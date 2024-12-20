@@ -1,0 +1,489 @@
+<%- include('../../Views/layouts/user/header.ejs') %>
+
+<style>
+    .ProductContainer {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        margin-top: 5%;
+        display: flex;
+        flex-direction: column;
+        gap: 30px;
+    }
+
+    .product-detail {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 40px;
+        align-items: flex-start;
+    }
+
+    .product-images {
+        flex: 1;
+        min-width: 300px;
+        max-width: 50%;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .main-image-container {
+        position: relative;
+        overflow: hidden;
+        width: 100%;
+        padding-top: 100%; /* 1:1 Aspect Ratio */
+        border-radius: 8px;
+        border: 1px solid #ddd;
+        background-color: #f8f9fa;
+    }
+
+    .main-image {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 8px;
+    }
+
+    .thumbnail-strip {
+        display: flex;
+        gap: 10px;
+        overflow-x: auto;
+        padding-bottom: 10px;
+    }
+
+    .thumbnail {
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
+        border-radius: 4px;
+        cursor: pointer;
+        border: 2px solid transparent;
+        transition: border-color 0.3s ease;
+    }
+
+    .thumbnail.active {
+        border-color: #01050a;
+    }
+
+    .product-info {
+        flex: 1;
+        min-width: 300px;
+        max-width: 50%;
+    }
+
+    .product-title {
+        font-size: 28px;
+        margin-bottom: 15px;
+        color: #333;
+    }
+
+    .product-brand {
+        color: #666;
+        font-size: 16px;
+        margin-bottom: 10px;
+    }
+
+    .product-description {
+        color: #444;
+        line-height: 1.6;
+        margin: 20px 0;
+    }
+
+    .price-container {
+        margin: 20px 0;
+    }
+
+    .current-price {
+        font-size: 28px;
+        font-weight: bold;
+        color: #010810;
+    }
+
+    .original-price {
+        text-decoration: line-through;
+        color: #6c757d;
+        font-size: 18px;
+        margin-left: 10px;
+    }
+
+    .discount-badge {
+        background-color: #dc3545;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 14px;
+        margin-left: 10px;
+    }
+
+    .quantity-selector {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 20px 0;
+    }
+
+    .quantity-btn {
+        background-color: #f8f9fa;
+        border: 1px solid #ced4da;
+        padding: 8px 12px;
+        font-size: 16px;
+        cursor: pointer;
+        border-radius: 4px;
+        transition: background-color 0.3s ease;
+    }
+
+    .quantity-btn:hover:not(:disabled) {
+        background-color: #e9ecef;
+    }
+
+    .quantity-btn:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+    }
+
+    .quantity-display {
+        padding: 8px 15px;
+        border: 1px solid #ced4da;
+        font-size: 16px;
+        font-weight: bold;
+        text-align: center;
+        min-width: 60px;
+    }
+
+    .stock-info {
+        color: #28a745;
+        font-size: 14px;
+        margin: 10px 0;
+    }
+
+    .low-stock {
+        color: #dc3545;
+    }
+
+    .add-to-cart-btn {
+        background-color: #000000;
+        color: white;
+        border: none;
+        padding: 12px 25px;
+        font-size: 16px;
+        cursor: pointer;
+        border-radius: 4px;
+        transition: background-color 0.3s ease;
+        width: 100%;
+        margin-top: 20px;
+    }
+
+    .add-to-cart-btn:hover:not(:disabled) {
+        background-color: #01070d;
+    }
+
+    .add-to-cart-btn:disabled {
+        background-color: #6c757d;
+        cursor: not-allowed;
+    }
+
+    .related-products {
+        margin-top: 50px;
+    }
+
+    .related-products-title {
+        font-size: 24px;
+        color: #333;
+        margin-bottom: 20px;
+    }
+
+    .related-products-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 20px;
+    }
+
+    .related-product-card {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        overflow: hidden;
+        transition: transform 0.3s ease;
+    }
+
+    .related-product-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .related-product-image {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+    }
+
+    .related-product-info {
+        padding: 15px;
+    }
+
+    .related-product-name {
+        font-size: 16px;
+        color: #333;
+        margin-bottom: 5px;
+    }
+
+    .related-product-price {
+        font-size: 18px;
+        color: #000102;
+        font-weight: bold;
+    }
+
+    @media (max-width: 768px) {
+        .product-detail {
+            flex-direction: column;
+        }
+
+        .product-images,
+        .product-info {
+            max-width: 100%;
+        }
+
+        .related-products-grid {
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        }
+    }
+</style>
+
+<div class="ProductContainer">
+    <div class="product-detail">
+        <!-- Product Images Section -->
+        <div class="product-images">
+            <div class="main-image-container" onmousemove="zoomImage(event)" onmouseleave="resetZoom(event)">
+                <img id="mainImage" 
+                     src="<%= product.product_img && product.product_img.length > 0 ? `/uploads/re-image/${product.product_img[0]}` : '/uploads/re-image/default.jpeg' %>" 
+                     alt="<%= product.name %>" 
+                     class="main-image"
+                     onerror="this.onerror=null; this.src='/uploads/re-image/default.jpeg';">
+            </div>
+            <div class="thumbnail-strip">
+                <% if (product.product_img && product.product_img.length > 0) { %>
+                    <% product.product_img.forEach(function(img) { %>
+                        <img src="/uploads/re-image/<%= img %>" 
+                             alt="Product Thumbnail" 
+                             class="thumbnail"
+                             onclick="changeImage(this)"
+                             onerror="this.onerror=null; this.src='/uploads/re-image/default.jpeg';">
+                    <% }); %>
+                <% } %>
+            </div>
+        </div>
+
+        <!-- Product Info Section -->
+        <div class="product-info">
+            <h1 class="product-title"><%= product.name %></h1>
+            <div class="product-brand">
+                <% if (product.writer) { %>
+                    Author: <%= product.writer %>
+                <% } %>
+            </div>
+            <div class="product-description">
+                <%= product.description %>
+            </div>
+
+            <div class="price-container">
+                <% if (product.offerPrice && product.offerPrice < product.Sale_price) { %>
+                    <span class="current-price">₹<%= product.offerPrice %></span>
+                    <span class="original-price">₹<%= product.Sale_price %></span>
+                    <span class="discount-badge">
+                        <%= Math.round((product.Sale_price - product.offerPrice) / product.Sale_price * 100) %>% OFF
+                    </span>
+                <% } else { %>
+                    <span class="current-price">₹<%= product.Sale_price %></span>
+                <% } %>
+            </div>
+
+            <div class="quantity-selector">
+                <button id="decrease-btn" class="quantity-btn" onclick="changeQuantity(-1)">-</button>
+                <span id="quantity" class="quantity-display">1</span>
+                <button id="increase-btn" class="quantity-btn" onclick="changeQuantity(1)">+</button>
+            </div>
+
+            <div class="stock-info <%= product.quantity < 5 ? 'low-stock' : '' %>">
+                <% if (product.quantity > 0) { %>
+                    <% if (product.quantity < 5) { %>
+                        Only <%= product.quantity %> left in stock - order soon
+                    <% } else { %>
+                        In Stock (<%= product.quantity %> available)
+                    <% } %>
+                <% } else { %>
+                    Out of Stock
+                <% } %>
+            </div>
+
+            <button class="add-to-cart-btn" 
+                    onclick="addToCartHandler(event, '<%= product._id %>')"
+                    <%= product.quantity === 0 ? 'disabled' : '' %>>
+                <%= product.quantity === 0 ? 'Out of Stock' : 'Add to Cart' %>
+            </button>
+
+            <div class="product-meta">
+                <% if (product.category_id) { %>
+                    <p>Category: <%= product.category_id.name %></p>
+                <% } %>
+                <% if (product.Published_Date) { %>
+                    <p>Published: <%= new Date(product.Published_Date).toLocaleDateString() %></p>
+                <% } %>
+            </div>
+        </div>
+    </div>
+
+    <!-- Related Products Section -->
+    <% if (typeof recommendedProducts !== 'undefined' && recommendedProducts && recommendedProducts.length > 0) { %>
+        <div class="related-products">
+            <h2 class="related-products-title">Related Products</h2>
+            <div class="related-products-grid">
+                <% recommendedProducts.forEach(function(relatedProduct) { %>
+                    <div class="related-product-card">
+                        <img src="<%= relatedProduct.product_img && relatedProduct.product_img.length > 0 ? `/uploads/re-image/${relatedProduct.product_img[0]}` : '/uploads/re-image/default.jpeg' %>" 
+                             alt="<%= relatedProduct.name %>" 
+                             class="related-product-image"
+                             onerror="this.onerror=null; this.src='/uploads/re-image/default.jpeg';">
+                        <div class="related-product-info">
+                            <h3 class="related-product-name"><%= relatedProduct.name %></h3>
+                            <div class="related-product-price">
+                                <% if (relatedProduct.offerPrice && relatedProduct.offerPrice < relatedProduct.Sale_price) { %>
+                                    ₹<%= relatedProduct.offerPrice %>
+                                <% } else { %>
+                                    ₹<%= relatedProduct.Sale_price %>
+                                <% } %>
+                            </div>
+                        </div>
+                    </div>
+                <% }); %>
+            </div>
+        </div>
+    <% } %>
+</div>
+
+<script>
+    let stockLeft = <%= product.quantity %>;
+
+    function changeImage(thumbnail) {
+        const mainImage = document.getElementById('mainImage');
+        mainImage.src = thumbnail.src;
+        thumbnail.parentElement.querySelectorAll('.thumbnail').forEach(thumb => {
+            thumb.classList.remove('active');
+        });
+        thumbnail.classList.add('active');
+    }
+
+    function zoomImage(e) {
+        const image = e.target;
+        const zoomer = e.currentTarget;
+        const x = e.offsetX / zoomer.offsetWidth;
+        const y = e.offsetY / zoomer.offsetHeight;
+        const zoomLevel = 2;
+        image.style.transformOrigin = `${x * 100}% ${y * 100}%`;
+        image.style.transform = `scale(${zoomLevel})`;
+    }
+
+    function resetZoom(e) {
+        const image = e.target;
+        image.style.transformOrigin = 'center center';
+        image.style.transform = 'scale(1)';
+    }
+
+    function changeQuantity(change) {
+        const quantityElement = document.getElementById("quantity");
+        const decreaseButton = document.getElementById("decrease-btn");
+        const increaseButton = document.getElementById("increase-btn");
+        let currentQuantity = parseInt(quantityElement.textContent);
+        let newQuantity = currentQuantity + change;
+
+        if (newQuantity <= 1) {
+            newQuantity = 1;
+            decreaseButton.disabled = true;
+        } else {
+            decreaseButton.disabled = false;
+        }
+
+        if (newQuantity >= stockLeft) {
+            newQuantity = stockLeft;
+            increaseButton.disabled = true;
+        } else {
+            increaseButton.disabled = false;
+        }
+
+        quantityElement.textContent = newQuantity;
+    }
+
+    function addToCartHandler(event, productId) {
+        event.preventDefault();
+        const quantity = parseInt(document.getElementById("quantity").textContent);
+
+        fetch('/addToCart', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                productId: productId,
+                quantity: quantity
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.message || 'Failed to add product to cart');
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                Swal.fire({
+                    title: 'Success!',
+                    text: data.message || 'Product added to cart successfully!',
+                    icon: 'success',
+                    showConfirmButton: false,
+                    timer: 1500
+                });
+            } else {
+                throw new Error(data.message || 'Failed to add product to cart');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            
+            if (error.message.includes('Please login')) {
+                Swal.fire({
+                    title: 'Login Required',
+                    text: 'Please login to add items to your cart',
+                    icon: 'info',
+                    showCancelButton: true,
+                    confirmButtonText: 'Login',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = '/login';
+                    }
+                });
+            } else {
+                Swal.fire({
+                    title: 'Error!',
+                    text: error.message || 'Something went wrong. Please try again.',
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+            }
+        });
+    }
+
+    // Initialize quantity buttons state
+    document.addEventListener('DOMContentLoaded', function() {
+        const decreaseButton = document.getElementById("decrease-btn");
+        const increaseButton = document.getElementById("increase-btn");
+        const quantity = parseInt(document.getElementById("quantity").textContent);
+
+        decreaseButton.disabled = quantity <= 1;
+        increaseButton.disabled = quantity >= stockLeft;
+    });
+</script>
+
+<%- include('../../Views/layouts/user/footer.ejs') %>

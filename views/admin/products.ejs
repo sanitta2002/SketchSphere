@@ -1,0 +1,198 @@
+<%- include('../../Views/layouts/admin/header.ejs') %>
+<head>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@10/dist/sweetalert2.min.css">
+</head>
+<div class="content-header">
+    <div>
+        <h2 class="content-title card-title">Products</h2>
+    </div>
+</div>
+<header class="card-header text-center mb-20">
+    <form action="" method="get" class="d-inline">
+        <div class="input-group input-group-sm border border-1 border-grey rounded-pill" style="width: 500px; margin-left: 230px;">
+            <input type="text" class="form-control border-0 rounded-pill" placeholder="Search products or brands" name="search">
+            <button class="btn  border-0" type="submit">Search</button>
+        </div>
+    </form>
+</header>
+<div class="right mt-5">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th scope="col"><b>Product name</b></th>
+                <th scope="col"><b>Category</b></th>
+                <th scope="col"><b>Sale Price</b></th>
+                <th scope="col"><b>Offer Price</b></th>
+                <th scope="col"><b>Offer</b></th>
+                <th scope="col"><b>Quantity</b></th>
+                <th scope="col"><b>Action</b></th>
+                <th scope="col"><b>Edit</b></th>
+            </tr>
+        </thead>
+        <tbody>
+    
+            <%for(let i=data.length-1;i>=0;i--){%>
+            
+            <tr>
+                <td><%=data[i].name%></td>
+                <td><%=data[i].category_id.name%></td>
+                <td><%=data[i].Sale_price%></td>
+                <td><%=data[i].offerPrice || 0 %></td>
+                <td>
+                    <% if (!data[i].offerPrice) { %>
+                        <button class="btn btn-info" onclick="" style="width: 100px;">
+                            <a href="#" class="text-white">Add Offer</a>
+                        </button>
+                    <% } else { %>
+                        <button class="btn btn-warning" onclick="" style="width: 100px;">
+                            <a href="#" class="text-white">Remove Offer</a>
+                        </button>
+                    <% } %>
+                </td>
+                <td><%=data[i].available_quantity || 0%></td>
+                <td></td>
+                <td>
+                    <%if(data[i].isBlocked===false){%>
+                    <button class="btn btn-danger block-btn" data-id="<%=data[i]._id%>" style="width: 80px;">
+                        Block
+                    </button>
+                    <%}else{%>
+                    
+                    <button class="btn btn-success unblock-btn" data-id="<%=data[i]._id%>" style="width: 80px;">
+                        Unblock
+                    </button>
+                    <%}%>
+            
+                </td>
+                <td>
+                    <button class="btn btn-info" style="width: 80px;">
+                        <a href="/admin/editProduct?id=<%=data[i]._id%>" class="text-white" style="text-decoration: none;">Edit</a>
+                    </button>
+                </td>
+            </tr>
+
+            <%}%>
+            
+        </tbody>
+
+    </table>
+</div>
+</div>
+</div>
+
+<div class="container mt-3">
+    <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center mb-20" style="margin-right: 200px;">
+ 
+ 
+            <% for (let i = 1; i <= totalPages; i++) { %>
+            <li class="page-item <%=(i === currentPage) ? 'active' : '' %>">
+                <a class="page-link" href="?page=<%= i %>"><%= i %></a>
+            </li>
+            <% } %>
+ 
+ 
+        </ul>
+    </nav>
+ </div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@10/dist/sweetalert2.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script>
+    $(document).ready(function() {
+        // Block product
+        $('.block-btn').click(function() {
+            const button = $(this);
+            const productId = button.data('id');
+            
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "Do you want to block this product?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, block it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: `/admin/blockProduct?id=${productId}`,
+                        method: 'GET',
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire(
+                                    'Blocked!',
+                                    'Product has been blocked.',
+                                    'success'
+                                ).then(() => {
+                                    location.reload();
+                                });
+                            } else {
+                                Swal.fire(
+                                    'Error!',
+                                    'Failed to block product.',
+                                    'error'
+                                );
+                            }
+                        },
+                        error: function() {
+                            Swal.fire(
+                                'Error!',
+                                'Failed to block product.',
+                                'error'
+                            );
+                        }
+                    });
+                }
+            });
+        });
+
+        // Unblock product
+        $('.unblock-btn').click(function() {
+            const button = $(this);
+            const productId = button.data('id');
+            
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "Do you want to unblock this product?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, unblock it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: `/admin/unblockProduct?id=${productId}`,
+                        method: 'GET',
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire(
+                                    'Unblocked!',
+                                    'Product has been unblocked.',
+                                    'success'
+                                ).then(() => {
+                                    location.reload();
+                                });
+                            } else {
+                                Swal.fire(
+                                    'Error!',
+                                    'Failed to unblock product.',
+                                    'error'
+                                );
+                            }
+                        },
+                        error: function() {
+                            Swal.fire(
+                                'Error!',
+                                'Failed to unblock product.',
+                                'error'
+                            );
+                        }
+                    });
+                }
+            });
+        });
+    });
+</script>
+<%- include('../../Views/layouts/admin/footer.ejs') %>

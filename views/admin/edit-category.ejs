@@ -1,0 +1,92 @@
+<%- include('../../Views/layouts/admin/header.ejs') %>
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6 mt-60">
+            <form id="editCategoryForm">
+                <div class="mb-4 mt-30">
+                    <label for="categoryName" class="form-label">Name</label>
+                    <input type="text" name="categoryName" id="categoryName" value="<%=category.name%>" class="form-control border" />
+                    <div id="name-error" class="error-message text-danger"></div>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="form-label">Description</label>
+                    <textarea name="description" id="description" class="form-control border"><%=category.description%></textarea>
+                    <div id="description-error" class="error-message text-danger"></div>
+                </div>
+
+                <div class="d-grid text-end mt-30">
+                    <button class="btn btn-primary" type="submit">Update Category</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@10/dist/sweetalert2.min.js"></script>
+<script>
+    document.getElementById('editCategoryForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        // Clear previous error messages
+        document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
+        
+        // Get form data
+        const categoryName = document.getElementById('categoryName').value.trim();
+        const description = document.getElementById('description').value.trim();
+        
+        // Validate
+        let isValid = true;
+        
+        if (!categoryName) {
+            document.getElementById('name-error').textContent = 'Category name is required';
+            isValid = false;
+        } else if (!/^[a-zA-Z\s]+$/.test(categoryName)) {
+            document.getElementById('name-error').textContent = 'Category name must contain only letters and spaces';
+            isValid = false;
+        }
+        
+        if (!description) {
+            document.getElementById('description-error').textContent = 'Description is required';
+            isValid = false;
+        }
+        
+        if (!isValid) return;
+
+        try {
+            const response = await fetch('/admin/editCategory/<%=category._id%>', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ categoryName, description })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: 'Category updated successfully',
+                    showConfirmButton: true
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = '/admin/category';
+                    }
+                });
+            } else {
+                throw new Error(data.error || 'Failed to update category');
+            }
+        } catch (error) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: error.message
+            });
+        }
+    });
+</script>
+
+<%- include('../../Views/layouts/admin/footer.ejs') %>
