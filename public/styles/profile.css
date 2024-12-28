@@ -1,0 +1,162 @@
+/* Profile Page Styles */
+
+/* Main Layout */
+.main {
+    padding: 80px 0;
+    background-color: #f8f9fa;
+}
+
+/* Breadcrumb Styles */
+.breadcrumb-wrap {
+    background: linear-gradient(135deg, #ffffff, #ffffff);
+    padding: 15px 0;
+    margin-bottom: 30px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    font-size: 0.95rem;
+}
+
+.breadcrumb a {
+    color: #090a0c;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.breadcrumb a:hover {
+    color: #0d0d0d;
+}
+
+/* Dashboard Menu */
+.dashboard-menu {
+    background: linear-gradient(135deg, #ffffff, #f5f5f5);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.dashboard-menu .nav-link {
+    padding: 12px 20px;
+    margin-bottom: 8px;
+    border-radius: 8px;
+    color: #37474f;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.dashboard-menu .nav-link:hover,
+.dashboard-menu .nav-link.active {
+    background: linear-gradient(135deg, #101010, #090909);
+    color: white;
+    transform: translateX(5px);
+}
+
+.dashboard-menu .nav-link i {
+    font-size: 1.2rem;
+}
+
+/* Cards */
+.card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    transition: transform 0.3s ease;
+    margin-bottom: 25px;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.card-header {
+    background: linear-gradient(135deg, #000000, #000000);
+    color: white;
+    border-radius: 12px 12px 0 0 !important;
+    padding: 15px 20px;
+}
+
+.card-body {
+    padding: 25px;
+}
+
+/* Profile Section */
+.card-green {
+    background: linear-gradient(135deg, #ffffff, #e3f2fd);
+}
+
+.profile-details {
+    text-align: center;
+    padding: 20px;
+}
+
+.profile-details .card-text {
+    margin: 15px 0;
+    font-size: 1.1rem;
+}
+
+/* Buttons */
+.btn-success {
+    background: linear-gradient(135deg, #000000, #000000);
+    border: none;
+    padding: 8px 20px;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+}
+
+.btn-success:hover {
+    background: linear-gradient(135deg, #000000, #0a0a0a);
+    transform: translateY(-2px);
+}
+
+/* Tables */
+.table {
+    width: 100%;
+    margin-bottom: 0;
+}
+
+.table th {
+    background-color: #f5f5f5;
+    font-weight: 600;
+    padding: 12px;
+}
+
+.table td {
+    padding: 12px;
+    vertical-align: middle;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .dashboard-menu {
+        margin-bottom: 20px;
+    }
+    
+    .card {
+        margin-bottom: 20px;
+    }
+    
+    .table-responsive {
+        overflow-x: auto;
+    }
+}
+
+/* Animation */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.dashboard-content {
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* Additional Utility Classes */
+.text-primary { color: #000000 !important; }
+.bg-light { background-color: #f5f5f5 !important; }
+.shadow-sm { box-shadow: 0 2px 5px rgba(0,0,0,0.08) !important; }

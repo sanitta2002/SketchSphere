@@ -27,7 +27,7 @@ const userschema=new Schema({
     
     password:{
         type:String,
-        required:true
+        required:false
     },
     isBlocked:{
      type:Boolean,

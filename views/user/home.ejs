@@ -33,6 +33,55 @@
     }
 </style>
 
+<style>
+	.block1 {
+		position: relative;
+		border: 1px solid #e6e6e6;
+		border-radius: 8px;
+		overflow: hidden;
+		transition: all 0.3s ease;
+		background-color: white;
+	}
+
+	.block1:hover {
+		box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+		transform: translateY(-5px);
+	}
+
+	.product-details {
+		padding: 15px;
+		background-color: white;
+	}
+
+	.product-name {
+		font-size: 1.1rem;
+		font-weight: 500;
+		color: #333;
+		margin-bottom: 10px;
+		height: 2.4em;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		-webkit-box-orient: vertical;
+	}
+
+	.product-price {
+		font-size: 1.1rem;
+		font-weight: 500;
+		margin: 10px 0;
+	}
+
+	.product-actions {
+		margin-top: 15px;
+	}
+
+	.btn-outline-dark:hover {
+		background-color: #343a40;
+		color: white;
+	}
+</style>
+
 	<!-- Cart -->
 	<div class="wrap-header-cart js-panel-cart">
 		<div class="s-full js-hide-cart"></div>
@@ -203,7 +252,7 @@
 			<% } %>
 		</div>
 	</div>
-{{ ... }}
+
 
 				<!-- Product section heading -->
 				<!-- <div class="container">
@@ -426,53 +475,6 @@
 			</div>
 		</div>
 
-	<style>
-		.block1 {
-			position: relative;
-			border: 1px solid #e6e6e6;
-			border-radius: 8px;
-			overflow: hidden;
-			transition: all 0.3s ease;
-			background-color: white;
-		}
+	
 
-		.block1:hover {
-			box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-			transform: translateY(-5px);
-		}
-
-		.product-details {
-			padding: 15px;
-			background-color: white;
-		}
-
-		.product-name {
-			font-size: 1.1rem;
-			font-weight: 500;
-			color: #333;
-			margin-bottom: 10px;
-			height: 2.4em;
-			overflow: hidden;
-			text-overflow: ellipsis;
-			display: -webkit-box;
-			-webkit-line-clamp: 2;
-			-webkit-box-orient: vertical;
-		}
-
-		.product-price {
-			font-size: 1.1rem;
-			font-weight: 500;
-			margin: 10px 0;
-		}
-
-		.product-actions {
-			margin-top: 15px;
-		}
-
-		.btn-outline-dark:hover {
-			background-color: #343a40;
-			color: white;
-		}
-	</style>
-
-<%- include('../../Views/layouts/user/footer.ejs') %>
+	<%- include('../../Views/layouts/user/footer.ejs') %>

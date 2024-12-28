@@ -1,0 +1,292 @@
+<%- include('../../Views/layouts/user/header.ejs') %>
+
+<link rel="stylesheet" href="/styles/profile.css">
+
+<main class="main">
+  <div class="page-header breadcrumb-wrap">
+    <div class="container">
+      <div class="breadcrumb">
+        <a href="/" rel="nofollow">Home</a>
+        <span>/</span> Profile <span>/</span> Account
+      </div>
+    </div>
+  </div>
+  
+  <section class="pt-4 pb-4">
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-10 m-auto">
+          <div class="row">
+            <!-- Dashboard Menu -->
+            <div class="col-md-4">
+              <div class="dashboard-menu">
+                <ul class="nav flex-column" role="tablist">
+                  <li class="nav-item">
+                    <a class="nav-link active" id="dashboard-tab" data-bs-toggle="tab" href="#dashboard" role="tab">
+                      <i class="fas fa-user-circle"></i>Dashboard
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" id="address-tab" data-bs-toggle="tab" href="#address" role="tab">
+                      <i class="fas fa-map-marker-alt"></i>My Address
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" id="orders-tab" data-bs-toggle="tab" href="#orders" role="tab">
+                      <i class="fas fa-shopping-bag"></i>Orders
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" id="wallet-tab" data-bs-toggle="tab" href="#track-orders" role="tab">
+                      <i class="fas fa-wallet"></i>Wallet Status
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" id="wallet-history-tab" data-bs-toggle="tab" href="#wallet-history" role="tab">
+                      <i class="fas fa-history"></i>Wallet History
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" id="referral-tab" data-bs-toggle="tab" href="#referal" role="tab">
+                      <i class="fas fa-user-friends"></i>Referrals
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="/logout">
+                      <i class="fas fa-sign-out-alt"></i>Logout
+                    </a>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- Dashboard Content -->
+            <div class="col-md-8">
+              <div class="tab-content dashboard-content">
+                <!-- Profile Dashboard -->
+                <div class="tab-pane fade show active" id="dashboard" role="tabpanel">
+                  <div class="card card-green">
+                    <div class="card-header">
+                      <h5 class="mb-0 text-center">Welcome, <%= user.name %></h5>
+                    </div>
+                    <div class="card-body profile-details">
+                        <p class="card-text d-flex align-items-center justify-content-between">
+                            <span>
+                                <i class="fa-solid fa-user me-2"></i>
+                                <strong>Name:</strong> <span id="userName"><%= user.name %></span>
+                            </span>
+                            <button class="btn btn-sm btn-success" onclick="editField('name', '<%= user.name %>')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </p>
+                        <p class="card-text d-flex align-items-center justify-content-between">
+                            <span>
+                                <i class="fas fa-phone me-2"></i>
+                                <strong>Phone:</strong> <span id="userPhone"><%= user.phone %></span>
+                            </span>
+                            <button class="btn btn-sm btn-success" onclick="editField('phone', '<%= user.phone %>')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </p>
+                        <p class="card-text d-flex align-items-center justify-content-between">
+                            <span>
+                                <i class="fas fa-envelope me-2"></i>
+                                <strong>Email:</strong> <span id="userEmail"><%= user.email %></span>
+                            </span>
+                            <button class="btn btn-sm btn-success" onclick="editField('email', '<%= user.email %>')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </p>
+                        <div class="mt-4">
+                            <a href="/change-password" class="btn btn-success">
+                              <i class="fas fa-key me-1"></i> Change Password
+                            </a>
+                        </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Address Section -->
+                <div class="tab-pane fade" id="address" role="tabpanel">
+                  <div class="card">
+                    <div class="card-header">
+                      <h5 class="mb-0">My Addresses</h5>
+                    </div>
+                    <div class="card-body">
+                      <div class="text-end mb-3">
+                        <a href="/add-address" class="btn btn-success">
+                          <i class="fas fa-plus me-1"></i> Add New Address
+                        </a>
+                      </div>
+                      <div class="row">
+                        <!-- Address cards will be dynamically added here -->
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Orders Section -->
+                <div class="tab-pane fade" id="orders" role="tabpanel">
+                  <div class="card">
+                    <div class="card-header">
+                      <h5 class="mb-0">Your Orders</h5>
+                    </div>
+                    <div class="card-body">
+                      <div class="table-responsive">
+                        <table class="table">
+                          <thead>
+                            <tr>
+                              <th>Order ID</th>
+                              <th>Date</th>
+                              <th>Status</th>
+                              <th>Total</th>
+                              <th>Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <!-- Order rows will be dynamically added here -->
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Wallet Status Section -->
+                <div class="tab-pane fade" id="track-orders" role="tabpanel">
+                  <div class="card">
+                    <div class="card-header">
+                      <h5 class="mb-0">Wallet</h5>
+                    </div>
+                    <div class="card-body contact-from-area">
+                      <div class="row">
+                        <div class="col-lg-8 mx-auto text-center mt-90">
+                          <form>
+                            <div class="form-group">
+                              <label for="walletAmount" class="h4">Amount</label>
+                              <div class="h3"></div>
+                            </div>
+                            <button type="button" class="btn btn-success" onclick="">Add Money</button>
+                          </form>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Wallet History Section -->
+                <div class="tab-pane fade" id="wallet-history" role="tabpanel">
+                  <div class="card">
+                    <div class="card-header">
+                      <h5 class="mb-0">Wallet History</h5>
+                    </div>
+                    <div class="card-body">
+                      <div class="table-responsive">
+                        <table class="table">
+                          <thead>
+                            <tr>
+                              <th>Date</th>
+                              <th>Status</th>
+                              <th>Amount</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <!-- Wallet history rows will be dynamically added here -->
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Referral Section -->
+                <div class="tab-pane fade" id="referal" role="tabpanel">
+                  <div class="card">
+                    <div class="card-header">
+                      <h5 class="mb-0">Referal</h5>
+                    </div>
+                    <div class="card-body">
+                      <h6 class="mb-3">Refer your friends and earn money!</h6>
+                      <p>Share this link: <strong>></strong></p>
+                      <p>Earned: ₹</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<%- include('../../Views/layouts/user/footer.ejs') %>
+
+<!-- Scripts -->
+<script src="https://kit.fontawesome.com/your-font-awesome-kit.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+function editField(field, currentValue) {
+    Swal.fire({
+        title: `Edit ${field.charAt(0).toUpperCase() + field.slice(1)}`,
+        input: field === 'phone' ? 'tel' : field === 'email' ? 'email' : 'text',
+        inputValue: currentValue,
+        showCancelButton: true,
+        inputValidator: (value) => {
+            if (!value) {
+                return `Please enter your ${field}!`;
+            }
+            
+            if (field === 'phone') {
+                const phoneRegex = /^\d{10}$/;
+                if (!phoneRegex.test(value)) {
+                    return 'Please enter a valid 10-digit phone number!';
+                }
+            }
+            
+            if (field === 'email') {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(value)) {
+                    return 'Please enter a valid email address!';
+                }
+            }
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const endpoint = field === 'name' ? '/edit-profile' : 
+                           field === 'email' ? '/change-email' : '/change-phone';
+            
+            fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ [field]: result.value })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById(`user${field.charAt(0).toUpperCase() + field.slice(1)}`).textContent = result.value;
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Updated Successfully!',
+                        showConfirmButton: false,
+                        timer: 1500
+                    });
+                } else {
+                    throw new Error(data.message || 'Update failed');
+                }
+            })
+            .catch(error => {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Update Failed',
+                    text: error.message || 'Something went wrong!'
+                });
+            });
+        }
+    });
+}
+</script>

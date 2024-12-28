@@ -320,6 +320,156 @@ const logout = async(req,res)=>{
     }
   };
 
+const profile = async (req, res) => {
+    try {
+        if (!req.session.user) {
+            return res.redirect('/login');
+        }
+        const userId = req.session.user;
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.redirect('/login');
+        }
+        res.render('profile', { user });
+    } catch (error) {
+        console.error("Profile page error:", error);
+        res.redirect('/pageNotFound');
+    }
+};
+
+const editProfile = async (req, res) => {
+    try {
+        const userId = req.session.user;
+        const { name } = req.body;
+
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            { name },
+            { new: true }
+        );
+
+        res.json({ success: true, user: updatedUser });
+    } catch (error) {
+        console.error("Edit profile error:", error);
+        res.status(500).json({ success: false, message: "Failed to update profile" });
+    }
+};
+
+const changeEmail = async (req, res) => {
+    try {
+        const userId = req.session.user;
+        const { email } = req.body;
+
+        // Check if email already exists
+        const existingUser = await User.findOne({ email, _id: { $ne: userId } });
+        if (existingUser) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Email already in use" 
+            });
+        }
+
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            { email },
+            { new: true }
+        );
+
+        res.json({ success: true, user: updatedUser });
+    } catch (error) {
+        console.error("Change email error:", error);
+        res.status(500).json({ success: false, message: "Failed to update email" });
+    }
+};
+
+const changePhone = async (req, res) => {
+    try {
+        const userId = req.session.user;
+        const { phone } = req.body;
+
+        // Check if phone already exists
+        const existingUser = await User.findOne({ phone, _id: { $ne: userId } });
+        if (existingUser) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Phone number already in use" 
+            });
+        }
+
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            { phone },
+            { new: true }
+        );
+
+        res.json({ success: true, user: updatedUser });
+    } catch (error) {
+        console.error("Change phone error:", error);
+        res.status(500).json({ success: false, message: "Failed to update phone number" });
+    }
+};
+
+const loadChangePassword = async (req, res) => {
+    try {
+        if (!req.session.user) {
+            return res.redirect('/login');
+        }
+        res.render('change-password');
+    } catch (error) {
+        console.error("Load change password error:", error);
+        res.redirect('/profile');
+    }
+};
+
+const changePassword = async (req, res) => {
+    try {
+        const userId = req.session.user;
+        const { currentPassword, newPassword, confirmPassword } = req.body;
+
+        // Get user
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.json({ 
+                success: false, 
+                message: "User not found" 
+            });
+        }
+
+        // Verify current password
+        const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+        if (!isPasswordValid) {
+            return res.json({ 
+                success: false, 
+                message: "Current password is incorrect" 
+            });
+        }
+
+        // Check if new password matches confirmation
+        if (newPassword !== confirmPassword) {
+            return res.json({ 
+                success: false, 
+                message: "New passwords do not match" 
+            });
+        }
+
+        // Hash new password
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        // Update password
+        await User.findByIdAndUpdate(userId, { password: hashedPassword });
+
+        res.json({ 
+            success: true, 
+            message: "Password updated successfully" 
+        });
+    } catch (error) {
+        console.error("Change password error:", error);
+        res.json({ 
+            success: false, 
+            message: "Failed to update password" 
+        });
+    }
+};
 
 module.exports ={
     loadHomepage,
@@ -330,5 +480,11 @@ module.exports ={
     resendOtp,
     loadLogin,
     login,
-    logout
+    logout,
+    profile,
+    editProfile,
+    changeEmail,
+    changePhone,
+    loadChangePassword,
+    changePassword
 }
