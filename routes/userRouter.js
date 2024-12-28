@@ -2,6 +2,7 @@ const express=require('express')
 const router=express.Router()
 const userController=require('../controlles/user/userController')
 const productController=require('../controlles/user/productController')
+const addressController=require('../controlles/user/addressController')
 const passport = require('passport')
 
 
@@ -36,5 +37,12 @@ router.post("/change-phone", userController.changePhone);
 // Password change routes
 router.get("/change-password", userController.loadChangePassword);
 router.post("/change-password", userController.changePassword);
+
+// Address routes
+router.get('/add-address',addressController.loadAddAddress)
+router.post('/add-address', addressController.addAddress);
+router.get('/get-addresses', addressController.getUserAddresses);
+router.put('/edit-address/:index', addressController.editAddress);
+router.delete('/delete-address/:index', addressController.deleteAddress);
 
 module.exports = router

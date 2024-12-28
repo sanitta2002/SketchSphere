@@ -113,13 +113,13 @@
                       <h5 class="mb-0">My Addresses</h5>
                     </div>
                     <div class="card-body">
-                      <div class="text-end mb-3">
-                        <a href="/add-address" class="btn btn-success">
+                      <!-- <div class="text-end mb-3">
+                        <a href="#" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addressModal">
                           <i class="fas fa-plus me-1"></i> Add New Address
                         </a>
-                      </div>
-                      <div class="row">
-                        <!-- Address cards will be dynamically added here -->
+                      </div> -->
+                      <div id="addressList" class="row g-4">
+                        <!-- Address cards will be dynamically inserted here -->
                       </div>
                     </div>
                   </div>
@@ -289,4 +289,739 @@ function editField(field, currentValue) {
         }
     });
 }
+
+// Function to load addresses
+async function loadAddresses() {
+    try {
+        const response = await fetch('/get-addresses');
+        const data = await response.json();
+        
+        const addressList = document.getElementById('addressList');
+        if (!addressList) {
+            console.error('Address list element not found');
+            return;
+        }
+        
+        addressList.innerHTML = ''; // Clear existing addresses
+
+        if (data.addresses && data.addresses.length > 0) {
+            // Add the "Add New Address" card first
+            const addNewCard = `
+                <div class="col-md-6 col-lg-4">
+                    <div class="add-address-card" data-bs-toggle="modal" data-bs-target="#addressModal">
+                        <div class="add-address-content">
+                            <i class="fas fa-plus-circle"></i>
+                            <p>Add New Address</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            addressList.insertAdjacentHTML('beforeend', addNewCard);
+
+            // Add existing addresses
+            data.addresses.forEach((address, index) => {
+                const addressTypeClass = address.addressType.toLowerCase();
+                const addressCard = `
+                    <div class="col-md-6 col-lg-4">
+                        <div class="address-card">
+                            <div class="card-body">
+                                <div class="address-actions">
+                                    <div class="dropdown">
+                                        <button class="btn btn-link p-0" data-bs-toggle="dropdown">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li><a class="dropdown-item" href="#" onclick="editAddress(${index})">
+                                                <i class="fas fa-edit"></i> Edit
+                                            </a></li>
+                                            <li><a class="dropdown-item text-danger" href="#" onclick="deleteAddress(${index})">
+                                                <i class="fas fa-trash-alt"></i> Delete
+                                            </a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="address-type ${addressTypeClass}">
+                                    <i class="fas ${address.addressType === 'Home' ? 'fa-home' : 
+                                                   address.addressType === 'Work' ? 'fa-briefcase' : 'fa-map-marker-alt'}">
+                                    </i>
+                                    ${address.addressType}
+                                </div>
+                                <h5 class="address-name">${address.name}</h5>
+                                <div class="address-details">
+                                    ${address.landMark}<br>
+                                    ${address.city}, ${address.state}<br>
+                                    PIN: ${address.pincode}
+                                </div>
+                                <div class="address-phone">
+                                    <i class="fas fa-phone-alt"></i>
+                                    ${address.phone}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                addressList.insertAdjacentHTML('beforeend', addressCard);
+            });
+        } else {
+            // Show only Add New Address card centered
+            const emptyState = `
+                <div class="col-12 d-flex justify-content-center align-items-center min-vh-50">
+                    <div class="col-md-6 col-lg-4">
+                        <div class="add-address-card" data-bs-toggle="modal" data-bs-target="#addressModal">
+                            <div class="add-address-content">
+                                <i class="fas fa-plus-circle"></i>
+                                <p>Add New Address</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            addressList.insertAdjacentHTML('beforeend', emptyState);
+        }
+    } catch (error) {
+        console.error('Error loading addresses:', error);
+    }
+}
+
+// Function to edit address
+async function editAddress(index) {
+    try {
+        const response = await fetch('/get-addresses');
+        const data = await response.json();
+        
+        if (data.addresses && data.addresses[index]) {
+            const address = data.addresses[index];
+            
+            // Update modal title
+            document.getElementById('addressModalLabel').textContent = 'Edit Address';
+            
+            // Fill form with address data
+            document.getElementById('addressId').value = index;
+            document.getElementById('addressType').value = address.addressType;
+            document.getElementById('name').value = address.name;
+            document.getElementById('phone').value = address.phone;
+            document.getElementById('city').value = address.city;
+            document.getElementById('landmark').value = address.landMark;
+            document.getElementById('state').value = address.state;
+            document.getElementById('pincode').value = address.pincode;
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('addressModal'));
+            if (modal) {
+                modal.show();
+            }
+        }
+    } catch (error) {
+        console.error('Error loading address for edit:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Failed to load address for editing'
+        });
+    }
+}
+
+// Function to delete address
+async function deleteAddress(index) {
+    try {
+        const result = await Swal.fire({
+            title: 'Are you sure?',
+            text: "You won't be able to revert this!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, delete it!'
+        });
+
+        if (result.isConfirmed) {
+            const response = await fetch(`/delete-address/${index}`, {
+                method: 'DELETE'
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                await Swal.fire(
+                    'Deleted!',
+                    'Your address has been deleted.',
+                    'success'
+                );
+                loadAddresses();
+            } else {
+                throw new Error(data.message || 'Failed to delete address');
+            }
+        }
+    } catch (error) {
+        console.error('Error deleting address:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: error.message
+        });
+    }
+}
+
+// Wait for DOM to be fully loaded before adding event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Load addresses when page loads
+    loadAddresses();
+
+    // Function to validate form fields
+    function validateField(field) {
+        const feedbackElement = field.nextElementSibling;
+        if (field.validity.valid) {
+            field.classList.remove('is-invalid');
+            field.classList.add('is-valid');
+            if (feedbackElement && feedbackElement.classList.contains('invalid-feedback')) {
+                feedbackElement.style.display = 'none';
+            }
+        } else {
+            field.classList.remove('is-valid');
+            field.classList.add('is-invalid');
+            if (feedbackElement && feedbackElement.classList.contains('invalid-feedback')) {
+                feedbackElement.style.display = 'block';
+            }
+        }
+    }
+
+    // Add input validation listeners
+    const form = document.getElementById('addressForm');
+    if (form) {
+        const inputs = form.querySelectorAll('input, select');
+        
+        // Initial validation state
+        inputs.forEach(input => {
+            input.classList.remove('is-valid', 'is-invalid');
+            const feedbackElement = input.nextElementSibling;
+            if (feedbackElement && feedbackElement.classList.contains('invalid-feedback')) {
+                feedbackElement.style.display = 'none';
+            }
+        });
+
+        inputs.forEach(input => {
+            // Input event listener
+            input.addEventListener('input', function() {
+                validateField(this);
+            });
+            
+            // Blur event listener
+            input.addEventListener('blur', function() {
+                validateField(this);
+            });
+        });
+
+        // Reset validation state when modal is hidden
+        const addressModal = document.getElementById('addressModal');
+        if (addressModal) {
+            addressModal.addEventListener('hidden.bs.modal', function () {
+                inputs.forEach(input => {
+                    input.classList.remove('is-valid', 'is-invalid');
+                    const feedbackElement = input.nextElementSibling;
+                    if (feedbackElement && feedbackElement.classList.contains('invalid-feedback')) {
+                        feedbackElement.style.display = 'none';
+                    }
+                });
+                form.reset();
+            });
+        }
+
+        // Form submission handler
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            let isValid = true;
+            inputs.forEach(input => {
+                if (!input.validity.valid) {
+                    isValid = false;
+                }
+                validateField(input);
+            });
+
+            if (!isValid) {
+                return;
+            }
+
+            // Disable submit button
+            const submitButton = form.querySelector('button[type="submit"]');
+            if (submitButton) {
+                submitButton.disabled = true;
+            }
+
+            const formData = {
+                addressId: document.getElementById('addressId').value,
+                addressType: document.getElementById('addressType').value,
+                name: document.getElementById('name').value,
+                phone: document.getElementById('phone').value,
+                city: document.getElementById('city').value,
+                landMark: document.getElementById('landmark').value,
+                state: document.getElementById('state').value,
+                pincode: document.getElementById('pincode').value
+            };
+
+            const isEdit = formData.addressId !== '';
+            const url = isEdit ? `/edit-address/${formData.addressId}` : '/add-address';
+            const method = isEdit ? 'PUT' : 'POST';
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    await Swal.fire({
+                        icon: 'success',
+                        title: 'Success',
+                        text: isEdit ? 'Address updated successfully' : 'Address added successfully',
+                        showConfirmButton: false,
+                        timer: 1500
+                    });
+
+                    // Close modal and reset form
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('addressModal'));
+                    if (modal) {
+                        modal.hide();
+                    }
+                    
+                    // Reset form and validation state
+                    inputs.forEach(input => {
+                        input.classList.remove('is-valid', 'is-invalid');
+                        const feedbackElement = input.nextElementSibling;
+                        if (feedbackElement && feedbackElement.classList.contains('invalid-feedback')) {
+                            feedbackElement.style.display = 'none';
+                        }
+                    });
+                    form.reset();
+                    
+                    // Reset modal title for next use
+                    document.getElementById('addressModalLabel').textContent = 'Add New Address';
+                    
+                    // Reload addresses
+                    await loadAddresses();
+                } else {
+                    throw new Error(data.message || `Failed to ${isEdit ? 'update' : 'add'} address`);
+                }
+            } catch (error) {
+                console.error('Error saving address:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: error.message
+                });
+            } finally {
+                // Re-enable submit button
+                if (submitButton) {
+                    submitButton.disabled = false;
+                }
+            }
+        });
+    }
+});
 </script>
+
+<!-- Address Modal -->
+<div class="modal fade" id="addressModal" tabindex="-1" aria-labelledby="addressModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content address-modal">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addressModalLabel">Add New Address</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="addressForm" class="needs-validation" novalidate>
+          <input type="hidden" id="addressId" name="addressId">
+          <!-- Address Type -->
+          <div class="mb-3">
+            <label for="addressType" class="form-label">Address Type</label>
+            <select class="form-select" id="addressType" name="addressType" required>
+              <option value="">Select Address Type</option>
+              <option value="Home">Home</option>
+              <option value="Work">Work</option>
+              <option value="Other">Other</option>
+            </select>
+            <div class="invalid-feedback">Please select an address type</div>
+          </div>
+
+          <!-- Name -->
+          <div class="mb-3">
+            <label for="name" class="form-label">Full Name</label>
+            <input type="text" class="form-control" id="name" name="name" pattern="[A-Za-z\s]{3,50}" required>
+            <div class="invalid-feedback">Please enter a valid name (minimum 3 characters)</div>
+          </div>
+
+          <!-- Phone -->
+          <div class="mb-3">
+            <label for="phone" class="form-label">Phone Number</label>
+            <input type="tel" class="form-control" id="phone" name="phone" pattern="[0-9]{10}" required>
+            <div class="invalid-feedback">Please enter a valid 10-digit phone number</div>
+          </div>
+
+          <!-- City -->
+          <div class="mb-3">
+            <label for="city" class="form-label">City</label>
+            <input type="text" class="form-control" id="city" name="city" required>
+            <div class="invalid-feedback">Please enter your city</div>
+          </div>
+
+          <!-- Landmark -->
+          <div class="mb-3">
+            <label for="landmark" class="form-label">Landmark</label>
+            <input type="text" class="form-control" id="landmark" name="landMark" required>
+            <div class="invalid-feedback">Please enter a landmark</div>
+          </div>
+
+          <!-- State -->
+          <div class="mb-3">
+            <label for="state" class="form-label">State</label>
+            <select class="form-select" id="state" name="state" required>
+              <option value="">Select State</option>
+              <option value="Andhra Pradesh">Andhra Pradesh</option>
+              <option value="Arunachal Pradesh">Arunachal Pradesh</option>
+              <option value="Assam">Assam</option>
+              <option value="Bihar">Bihar</option>
+              <option value="Chhattisgarh">Chhattisgarh</option>
+              <option value="Goa">Goa</option>
+              <option value="Gujarat">Gujarat</option>
+              <option value="Haryana">Haryana</option>
+              <option value="Himachal Pradesh">Himachal Pradesh</option>
+              <option value="Jharkhand">Jharkhand</option>
+              <option value="Karnataka">Karnataka</option>
+              <option value="Kerala">Kerala</option>
+              <option value="Madhya Pradesh">Madhya Pradesh</option>
+              <option value="Maharashtra">Maharashtra</option>
+              <option value="Manipur">Manipur</option>
+              <option value="Meghalaya">Meghalaya</option>
+              <option value="Mizoram">Mizoram</option>
+              <option value="Nagaland">Nagaland</option>
+              <option value="Odisha">Odisha</option>
+              <option value="Punjab">Punjab</option>
+              <option value="Rajasthan">Rajasthan</option>
+              <option value="Sikkim">Sikkim</option>
+              <option value="Tamil Nadu">Tamil Nadu</option>
+              <option value="Telangana">Telangana</option>
+              <option value="Tripura">Tripura</option>
+              <option value="Uttar Pradesh">Uttar Pradesh</option>
+              <option value="Uttarakhand">Uttarakhand</option>
+              <option value="West Bengal">West Bengal</option>
+            </select>
+            <div class="invalid-feedback">Please select your state</div>
+          </div>
+
+          <!-- Pincode -->
+          <div class="mb-3">
+            <label for="pincode" class="form-label">Pincode</label>
+            <input type="text" class="form-control" id="pincode" name="pincode" pattern="[0-9]{6}" required>
+            <div class="invalid-feedback">Please enter a valid 6-digit pincode</div>
+          </div>
+
+          <div class="text-end">
+            <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Close</button>
+            <button type="submit" class="btn btn-success">Save Address</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add these styles -->
+<style>
+.min-vh-50 {
+    min-height: 50vh;
+}
+
+.card {
+    border: 1px solid rgba(0,0,0,.125);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.dropdown-item {
+    padding: 0.5rem 1rem;
+}
+
+.dropdown-item i {
+    width: 1rem;
+}
+
+.card-text {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+.modal-dialog {
+  max-width: 500px;
+}
+
+.form-label {
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.btn-success {
+  background-color: #198754;
+  border-color: #198754;
+}
+
+.btn-success:hover {
+  background-color: #157347;
+  border-color: #146c43;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: #198754;
+  box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.25);
+}
+
+.invalid-feedback {
+  display: none;
+  margin-top: 0.25rem;
+  font-size: 0.875em;
+  color: #dc3545;
+}
+
+.is-invalid ~ .invalid-feedback {
+  display: block;
+}
+
+.is-valid ~ .invalid-feedback {
+  display: none !important;
+}
+
+.form-control:focus, .form-select:focus {
+    box-shadow: none;
+}
+
+.form-control.is-valid, .form-select.is-valid {
+    border-color: #198754;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%23198754' d='M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e");
+    padding-right: calc(1.5em + 0.75rem);
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+.form-control.is-invalid, .form-select.is-invalid {
+    border-color: #dc3545;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+    padding-right: calc(1.5em + 0.75rem);
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+.form-select.is-invalid {
+    padding-right: 4.125rem;
+    background-position: right 0.75rem center, center right 2.25rem;
+    background-size: 16px 12px, calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+.invalid-feedback {
+    display: none;
+    margin-top: 0.25rem;
+    font-size: 0.875em;
+    color: #dc3545;
+}
+
+.is-invalid ~ .invalid-feedback {
+    display: block;
+}
+
+.is-valid ~ .invalid-feedback {
+    display: none !important;
+}
+
+/* Modern Address Card Styles */
+.address-section {
+    padding: 2rem 0;
+}
+
+.address-card {
+    background: #ffffff;
+    border-radius: 15px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+.address-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+}
+
+.address-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, #00d2ff 0%, #3a7bd5 100%);
+}
+
+.address-card .card-body {
+    padding: 1.5rem;
+}
+
+.address-type {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.35rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 1rem;
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.address-type i {
+    margin-right: 0.5rem;
+    font-size: 1rem;
+}
+
+.address-type.home {
+    background: rgba(52, 152, 219, 0.1);
+    color: #3498db;
+}
+
+.address-type.work {
+    background: rgba(46, 204, 113, 0.1);
+    color: #2ecc71;
+}
+
+.address-type.other {
+    background: rgba(155, 89, 182, 0.1);
+    color: #9b59b6;
+}
+
+.address-name {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 1rem;
+}
+
+.address-details {
+    color: #7f8c8d;
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+.address-phone {
+    display: flex;
+    align-items: center;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.address-phone i {
+    margin-right: 0.5rem;
+    color: #95a5a6;
+}
+
+.address-actions {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+}
+
+.address-actions .dropdown-toggle::after {
+    display: none;
+}
+
+.address-actions .btn-link {
+    color: #bdc3c7;
+    transition: color 0.3s ease;
+}
+
+.address-actions .btn-link:hover {
+    color: #7f8c8d;
+}
+
+.address-actions .dropdown-menu {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+    padding: 0.5rem;
+}
+
+.address-actions .dropdown-item {
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+}
+
+.address-actions .dropdown-item:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.address-actions .dropdown-item i {
+    width: 1.2rem;
+}
+
+.add-address-card {
+    height: 100%;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.02);
+    border: 2px dashed rgba(0, 0, 0, 0.1);
+    border-radius: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.add-address-card:hover {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.2);
+}
+
+.add-address-content {
+    text-align: center;
+    color: #95a5a6;
+}
+
+.add-address-content i {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+.add-address-content p {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+/* Empty state styling */
+.empty-address-state {
+    text-align: center;
+    padding: 3rem 0;
+}
+
+.empty-address-state i {
+    font-size: 4rem;
+    color: #bdc3c7;
+    margin-bottom: 1.5rem;
+}
+
+.empty-address-state p {
+    color: #7f8c8d;
+    font-size: 1.1rem;
+    margin-bottom: 2rem;
+}
+</style>

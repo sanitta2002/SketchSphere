@@ -1,8 +1,8 @@
 const mongoose =require('mongoose')
-
+const {Schema}= mongoose
 const addressSchema= new mongoose.Schema({
     userId:{
-       type:Schema.Type.ObjectId,
+       type:Schema.Types.ObjectId,
        ref:"User",
        required:true
     },
