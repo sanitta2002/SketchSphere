@@ -1,14 +1,14 @@
 const mongoose =require('mongoose')
-
+const {Schema}= mongoose
 const cartSchema= new mongoose.Schema({
     userId:{
-        type:Schema.Type.ObjectId,
+        type:Schema.Types.ObjectId,
         ref:"User",
         required:true
     },
     items:[{
         productId:{
-            type:Schema.Type.ObjectId,
+            type:Schema.Types.ObjectId,
             ref:'Product',
             required:true
         },

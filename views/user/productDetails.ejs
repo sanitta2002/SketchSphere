@@ -304,12 +304,12 @@
                 <button id="increase-btn" class="quantity-btn" onclick="changeQuantity(1)">+</button>
             </div>
 
-            <div class="stock-info <%= product.quantity < 5 ? 'low-stock' : '' %>">
-                <% if (product.quantity > 0) { %>
-                    <% if (product.quantity < 5) { %>
-                        Only <%= product.quantity %> left in stock - order soon
+            <div class="stock-info <%= product.available_quantity < 5 ? 'low-stock' : '' %>">
+                <% if (product.available_quantity > 0) { %>
+                    <% if (product.available_quantity < 5) { %>
+                        Only <%= product.available_quantity %> left in stock - order soon
                     <% } else { %>
-                        In Stock (<%= product.quantity %> available)
+                        In Stock (<%= product.available_quantity %> available)
                     <% } %>
                 <% } else { %>
                     Out of Stock
@@ -318,8 +318,8 @@
 
             <button class="add-to-cart-btn" 
                     onclick="addToCartHandler(event, '<%= product._id %>')"
-                    <%= product.quantity === 0 ? 'disabled' : '' %>>
-                <%= product.quantity === 0 ? 'Out of Stock' : 'Add to Cart' %>
+                    <%= product.available_quantity === 0 ? 'disabled' : '' %>>
+                <%= product.available_quantity === 0 ? 'Out of Stock' : 'Add to Cart' %>
             </button>
 
             <div class="product-meta">
@@ -362,127 +362,82 @@
 </div>
 
 <script>
-    let stockLeft = <%= product.quantity %>;
-
-    function changeImage(thumbnail) {
-        const mainImage = document.getElementById('mainImage');
-        mainImage.src = thumbnail.src;
-        thumbnail.parentElement.querySelectorAll('.thumbnail').forEach(thumb => {
-            thumb.classList.remove('active');
-        });
-        thumbnail.classList.add('active');
-    }
-
-    function zoomImage(e) {
-        const image = e.target;
-        const zoomer = e.currentTarget;
-        const x = e.offsetX / zoomer.offsetWidth;
-        const y = e.offsetY / zoomer.offsetHeight;
-        const zoomLevel = 2;
-        image.style.transformOrigin = `${x * 100}% ${y * 100}%`;
-        image.style.transform = `scale(${zoomLevel})`;
-    }
-
-    function resetZoom(e) {
-        const image = e.target;
-        image.style.transformOrigin = 'center center';
-        image.style.transform = 'scale(1)';
-    }
+    let stockLeft = <%= product.available_quantity %>;
+    let currentQuantity = 1;
 
     function changeQuantity(change) {
-        const quantityElement = document.getElementById("quantity");
-        const decreaseButton = document.getElementById("decrease-btn");
-        const increaseButton = document.getElementById("increase-btn");
-        let currentQuantity = parseInt(quantityElement.textContent);
-        let newQuantity = currentQuantity + change;
-
-        if (newQuantity <= 1) {
-            newQuantity = 1;
-            decreaseButton.disabled = true;
-        } else {
-            decreaseButton.disabled = false;
+        const newQuantity = currentQuantity + change;
+        if (newQuantity >= 1 && newQuantity <= stockLeft) {
+            currentQuantity = newQuantity;
+            document.getElementById('quantity').textContent = currentQuantity;
+            document.getElementById('decrease-btn').disabled = currentQuantity <= 1;
+            document.getElementById('increase-btn').disabled = currentQuantity >= stockLeft;
         }
-
-        if (newQuantity >= stockLeft) {
-            newQuantity = stockLeft;
-            increaseButton.disabled = true;
-        } else {
-            increaseButton.disabled = false;
-        }
-
-        quantityElement.textContent = newQuantity;
     }
 
-    function addToCartHandler(event, productId) {
+    async function addToCartHandler(event, productId) {
         event.preventDefault();
-        const quantity = parseInt(document.getElementById("quantity").textContent);
+        
+        <% if (!user) { %>
+            Swal.fire({
+                title: 'Login Required',
+                text: 'Please login to add items to cart',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Login',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = '/login';
+                }
+            });
+            return;
+        <% } %>
 
-        fetch('/addToCart', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                productId: productId,
-                quantity: quantity
-            })
-        })
-        .then(response => {
+        try {
+            const quantity = parseInt(document.getElementById('quantity').textContent);
+            console.log('Sending request with:', { productId, quantity });
+
+            const response = await fetch('/add-to-cart', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    productId: productId,
+                    quantity: quantity
+                })
+            });
+
             if (!response.ok) {
-                return response.json().then(data => {
-                    throw new Error(data.message || 'Failed to add product to cart');
-                });
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to add product to cart');
             }
-            return response.json();
-        })
-        .then(data => {
+
+            const data = await response.json();
+            console.log('Response:', data);
+
             if (data.success) {
-                Swal.fire({
-                    title: 'Success!',
-                    text: data.message || 'Product added to cart successfully!',
-                    icon: 'success',
-                    showConfirmButton: false,
-                    timer: 1500
-                });
+                window.location.href = '/cart';
             } else {
                 throw new Error(data.message || 'Failed to add product to cart');
             }
-        })
-        .catch(error => {
+        } catch (error) {
             console.error('Error:', error);
-            
-            if (error.message.includes('Please login')) {
-                Swal.fire({
-                    title: 'Login Required',
-                    text: 'Please login to add items to your cart',
-                    icon: 'info',
-                    showCancelButton: true,
-                    confirmButtonText: 'Login',
-                    cancelButtonText: 'Cancel'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        window.location.href = '/login';
-                    }
-                });
-            } else {
-                Swal.fire({
-                    title: 'Error!',
-                    text: error.message || 'Something went wrong. Please try again.',
-                    icon: 'error',
-                    confirmButtonText: 'OK'
-                });
-            }
-        });
+            Swal.fire({
+                title: 'Error!',
+                text: error.message || 'Failed to add product to cart',
+                icon: 'error'
+            });
+        }
     }
 
     // Initialize quantity buttons state
     document.addEventListener('DOMContentLoaded', function() {
-        const decreaseButton = document.getElementById("decrease-btn");
-        const increaseButton = document.getElementById("increase-btn");
-        const quantity = parseInt(document.getElementById("quantity").textContent);
-
-        decreaseButton.disabled = quantity <= 1;
-        increaseButton.disabled = quantity >= stockLeft;
+        document.getElementById('decrease-btn').disabled = true;
+        document.getElementById('increase-btn').disabled = stockLeft <= 1;
     });
 </script>
 

@@ -1,0 +1,378 @@
+<%- include('../layouts/user/header.ejs') %>
+
+<div class="container-fluid cart-container py-5">
+    <div class="row justify-content-center pt-5 px-4">
+        <!-- Cart Items -->
+        <div class="col-lg-8 mb-4">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h4 class="mb-1 fw-bold">Shopping Cart</h4>
+                            <p class="text-muted mb-0">
+                                <%= cart && cart.items ? cart.items.length : 0 %> items in your cart
+                            </p>
+                        </div>
+                        <a href="/shop" class="btn btn-outline-dark rounded-pill px-4">
+                            <i class="fas fa-arrow-left me-2"></i>Continue Shopping
+                        </a>
+                    </div>
+
+                    <% if (cart && cart.items && cart.items.length > 0) { %>
+                        <div class="cart-items">
+                            <% cart.items.forEach(item => { %>
+                                <div class="cart-item" data-product-id="<%= item.productId._id %>">
+                                    <div class="row align-items-center g-4">
+                                        <!-- Product Image -->
+                                        <div class="col-lg-2 col-md-3">
+                                            <div class="product-image">
+                                                <img src="<%= item.productId.product_img && item.productId.product_img.length > 0 ? `/uploads/re-image/${item.productId.product_img[0]}` : '/uploads/re-image/default.jpeg' %>" 
+                                                    alt="<%= item.productId.name %>"
+                                                    class="img-fluid"
+                                                    onerror="this.src='/uploads/re-image/default.jpeg'">
+                                            </div>
+                                        </div>
+                                        <!-- Product Details -->
+                                        <div class="col-lg-4 col-md-4">
+                                            <h6 class="product-name mb-2"><%= item.productId.name %></h6>
+                                            <p class="text-muted mb-0">₹<%= item.price %></p>
+                                            <% if (item.productId.writer) { %>
+                                                <small class="text-muted d-flex align-items-center mt-1">
+                                                    <i class="fas fa-pen me-2"></i><%= item.productId.writer %>
+                                                </small>
+                                            <% } %>
+                                        </div>
+                                        <!-- Quantity Controls -->
+                                        <div class="col-lg-3 col-md-3">
+                                            <div class="quantity-control">
+                                                <button class="quantity-btn minus" 
+                                                    onclick="updateQuantity('<%= item.productId._id %>', 'decrease')"
+                                                    <%= item.quantity <= 1 ? 'disabled' : '' %>>
+                                                    <i class="fas fa-minus"></i>
+                                                </button>
+                                                <input type="number" 
+                                                    class="quantity-input"
+                                                    value="<%= item.quantity %>" 
+                                                    min="1" 
+                                                    max="<%= item.productId.available_quantity %>"
+                                                    onchange="updateQuantity('<%= item.productId._id %>', 'set', this.value)">
+                                                <button class="quantity-btn plus" 
+                                                    onclick="updateQuantity('<%= item.productId._id %>', 'increase')"
+                                                    <%= item.quantity >= item.productId.available_quantity ? 'disabled' : '' %>>
+                                                    <i class="fas fa-plus"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <!-- Total Price -->
+                                        <div class="col-lg-2 col-md-1">
+                                            <p class="mb-0 fw-bold">₹<%= item.totalPrice %></p>
+                                        </div>
+                                        <!-- Remove Button -->
+                                        <div class="col-lg-1 col-md-1 text-end">
+                                            <button class="btn-remove" onclick="removeItem('<%= item.productId._id %>')">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            <% }); %>
+                        </div>
+                    <% } else { %>
+                        <div class="empty-cart text-center py-5">
+                            <i class="fas fa-shopping-cart fa-3x mb-3"></i>
+                            <h3>Your cart is empty</h3>
+                            <p class="text-muted">Add items to your cart to continue shopping</p>
+                            <a href="/" class="btn btn-dark rounded-pill mt-3">Continue Shopping</a>
+                        </div>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Summary -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-4">Order Summary</h5>
+                    <div class="summary-item d-flex justify-content-between mb-3">
+                        <span class="text-muted">Subtotal</span>
+                        <span class="fw-bold">₹<%= cart ? cart.total : 0 %></span>
+                    </div>
+                    <div class="summary-item d-flex justify-content-between mb-3">
+                        <span class="text-muted">Shipping</span>
+                        <span class="text-success fw-medium">Free</span>
+                    </div>
+                    <hr class="my-4">
+                    <div class="summary-item d-flex justify-content-between mb-4">
+                        <span class="fw-bold">Total</span>
+                        <span class="fw-bold fs-5">₹<%= cart ? cart.total : 0 %></span>
+                    </div>
+                    <button class="btn btn-dark w-100 btn-lg rounded-pill" 
+                        onclick="proceedToCheckout()"
+                        <%= (!cart || !cart.items || cart.items.length === 0) ? 'disabled' : '' %>>
+                        Proceed to Checkout
+                    </button>
+                    <% if (cart && cart.items && cart.items.length > 0) { %>
+                        <div class="secure-checkout text-center mt-4">
+                            <small class="text-muted d-flex align-items-center justify-content-center">
+                                <i class="fas fa-lock me-2"></i>Secure Checkout
+                            </small>
+                        </div>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.cart-container {
+    background-color: #f8f9fa;
+    min-height: 100vh;
+}
+
+.cart-item {
+    padding: 1.5rem;
+    border-bottom: 1px solid #eee;
+    transition: all 0.3s ease;
+}
+
+.cart-item:last-child {
+    border-bottom: none;
+}
+
+.cart-item:hover {
+    background-color: #f8f9fa;
+}
+
+.product-image {
+    aspect-ratio: 1;
+    overflow: hidden;
+    background-color: #fff;
+    border: 1px solid #eee;
+}
+
+.product-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.product-name {
+    color: #2d3436;
+    font-weight: 500;
+    font-size: 1.1rem;
+}
+
+/* Quantity Controls */
+.quantity-control {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #fff;
+    padding: 0.25rem;
+    border-radius: 50px;
+    border: 1px solid #eee;
+    width: fit-content;
+}
+
+.quantity-btn {
+    border: none;
+    background: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.quantity-btn:hover:not(:disabled) {
+    background-color: #f1f1f1;
+}
+
+.quantity-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.quantity-input {
+    width: 50px;
+    border: none;
+    text-align: center;
+    font-weight: 500;
+    background: transparent;
+}
+
+.quantity-input::-webkit-inner-spin-button,
+.quantity-input::-webkit-outer-spin-button {
+    display: none;
+}
+
+/* Remove Button */
+.btn-remove {
+    border: none;
+    background: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #dc3545;
+    opacity: 0.7;
+    transition: all 0.2s ease;
+}
+
+.btn-remove:hover {
+    opacity: 1;
+    background-color: #dc35451a;
+}
+
+/* Empty Cart */
+.empty-cart-icon {
+    font-size: 4rem;
+    color: #adb5bd;
+}
+
+/* Summary Card */
+.summary-item {
+    font-size: 0.95rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .cart-item {
+        padding: 1rem;
+    }
+    
+    .product-name {
+        font-size: 1rem;
+    }
+    
+    .quantity-control {
+        margin-top: 0.5rem;
+    }
+}
+</style>
+
+<script>
+function updateQuantity(productId, action, value) {
+    let quantity;
+    const input = document.querySelector(`[data-product-id="${productId}"] .quantity-input`);
+    
+    switch(action) {
+        case 'increase':
+            quantity = parseInt(input.value) + 1;
+            break;
+        case 'decrease':
+            quantity = parseInt(input.value) - 1;
+            if (quantity < 1) return;
+            break;
+        case 'set':
+            quantity = parseInt(value);
+            if (quantity < 1) {
+                quantity = 1;
+                input.value = 1;
+            }
+            break;
+    }
+
+    const cartItem = document.querySelector(`[data-product-id="${productId}"]`);
+    cartItem.style.opacity = '0.5';
+
+    fetch('/update-cart', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ productId, quantity })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            Swal.fire({
+                title: 'Error!',
+                text: data.message || 'Failed to update quantity',
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+            cartItem.style.opacity = '1';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire({
+            title: 'Error!',
+            text: 'Failed to update quantity',
+            icon: 'error',
+            confirmButtonText: 'OK'
+        });
+        cartItem.style.opacity = '1';
+    });
+}
+
+function removeItem(productId) {
+    Swal.fire({
+        title: 'Remove Item?',
+        text: "Are you sure you want to remove this item?",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Yes, remove it',
+        cancelButtonText: 'Cancel',
+        customClass: {
+            confirmButton: 'btn btn-danger',
+            cancelButton: 'btn btn-secondary'
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const cartItem = document.querySelector(`[data-product-id="${productId}"]`);
+            cartItem.style.opacity = '0.5';
+
+            fetch('/remove-from-cart', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ productId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: data.message || 'Failed to remove item',
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    });
+                    cartItem.style.opacity = '1';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'Failed to remove item',
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+                cartItem.style.opacity = '1';
+            });
+        }
+    });
+}
+
+function proceedToCheckout() {
+    window.location.href = '/checkout';
+}
+</script>
+
+<%- include('../layouts/user/footer.ejs') %>

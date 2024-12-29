@@ -1,5 +1,6 @@
 const Product = require('../../models/productSchema');
 const Category = require('../../models/categorySchema');
+const User = require('../../models/userSchema');
 
 const productDetail = async (req, res) => {
     try {
@@ -24,9 +25,16 @@ const productDetail = async (req, res) => {
         .limit(4)
         .select('name product_img Sale_price offerPrice');
 
+        // Get user data if logged in
+        let userData = null;
+        if (req.session.user) {
+            userData = await User.findById(req.session.user);
+        }
+
         res.render('productDetails', {
             product,
-            recommendedProducts
+            recommendedProducts,
+            user: userData
         });
 
     } catch (error) {

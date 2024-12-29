@@ -471,6 +471,27 @@ const changePassword = async (req, res) => {
     }
 };
 
+const loadShop = async (req, res) => {
+    try {
+        // Fetch all active products
+        const products = await Product.find({ 
+            isBlocked: false,
+            quantity: { $gt: 0 }
+        }).populate('category_id');
+
+        // Fetch all categories for filters
+        const categories = await Category.find({ isBlocked: false });
+
+        res.render('shop', {
+            products,
+            categories
+        });
+    } catch (error) {
+        console.error(error);
+        res.redirect('/pageNotFound');
+    }
+};
+
 
 
 
@@ -490,5 +511,6 @@ module.exports ={
     changeEmail,
     changePhone,
     loadChangePassword,
-    changePassword
+    changePassword,
+    loadShop
 }
