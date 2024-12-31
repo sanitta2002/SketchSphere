@@ -1,0 +1,349 @@
+<%- include('../../Views/layouts/user/header.ejs') %>
+
+<div class="container mt-5 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-5">
+                    <!-- Success Icon -->
+                    <div class="text-center mb-4">
+                        <div class="success-checkmark">
+                            <div class="check-icon">
+                                <span class="icon-line line-tip"></span>
+                                <span class="icon-line line-long"></span>
+                                <div class="icon-circle"></div>
+                                <div class="icon-fix"></div>
+                            </div>
+                        </div>
+                        <h2 class="mt-4 mb-2">Order Placed Successfully!</h2>
+                        <p class="text-muted">Thank you for shopping with us.</p>
+                    </div>
+
+                    <!-- Order Information -->
+                    <div class="order-info bg-light p-4 rounded-4 mb-4">
+                        <div class="row">
+                            <div class="col-sm-6 mb-3">
+                                <h6 class="text-muted mb-2">Order ID</h6>
+                                <p class="mb-0 fw-bold">#<%= order.orderId %></p>
+                            </div>
+                            <div class="col-sm-6 mb-3">
+                                <h6 class="text-muted mb-2">Order Date</h6>
+                                <p class="mb-0"><%= new Date(order.createdOn).toLocaleDateString('en-US', { 
+                                    year: 'numeric', 
+                                    month: 'long', 
+                                    day: 'numeric' 
+                                }) %></p>
+                            </div>
+                            <div class="col-sm-6 mb-3">
+                                <h6 class="text-muted mb-2">Payment Method</h6>
+                                <p class="mb-0"><%= order.paymentMethod %></p>
+                            </div>
+                            <div class="col-sm-6 mb-3">
+                                <h6 class="text-muted mb-2">Order Status</h6>
+                                <span class="badge bg-warning px-3 py-2 rounded-pill"><%= order.status %></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Delivery Address -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-map-marker-alt me-2 text-success"></i>Delivery Address
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <% if (order && order.address) { %>
+                                <div class="delivery-address">
+                                    <h6 class="fw-bold mb-2"><%= order.address.name %></h6>
+                                    <p class="mb-1"><%= order.address.landMark %></p>
+                                    <p class="mb-1"><%= order.address.city %>, <%= order.address.state %> <%= order.address.pincode %></p>
+                                    <p class="mb-0">
+                                        <i class="fas fa-phone-alt me-2 text-success"></i>
+                                        <%= order.address.phone %>
+                                    </p>
+                                </div>
+                            <% } else { %>
+                                <p class="text-muted mb-0">No delivery address found</p>
+                            <% } %>
+                        </div>
+                    </div>
+
+                    <!-- Order Items -->
+                    <div class="card">
+                        <div class="card-header bg-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-shopping-bag me-2 text-success"></i>Order Items
+                            </h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table mb-0">
+                                    <thead class="bg-light">
+                                        <tr>
+                                            <th scope="col" class="ps-4">Product</th>
+                                            <th scope="col" class="text-center">Price</th>
+                                            <th scope="col" class="text-center">Quantity</th>
+                                            <th scope="col" class="text-end pe-4">Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <% if (order && order.orderedItems && order.orderedItems.length > 0) { %>
+                                            <% order.orderedItems.forEach(item => { %>
+                                                <tr>
+                                                    <td class="ps-4">
+                                                        <div class="d-flex align-items-center">
+                                                            <img src="/uploads/re-image/<%= item.product.product_img[0] %>" 
+                                                                 alt="<%= item.product.name %>" 
+                                                                 class="me-3"
+                                                                 style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">
+                                                            <span><%= item.product.name %></span>
+                                                        </div>
+                                                    </td>
+                                                    <td class="text-center">₹<%= item.price %></td>
+                                                    <td class="text-center"><%= item.quantity %></td>
+                                                    <td class="text-end pe-4">₹<%= (item.price * item.quantity) %></td>
+                                                </tr>
+                                            <% }); %>
+                                            <tr class="border-top">
+                                                <td colspan="3" class="text-end pe-4">
+                                                    <strong>Total Amount:</strong>
+                                                </td>
+                                                <td class="text-end pe-4">
+                                                    <strong class="text-success">₹<%= order.finalAmount %></strong>
+                                                </td>
+                                            </tr>
+                                        <% } else { %>
+                                            <tr>
+                                                <td colspan="4" class="text-center py-4">No items found</td>
+                                            </tr>
+                                        <% } %>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                        <a href="/shop" class="btn btn-outline-dark px-4">Continue Shopping</a>
+                        <!-- <a href="/orders" class="btn btn-dark px-4">View All Orders</a> -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Success Checkmark Animation */
+.success-checkmark {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto;
+    position: relative;
+}
+
+.check-icon {
+    width: 80px;
+    height: 80px;
+    position: relative;
+    border-radius: 50%;
+    box-sizing: content-box;
+    border: 4px solid #4CAF50;
+}
+
+.check-icon::before {
+    top: 3px;
+    left: -2px;
+    width: 30px;
+    transform-origin: 100% 50%;
+    border-radius: 100px 0 0 100px;
+}
+
+.check-icon::after {
+    top: 0;
+    left: 30px;
+    width: 60px;
+    transform-origin: 0 50%;
+    border-radius: 0 100px 100px 0;
+    animation: rotate-circle 4.25s ease-in;
+}
+
+.icon-line {
+    height: 5px;
+    background-color: #4CAF50;
+    display: block;
+    border-radius: 2px;
+    position: absolute;
+    z-index: 10;
+}
+
+.icon-line.line-tip {
+    top: 46px;
+    left: 14px;
+    width: 25px;
+    transform: rotate(45deg);
+    animation: icon-line-tip 0.75s;
+}
+
+.icon-line.line-long {
+    top: 38px;
+    right: 8px;
+    width: 47px;
+    transform: rotate(-45deg);
+    animation: icon-line-long 0.75s;
+}
+
+.icon-circle {
+    top: -4px;
+    left: -4px;
+    z-index: 10;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    position: absolute;
+    box-sizing: content-box;
+    border: 4px solid rgba(76, 175, 80, .5);
+}
+
+.icon-fix {
+    top: 8px;
+    width: 5px;
+    left: 26px;
+    z-index: 1;
+    height: 85px;
+    position: absolute;
+    transform: rotate(-45deg);
+    background-color: #fff;
+}
+
+@keyframes rotate-circle {
+    0% {
+        transform: rotate(-45deg);
+    }
+    5% {
+        transform: rotate(-45deg);
+    }
+    12% {
+        transform: rotate(-405deg);
+    }
+    100% {
+        transform: rotate(-405deg);
+    }
+}
+
+@keyframes icon-line-tip {
+    0% {
+        width: 0;
+        left: 1px;
+        top: 19px;
+    }
+    54% {
+        width: 0;
+        left: 1px;
+        top: 19px;
+    }
+    70% {
+        width: 50px;
+        left: -8px;
+        top: 37px;
+    }
+    84% {
+        width: 17px;
+        left: 21px;
+        top: 48px;
+    }
+    100% {
+        width: 25px;
+        left: 14px;
+        top: 45px;
+    }
+}
+
+@keyframes icon-line-long {
+    0% {
+        width: 0;
+        right: 46px;
+        top: 54px;
+    }
+    65% {
+        width: 0;
+        right: 46px;
+        top: 54px;
+    }
+    84% {
+        width: 55px;
+        right: 0px;
+        top: 35px;
+    }
+    100% {
+        width: 47px;
+        right: 8px;
+        top: 38px;
+    }
+}
+
+/* Card and Section Styles */
+.card {
+    transition: transform 0.2s ease;
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+    border-radius: 0.5rem;
+}
+
+.card-header {
+    border-bottom: 1px solid #e9ecef;
+    padding: 1rem;
+}
+
+.card-body {
+    padding: 1.25rem;
+}
+
+.bg-light {
+    background-color: #f8f9fa !important;
+}
+
+.order-items .bg-light:hover {
+    transform: translateX(5px);
+    transition: transform 0.2s ease;
+}
+
+.badge {
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+
+.btn {
+    padding: 0.75rem 2rem;
+    border-radius: 50px;
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+}
+
+.delivery-address p {
+    color: #6c757d;
+    font-size: 0.95rem;
+}
+
+.table th {
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.text-success {
+    color: #198754 !important;
+}
+</style>
+
+<%- include('../../Views/layouts/user/footer.ejs') %>

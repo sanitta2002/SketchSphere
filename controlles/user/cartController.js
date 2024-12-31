@@ -12,6 +12,13 @@ const cartController = {
             const cart = await Cart.findOne({ userId: req.session.user })
                 .populate('items.productId', 'name Sale_price product_img writer available_quantity');
 
+            if (cart) {
+                // Calculate cart total
+                cart.total = cart.items.reduce((total, item) => {
+                    return total + (item.price * item.quantity);
+                }, 0);
+            }
+
             res.render('cart', { cart });
         } catch (error) {
             console.error('Error loading cart:', error);
@@ -46,6 +53,14 @@ const cartController = {
                 });
             }
 
+            // Check maximum quantity limit
+            if (quantity > 5) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Maximum 5 items allowed per product'
+                });
+            }
+
             // Find product
             const product = await Product.findById(productId);
             if (!product) {
@@ -55,8 +70,8 @@ const cartController = {
                 });
             }
 
-            // Check stock
-            if (product.available_quantity < parseInt(quantity)) {
+            // Check stock availability
+            if (product.available_quantity < quantity) {
                 return res.status(400).json({
                     success: false,
                     message: 'Not enough stock available'
@@ -64,31 +79,28 @@ const cartController = {
             }
 
             // Find or create cart
-            let cart = await Cart.findOne({ userId: userId });
-            
+            let cart = await Cart.findOne({ userId });
             if (!cart) {
-                // Create new cart
-                cart = new Cart({
-                    userId: userId,
-                    items: []
-                });
+                cart = new Cart({ userId, items: [] });
             }
 
             // Check if product already in cart
-            const existingItemIndex = cart.items.findIndex(
-                item => item.productId.toString() === productId
-            );
-
-            if (existingItemIndex > -1) {
-                // Update existing item
-                cart.items[existingItemIndex].quantity += parseInt(quantity);
-                cart.items[existingItemIndex].price = product.Sale_price;
-                cart.items[existingItemIndex].totalPrice = 
-                    cart.items[existingItemIndex].price * cart.items[existingItemIndex].quantity;
+            const existingItem = cart.items.find(item => item.productId.toString() === productId);
+            if (existingItem) {
+                // Check if new total quantity exceeds limit
+                const newQuantity = existingItem.quantity + parseInt(quantity);
+                if (newQuantity > 5) {
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Maximum 5 items allowed per product'
+                    });
+                }
+                
+                existingItem.quantity = newQuantity;
+                existingItem.totalPrice = product.Sale_price * newQuantity;
             } else {
-                // Add new item
                 cart.items.push({
-                    productId: productId,
+                    productId: product._id,
                     quantity: parseInt(quantity),
                     price: product.Sale_price,
                     totalPrice: product.Sale_price * parseInt(quantity)
@@ -121,6 +133,15 @@ const cartController = {
             }
 
             const { productId, quantity } = req.body;
+
+            // Check maximum quantity limit
+            if (quantity > 5) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Maximum 5 items allowed per product'
+                });
+            }
+
             const cart = await Cart.findOne({ userId: req.session.user });
             
             if (!cart) {
@@ -145,7 +166,19 @@ const cartController = {
             item.totalPrice = item.price * item.quantity;
 
             await cart.save();
-            res.json({ success: true, message: 'Cart updated successfully' });
+            
+            // Calculate cart total
+            const cartTotal = cart.items.reduce((total, item) => total + item.totalPrice, 0);
+            
+            res.json({ 
+                success: true, 
+                message: 'Cart updated successfully',
+                data: {
+                    itemQuantity: item.quantity,
+                    itemTotal: item.totalPrice,
+                    cartTotal: cartTotal
+                }
+            });
         } catch (error) {
             console.error('Error updating cart:', error);
             res.status(500).json({ success: false, message: 'Failed to update cart' });

@@ -44,21 +44,21 @@
                                         </div>
                                         <!-- Quantity Controls -->
                                         <div class="col-lg-3 col-md-3">
-                                            <div class="quantity-control">
-                                                <button class="quantity-btn minus" 
-                                                    onclick="updateQuantity('<%= item.productId._id %>', 'decrease')"
-                                                    <%= item.quantity <= 1 ? 'disabled' : '' %>>
+                                            <div class="quantity-controls d-flex align-items-center">
+                                                <button class="btn btn-sm quantity-btn minus" 
+                                                        onclick="updateQuantity('<%= item.productId._id %>', 'decrease')"
+                                                        <%= item.quantity <= 1 ? 'disabled' : '' %>>
                                                     <i class="fas fa-minus"></i>
                                                 </button>
-                                                <input type="number" 
-                                                    class="quantity-input"
-                                                    value="<%= item.quantity %>" 
-                                                    min="1" 
-                                                    max="<%= item.productId.available_quantity %>"
-                                                    onchange="updateQuantity('<%= item.productId._id %>', 'set', this.value)">
-                                                <button class="quantity-btn plus" 
-                                                    onclick="updateQuantity('<%= item.productId._id %>', 'increase')"
-                                                    <%= item.quantity >= item.productId.available_quantity ? 'disabled' : '' %>>
+                                                <input type="number" class="form-control quantity-input mx-2" 
+                                                       value="<%= item.quantity %>" 
+                                                       min="1" 
+                                                       max="5"
+                                                       onchange="updateQuantity('<%= item.productId._id %>', 'set', this.value)"
+                                                       data-product-id="<%= item.productId._id %>">
+                                                <button class="btn btn-sm quantity-btn plus" 
+                                                        onclick="updateQuantity('<%= item.productId._id %>', 'increase')"
+                                                        <%= item.quantity >= 5 ? 'disabled' : '' %>>
                                                     <i class="fas fa-plus"></i>
                                                 </button>
                                             </div>
@@ -95,8 +95,8 @@
                 <div class="card-body p-4">
                     <h5 class="fw-bold mb-4">Order Summary</h5>
                     <div class="summary-item d-flex justify-content-between mb-3">
-                        <span class="text-muted">Subtotal</span>
-                        <span class="fw-bold">₹<%= cart ? cart.total : 0 %></span>
+                        <span class="text-muted">Subtotal (<%= cart ? cart.items.length : 0 %> items)</span>
+                        <span class="fw-bold cart-total">₹<%= cart ? cart.total : 0 %></span>
                     </div>
                     <div class="summary-item d-flex justify-content-between mb-3">
                         <span class="text-muted">Shipping</span>
@@ -105,11 +105,11 @@
                     <hr class="my-4">
                     <div class="summary-item d-flex justify-content-between mb-4">
                         <span class="fw-bold">Total</span>
-                        <span class="fw-bold fs-5">₹<%= cart ? cart.total : 0 %></span>
+                        <span class="fw-bold fs-5 cart-total">₹<%= cart ? cart.total : 0 %></span>
                     </div>
                     <button class="btn btn-dark w-100 btn-lg rounded-pill" 
-                        onclick="proceedToCheckout()"
-                        <%= (!cart || !cart.items || cart.items.length === 0) ? 'disabled' : '' %>>
+                            onclick="proceedToCheckout()"
+                            <%= (!cart || !cart.items || cart.items.length === 0) ? 'disabled' : '' %>>
                         Proceed to Checkout
                     </button>
                     <% if (cart && cart.items && cart.items.length > 0) { %>
@@ -165,7 +165,7 @@
 }
 
 /* Quantity Controls */
-.quantity-control {
+.quantity-controls {
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -252,7 +252,7 @@
         font-size: 1rem;
     }
     
-    .quantity-control {
+    .quantity-controls {
         margin-top: 0.5rem;
     }
 }
@@ -262,10 +262,32 @@
 function updateQuantity(productId, action, value) {
     let quantity;
     const input = document.querySelector(`[data-product-id="${productId}"] .quantity-input`);
+    const cartItem = document.querySelector(`[data-product-id="${productId}"]`);
+    const priceElement = cartItem.querySelector('.text-muted');
+    const totalPriceElement = cartItem.querySelector('.fw-bold');
+    const cartTotalElements = document.querySelectorAll('.cart-total');
+    const maxQuantity = 5;
+    const toastDuration = 4000; // 4 seconds
     
     switch(action) {
         case 'increase':
             quantity = parseInt(input.value) + 1;
+            if (quantity > maxQuantity) {
+                const Toast = Swal.mixin({
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: toastDuration,
+                    timerProgressBar: true,
+                    background: '#dc3545',
+                    color: '#fff'
+                });
+                Toast.fire({
+                    icon: 'warning',
+                    title: 'Maximum quantity limit reached (5 items)'
+                });
+                return;
+            }
             break;
         case 'decrease':
             quantity = parseInt(input.value) - 1;
@@ -273,6 +295,23 @@ function updateQuantity(productId, action, value) {
             break;
         case 'set':
             quantity = parseInt(value);
+            if (quantity > maxQuantity) {
+                quantity = maxQuantity;
+                input.value = maxQuantity;
+                const Toast = Swal.mixin({
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: toastDuration,
+                    timerProgressBar: true,
+                    background: '#dc3545',
+                    color: '#fff'
+                });
+                Toast.fire({
+                    icon: 'warning',
+                    title: 'Maximum quantity limit reached (5 items)'
+                });
+            }
             if (quantity < 1) {
                 quantity = 1;
                 input.value = 1;
@@ -280,7 +319,6 @@ function updateQuantity(productId, action, value) {
             break;
     }
 
-    const cartItem = document.querySelector(`[data-product-id="${productId}"]`);
     cartItem.style.opacity = '0.5';
 
     fetch('/update-cart', {
@@ -293,43 +331,93 @@ function updateQuantity(productId, action, value) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            location.reload();
-        } else {
-            Swal.fire({
-                title: 'Error!',
-                text: data.message || 'Failed to update quantity',
-                icon: 'error',
-                confirmButtonText: 'OK'
+            // Update quantity input
+            input.value = quantity;
+            
+            // Update item total price
+            totalPriceElement.textContent = `₹${data.data.itemTotal}`;
+            
+            // Update cart total in all places
+            cartTotalElements.forEach(element => {
+                element.textContent = `₹${data.data.cartTotal}`;
             });
+            
+            // Update button states
+            const plusBtn = cartItem.querySelector('.quantity-btn.plus');
+            const minusBtn = cartItem.querySelector('.quantity-btn.minus');
+            if (plusBtn) plusBtn.disabled = quantity >= maxQuantity;
+            if (minusBtn) minusBtn.disabled = quantity <= 1;
+            
+            // Show max quantity reached alert if quantity is 5
+            if (quantity === maxQuantity) {
+                const Toast = Swal.mixin({
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: toastDuration,
+                    timerProgressBar: true,
+                    background: '#ffc107',
+                    color: '#000'
+                });
+                Toast.fire({
+                    icon: 'info',
+                    title: 'You have reached the maximum quantity (5 items)'
+                });
+            }
+            
+            cartItem.style.opacity = '1';
+        } else {
+            // Show error toast
+            const Toast = Swal.mixin({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: toastDuration,
+                timerProgressBar: true,
+                background: '#dc3545',
+                color: '#fff'
+            });
+            Toast.fire({
+                icon: 'error',
+                title: data.message || 'Failed to update quantity'
+            });
+            // Reset input to previous value
+            input.value = quantity - (action === 'increase' ? 1 : -1);
             cartItem.style.opacity = '1';
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        Swal.fire({
-            title: 'Error!',
-            text: 'Failed to update quantity',
-            icon: 'error',
-            confirmButtonText: 'OK'
+        // Show error toast
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: toastDuration,
+            timerProgressBar: true,
+            background: '#dc3545',
+            color: '#fff'
         });
+        Toast.fire({
+            icon: 'error',
+            title: 'Failed to update quantity'
+        });
+        // Reset input to previous value
+        input.value = quantity - (action === 'increase' ? 1 : -1);
         cartItem.style.opacity = '1';
     });
 }
 
 function removeItem(productId) {
     Swal.fire({
-        title: 'Remove Item?',
-        text: "Are you sure you want to remove this item?",
+        title: 'Remove Item',
+        text: 'Are you sure you want to remove this item from cart?',
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#dc3545',
-        cancelButtonColor: '#6c757d',
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
         confirmButtonText: 'Yes, remove it',
-        cancelButtonText: 'Cancel',
-        customClass: {
-            confirmButton: 'btn btn-danger',
-            cancelButton: 'btn btn-secondary'
-        }
+        cancelButtonText: 'Cancel'
     }).then((result) => {
         if (result.isConfirmed) {
             const cartItem = document.querySelector(`[data-product-id="${productId}"]`);
@@ -345,26 +433,51 @@ function removeItem(productId) {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    location.reload();
+                    cartItem.remove();
+                    // Update cart total
+                    const cartTotalElement = document.querySelector('.cart-total');
+                    if (cartTotalElement) {
+                        let newCartTotal = 0;
+                        document.querySelectorAll('.cart-item').forEach(item => {
+                            const itemTotal = parseFloat(item.querySelector('.fw-bold').textContent.replace('₹', ''));
+                            newCartTotal += itemTotal;
+                        });
+                        cartTotalElement.textContent = `₹${newCartTotal}`;
+                    }
+                    // If no items left, reload to show empty cart message
+                    if (document.querySelectorAll('.cart-item').length === 0) {
+                        location.reload();
+                    }
+                    
+                    // Show success message
+                    Swal.fire({
+                        title: 'Removed!',
+                        text: 'Item has been removed from cart',
+                        icon: 'success',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
                 } else {
+                    cartItem.style.opacity = '1';
                     Swal.fire({
                         title: 'Error!',
-                        text: data.message || 'Failed to remove item',
+                        text: 'Failed to remove item',
                         icon: 'error',
-                        confirmButtonText: 'OK'
+                        timer: 1500,
+                        showConfirmButton: false
                     });
-                    cartItem.style.opacity = '1';
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
+                cartItem.style.opacity = '1';
                 Swal.fire({
                     title: 'Error!',
                     text: 'Failed to remove item',
                     icon: 'error',
-                    confirmButtonText: 'OK'
+                    timer: 1500,
+                    showConfirmButton: false
                 });
-                cartItem.style.opacity = '1';
             });
         }
     });

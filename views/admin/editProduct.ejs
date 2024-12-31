@@ -46,6 +46,24 @@
                                 <div id="description-error" class="error-message"></div>
                             </div>
 
+                            <div class="mb-4">
+                                <label class="form-label">Published Date</label>
+                                <input type="date" name="Published_Date" value="<%= product.Published_Date ? product.Published_Date.toISOString().split('T')[0] : '' %>" class="form-control border" id="published_date">
+                                <div id="publishedDate-error" class="error-message"></div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label">Writer</label>
+                                <input type="text" name="writer" value="<%= product.writer || '' %>" placeholder="Enter writer name" class="form-control border" id="writer">
+                                <div id="writer-error" class="error-message"></div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label">Cover Artist</label>
+                                <input type="text" name="cover_Artist" value="<%= product.cover_Artist || '' %>" placeholder="Enter cover artist name" class="form-control border" id="cover_artist">
+                                <div id="coverArtist-error" class="error-message"></div>
+                            </div>
+
                             <div class="row">
                                 <div class="col-lg-4">
                                     <div class="mb-4">
@@ -85,6 +103,17 @@
                                                 <% } %>
                                             </select>
                                             <div id="category-error" class="error-message"></div>
+                                        </div>
+                                        <div class="col-sm-6 mb-3">
+                                            <label class="form-label">Language</label>
+                                            <select class="form-select border" style="width: 150px;" name="language">
+                                                <option value="">Select Language</option>
+                                                <option value="English" <%= product.language === 'English' ? 'selected' : '' %>>English</option>
+                                                <option value="Malayalam" <%= product.language === 'Malayalam' ? 'selected' : '' %>>Malayalam</option>
+                                                <option value="Hindi" <%= product.language === 'Hindi' ? 'selected' : '' %>>Hindi</option>
+                                                <option value="Tamil" <%= product.language === 'Tamil' ? 'selected' : '' %>>Tamil</option>
+                                            </select>
+                                            <div id="language-error" class="error-message"></div>
                                         </div>
                                     </div>
                                 </div>
@@ -284,6 +313,27 @@
             isValid = false;
         }
 
+        // Published Date validation
+        const publishedDate = document.getElementsByName('Published_Date')[0].value.trim();
+        if (!publishedDate) {
+            displayErrorMessage('publishedDate-error', 'Published date is required');
+            isValid = false;
+        }
+
+        // Writer validation
+        const writer = document.getElementsByName('writer')[0].value.trim();
+        if (!writer) {
+            displayErrorMessage('writer-error', 'Writer is required');
+            isValid = false;
+        }
+
+        // Cover Artist validation
+        const coverArtist = document.getElementsByName('cover_Artist')[0].value.trim();
+        if (!coverArtist) {
+            displayErrorMessage('coverArtist-error', 'Cover artist is required');
+            isValid = false;
+        }
+
         // Regular Price validation
         const regularPrice = document.getElementsByName('regularPrice')[0].value.trim();
         if (!regularPrice) {
@@ -322,6 +372,13 @@
             isValid = false;
         } else if (parseInt(quantity) <= 0) {
             displayErrorMessage('quantity-error', 'Quantity must be greater than 0');
+            isValid = false;
+        }
+
+        // Language validation
+        const language = document.getElementsByName('language')[0].value.trim();
+        if (!language) {
+            displayErrorMessage('language-error', 'Language is required');
             isValid = false;
         }
 

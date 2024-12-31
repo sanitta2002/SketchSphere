@@ -1,6 +1,5 @@
 const mongoose =require('mongoose')
 
-
 const productSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -28,9 +27,9 @@ const productSchema = new mongoose.Schema({
     ref: 'Genre',
     required: false,
   },
-  language_id: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Language',
+  language: {
+    type: String,
+    enum: ['English', 'Malayalam', 'Hindi', 'Tamil'],
     required: false,
   },
   offerPrice: {
@@ -61,7 +60,7 @@ const productSchema = new mongoose.Schema({
   },
   isBlocked:{
     type:Boolean,
-    defult:false
+    default:false
    },
   status: {
     type: String,

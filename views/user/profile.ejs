@@ -144,7 +144,49 @@
                             </tr>
                           </thead>
                           <tbody>
-                            <!-- Order rows will be dynamically added here -->
+                            <% if (orders && orders.length > 0) { %>
+                              <% orders.forEach(order => { %>
+                                <tr>
+                                  <td><%= order.orderId %></td>
+                                  <td><%= new Date(order.createdOn).toLocaleDateString('en-US', { 
+                                    year: 'numeric', 
+                                    month: 'long', 
+                                    day: 'numeric' 
+                                  }) %></td>
+                                  <td>
+                                    <span class="badge <%= 
+                                      order.status === 'Delivered' ? 'bg-success' : 
+                                      order.status === 'Cancelled' ? 'bg-danger' : 
+                                      'bg-warning' %> rounded-pill">
+                                      <%= order.status %>
+                                    </span>
+                                  </td>
+                                  <td>₹<%= order.finalAmount %></td>
+                                  <td>
+                                    <div class="d-inline-flex align-items-center">
+                                      <button class="btn btn-sm btn-dark" onclick="viewOrderDetails('<%= order._id %>')">
+                                        <i class="fas fa-eye me-1"></i>View
+                                      </button>
+                                      <% if (['Pending', 'Processing'].includes(order.status)) { %>
+                                        <button onclick="cancelOrder('<%= order._id %>')" class="btn btn-sm btn-outline-danger ms-2">
+                                          <i class="fas fa-times me-1"></i>Cancel
+                                        </button>
+                                      <% } %>
+                                    </div>
+                                  </td>
+                                </tr>
+                              <% }); %>
+                            <% } else { %>
+                              <tr>
+                                <td colspan="5" class="text-center py-4">
+                                  <div class="d-flex flex-column align-items-center">
+                                    <i class="fas fa-shopping-bag fa-3x text-muted mb-3"></i>
+                                    <p class="mb-1">No orders found</p>
+                                    <a href="/shop" class="btn btn-success mt-2">Start Shopping</a>
+                                  </div>
+                                </td>
+                              </tr>
+                            <% } %>
                           </tbody>
                         </table>
                       </div>
@@ -220,6 +262,64 @@
     </div>
   </section>
 </main>
+
+<!-- Order Details Modal -->
+<div class="modal fade" id="orderDetailsModal" tabindex="-1" aria-labelledby="orderDetailsModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="orderDetailsModalLabel">Order Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="order-info mb-4">
+          <h6>Order Information</h6>
+          <div class="row">
+            <div class="col-md-6">
+              <p><strong>Order ID:</strong> <span id="modalOrderId"></span></p>
+              <p><strong>Order Date:</strong> <span id="modalOrderDate"></span></p>
+              <p><strong>Status:</strong> <span id="modalOrderStatus"></span></p>
+            </div>
+            <div class="col-md-6">
+              <p><strong>Payment Method:</strong> <span id="modalPaymentMethod"></span></p>
+              <p><strong>Payment Status:</strong> <span id="modalPaymentStatus"></span></p>
+              <p><strong>Total Amount:</strong> ₹<span id="modalTotalAmount"></span></p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="delivery-address mb-4">
+          <h6>Delivery Address</h6>
+          <div class="bg-light p-3 rounded">
+            <p class="mb-1" id="modalAddressName"></p>
+            <p class="mb-1" id="modalAddressStreet"></p>
+            <p class="mb-1" id="modalAddressCity"></p>
+            <p class="mb-0" id="modalAddressPhone"></p>
+          </div>
+        </div>
+
+        <div class="ordered-items">
+          <h6>Ordered Items</h6>
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Price</th>
+                  <th>Quantity</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody id="modalOrderItems">
+                <!-- Order items will be dynamically added here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <%- include('../../Views/layouts/user/footer.ejs') %>
 
@@ -623,6 +723,120 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+async function cancelOrder(orderId) {
+    try {
+        const result = await Swal.fire({
+            title: 'Cancel Order',
+            text: 'Are you sure you want to cancel this order?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, cancel it!'
+        });
+
+        if (result.isConfirmed) {
+            const response = await fetch(`/cancel-order/${orderId}`, {
+                method: 'POST'
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                Swal.fire(
+                    'Cancelled!',
+                    'Your order has been cancelled.',
+                    'success'
+                ).then(() => {
+                    window.location.reload();
+                });
+            } else {
+                Swal.fire(
+                    'Error!',
+                    data.message || 'Failed to cancel order',
+                    'error'
+                );
+            }
+        }
+    } catch (error) {
+        console.error('Error cancelling order:', error);
+        Swal.fire(
+            'Error!',
+            'Something went wrong. Please try again.',
+            'error'
+        );
+    }
+}
+
+async function viewOrderDetails(orderId) {
+    try {
+        const response = await fetch(`/api/orders/${orderId}`);
+        const order = await response.json();
+        
+        if (order) {
+            // Fill in the modal with order details
+            document.getElementById('modalOrderId').textContent = order.orderId;
+            document.getElementById('modalOrderDate').textContent = new Date(order.createdOn).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            document.getElementById('modalOrderStatus').textContent = order.status;
+            document.getElementById('modalPaymentMethod').textContent = order.paymentMethod;
+            document.getElementById('modalPaymentStatus').textContent = order.paymentStatus;
+            document.getElementById('modalTotalAmount').textContent = order.finalAmount;
+
+            // Fill in address details
+            if (order.address) {
+                document.getElementById('modalAddressName').textContent = order.address.name;
+                document.getElementById('modalAddressStreet').textContent = order.address.street;
+                document.getElementById('modalAddressCity').textContent = `${order.address.city}, ${order.address.state} ${order.address.pincode}`;
+                document.getElementById('modalAddressPhone').textContent = `Phone: ${order.address.mobile}`;
+            }
+
+            // Fill in ordered items
+            const itemsContainer = document.getElementById('modalOrderItems');
+            itemsContainer.innerHTML = '';
+            
+            order.orderedItems.forEach(item => {
+                const productImage = item.product.product_img && item.product.product_img.length > 0 
+                    ? `/uploads/re-image/${item.product.product_img[0]}`  
+                    : '/uploads/re-image/default.jpeg';  
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <img src="${productImage}" 
+                                 alt="${item.product.name}" 
+                                 class="rounded-3" 
+                                 width="50" 
+                                 height="50" 
+                                 style="object-fit: cover;"
+                                 onerror="this.src='/uploads/re-image/default.jpeg'">
+                            <span class="ms-3">${item.product.name}</span>
+                        </div>
+                    </td>
+                    <td>₹${item.price}</td>
+                    <td>${item.quantity}</td>
+                    <td>₹${item.price * item.quantity}</td>
+                `;
+                itemsContainer.appendChild(row);
+            });
+
+            // Show the modal
+            const modal = new bootstrap.Modal(document.getElementById('orderDetailsModal'));
+            modal.show();
+        }
+    } catch (error) {
+        console.error('Error fetching order details:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Failed to load order details'
+        });
+    }
+}
 </script>
 
 <!-- Address Modal -->
@@ -1023,5 +1237,53 @@ document.addEventListener('DOMContentLoaded', function() {
     color: #7f8c8d;
     font-size: 1.1rem;
     margin-bottom: 2rem;
+}
+
+/* Button Styles */
+.btn-sm {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.875rem;
+    line-height: 1;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    transition: all 0.2s ease;
+}
+
+.btn-dark {
+    background-color: #212529;
+    border-color: #212529;
+}
+
+.btn-dark:hover {
+    background-color: #424649;
+    border-color: #424649;
+}
+
+.btn-outline-danger {
+    color: #dc3545;
+    border-color: #dc3545;
+}
+
+.btn-outline-danger:hover {
+    color: #fff;
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+.me-1 {
+    margin-right: 0.25rem !important;
+}
+
+.ms-2 {
+    margin-left: 0.5rem !important;
+}
+
+.d-inline-flex {
+    display: inline-flex !important;
+}
+
+.align-items-center {
+    align-items: center !important;
 }
 </style>

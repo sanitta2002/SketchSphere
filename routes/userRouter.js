@@ -4,8 +4,9 @@ const userController=require('../controlles/user/userController')
 const productController=require('../controlles/user/productController')
 const addressController=require('../controlles/user/addressController')
 const cartController=require('../controlles/user/cartController')
+const checkoutController=require('../controlles/user/checkoutController')
+const orderController=require('../controlles/user/orderController')
 const passport = require('passport')
-
 
 
 router.get('/pageNotFound',userController.pageNotFound)
@@ -53,5 +54,18 @@ router.get('/cart', cartController.loadCart);
 router.post('/add-to-cart', cartController.addToCart);
 router.post('/update-cart', cartController.updateCart);
 router.post('/remove-from-cart', cartController.removeFromCart);
+
+// Checkout routes
+router.get('/checkout', checkoutController.loadCheckout);
+router.post('/place-order', checkoutController.placeOrder);
+
+// Order routes
+router.get('/orders', orderController.viewOrders);
+router.get('/orderDetails/:orderId', orderController.viewOrder);
+router.post('/cancel-order/:orderId', orderController.cancelOrder);
+router.get('/orderSuccess/:orderId',orderController.orderSuccess);
+
+// Order details API
+router.get('/api/orders/:orderId', orderController.getOrderDetails);
 
 module.exports = router

@@ -35,6 +35,7 @@
         border-radius: 8px;
         border: 1px solid #ddd;
         background-color: #f8f9fa;
+        cursor: zoom-in;
     }
 
     .main-image {
@@ -45,6 +46,11 @@
         height: 100%;
         object-fit: cover;
         border-radius: 8px;
+        transition: transform 0.1s ease-out;
+    }
+
+    .main-image.zoomed {
+        transform-origin: 0 0;
     }
 
     .thumbnail-strip {
@@ -83,7 +89,32 @@
     .product-brand {
         color: #666;
         font-size: 16px;
-        margin-bottom: 10px;
+        margin: 20px 0;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+
+    .info-row {
+        margin: 8px 0;
+        display: flex;
+        align-items: center;
+    }
+
+    .info-row i {
+        margin-right: 8px;
+        color: #0056b3;
+        width: 20px;
+    }
+
+    .info-label {
+        font-weight: 600;
+        min-width: 120px;
+        color: #444;
+    }
+
+    .info-value {
+        color: #666;
     }
 
     .product-description {
@@ -234,6 +265,24 @@
         font-weight: bold;
     }
 
+    .product-meta {
+        margin: 20px 0;
+        padding: 15px;
+        border-top: 1px solid #eee;
+        border-bottom: 1px solid #eee;
+    }
+
+    .meta-item {
+        display: inline-block;
+        margin-right: 20px;
+        color: #666;
+    }
+
+    .meta-item i {
+        margin-right: 5px;
+        color: #0056b3;
+    }
+
     @media (max-width: 768px) {
         .product-detail {
             flex-direction: column;
@@ -277,12 +326,51 @@
         <!-- Product Info Section -->
         <div class="product-info">
             <h1 class="product-title"><%= product.name %></h1>
+            
             <div class="product-brand">
                 <% if (product.writer) { %>
-                    Author: <%= product.writer %>
+                    <div class="info-row">
+                        <i class="fas fa-pen-fancy"></i>
+                        <span class="info-label">Author:</span>
+                        <span class="info-value"><%= product.writer %></span>
+                    </div>
+                <% } %>
+                <% if (product.cover_Artist) { %>
+                    <div class="info-row">
+                        <i class="fas fa-paint-brush"></i>
+                        <span class="info-label">Cover Artist:</span>
+                        <span class="info-value"><%= product.cover_Artist %></span>
+                    </div>
+                <% } %>
+                <% if (product.Published_Date) { %>
+                    <div class="info-row">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span class="info-label">Published:</span>
+                        <span class="info-value"><%= new Date(product.Published_Date).toLocaleDateString('en-US', { 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric' 
+                        }) %></span>
+                    </div>
+                <% } %>
+                <% if (product.category_id && product.category_id.name) { %>
+                    <div class="info-row">
+                        <i class="fas fa-bookmark"></i>
+                        <span class="info-label">Category:</span>
+                        <span class="info-value"><%= product.category_id.name %></span>
+                    </div>
+                <% } %>
+                <% if (product.language) { %>
+                    <div class="info-row">
+                        <i class="fas fa-language"></i>
+                        <span class="info-label">Language:</span>
+                        <span class="info-value"><%= product.language %></span>
+                    </div>
                 <% } %>
             </div>
+
             <div class="product-description">
+                <h3><i class="fas fa-book-open"></i> About this Book</h3>
                 <%= product.description %>
             </div>
 
@@ -322,14 +410,11 @@
                 <%= product.available_quantity === 0 ? 'Out of Stock' : 'Add to Cart' %>
             </button>
 
-            <div class="product-meta">
+            <!-- <div class="product-meta">
                 <% if (product.category_id) { %>
-                    <p>Category: <%= product.category_id.name %></p>
+                    <p class="meta-item"><i class="fas fa-bookmark"></i> Category: <%= product.category_id.name %></p>
                 <% } %>
-                <% if (product.Published_Date) { %>
-                    <p>Published: <%= new Date(product.Published_Date).toLocaleDateString() %></p>
-                <% } %>
-            </div>
+            </div> -->
         </div>
     </div>
 
@@ -364,6 +449,8 @@
 <script>
     let stockLeft = <%= product.available_quantity %>;
     let currentQuantity = 1;
+    let isZoomed = false;
+    const ZOOM_LEVEL = 2.5;
 
     function changeQuantity(change) {
         const newQuantity = currentQuantity + change;
@@ -373,6 +460,29 @@
             document.getElementById('decrease-btn').disabled = currentQuantity <= 1;
             document.getElementById('increase-btn').disabled = currentQuantity >= stockLeft;
         }
+    }
+
+    function zoomImage(event) {
+        const image = event.currentTarget.querySelector('.main-image');
+        const container = event.currentTarget;
+        const rect = container.getBoundingClientRect();
+
+        // Calculate mouse position relative to container
+        const x = (event.clientX - rect.left) / container.offsetWidth;
+        const y = (event.clientY - rect.top) / container.offsetHeight;
+
+        // Apply zoom
+        image.style.transformOrigin = `${x * 100}% ${y * 100}%`;
+        image.style.transform = `scale(${ZOOM_LEVEL})`;
+        image.classList.add('zoomed');
+        isZoomed = true;
+    }
+
+    function resetZoom(event) {
+        const image = event.currentTarget.querySelector('.main-image');
+        image.style.transform = 'scale(1)';
+        image.classList.remove('zoomed');
+        isZoomed = false;
     }
 
     async function addToCartHandler(event, productId) {
@@ -420,7 +530,15 @@
             console.log('Response:', data);
 
             if (data.success) {
-                window.location.href = '/cart';
+                Swal.fire({
+                    title: 'Success!',
+                    text: 'Product added to cart successfully',
+                    icon: 'success',
+                    timer: 2000,
+                    showConfirmButton: false
+                }).then(() => {
+                    window.location.href = '/cart';
+                });
             } else {
                 throw new Error(data.message || 'Failed to add product to cart');
             }

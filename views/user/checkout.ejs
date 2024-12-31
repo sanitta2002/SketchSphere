@@ -1,0 +1,337 @@
+<%- include('../layouts/user/header.ejs') %>
+
+<div class="container-fluid checkout-container py-5">
+    <div class="container pt-5">
+        <div class="row">
+            <!-- Left Column - Addresses and Payment -->
+            <div class="col-lg-8">
+                <!-- Saved Addresses -->
+                <div class="card border-0 shadow-sm rounded-4 mb-4">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h4 class="mb-0 fw-bold">Delivery Address</h4>
+                            <a href="/add-address" class="btn btn-outline-dark rounded-pill">
+                                <i class="fas fa-plus me-2"></i>Add New Address
+                            </a>
+                        </div>
+                        
+                        <% if (addresses && addresses.length > 0) { %>
+                            <div class="saved-addresses">
+                                <% addresses.forEach((address, index) => { %>
+                                    <div class="address-card mb-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" 
+                                                   name="selectedAddress" 
+                                                   id="address<%= index %>" 
+                                                   value="<%= address._id %>"
+                                                   <%= index === 0 ? 'checked' : '' %>>
+                                            <label class="form-check-label w-100" for="address<%= index %>">
+                                                <div class="address-details p-3">
+                                                    <div class="d-flex justify-content-between align-items-start">
+                                                        <div>
+                                                            <h6 class="mb-1 fw-bold"><%= address.name %></h6>
+                                                            <p class="mb-1"><%= address.street %></p>
+                                                            <p class="mb-1"><%= address.city %>, <%= address.state %> <%= address.pincode %></p>
+                                                            <p class="mb-0">
+                                                                <i class="fas fa-phone-alt me-2 text-muted"></i>
+                                                                <%= address.mobile %>
+                                                            </p>
+                                                        </div>
+                                                        <a href="/edit-address/<%= address._id %>" class="btn btn-link text-dark p-0">
+                                                            <i class="fas fa-edit"></i>
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                <% }); %>
+                            </div>
+                        <% } else { %>
+                            <div class="text-center py-4">
+                                <i class="fas fa-map-marker-alt fa-3x mb-3 text-muted"></i>
+                                <h5>No saved addresses</h5>
+                                <p class="text-muted mb-4">Please add a delivery address to continue</p>
+                                <a href="/add-address" class="btn btn-dark rounded-pill px-4">
+                                    <i class="fas fa-plus me-2"></i>Add New Address
+                                </a>
+                            </div>
+                        <% } %>
+                    </div>
+                </div>
+
+                <!-- Payment Methods -->
+                <div class="card border-0 shadow-sm rounded-4 mb-4">
+                    <div class="card-body p-4">
+                        <h4 class="mb-4 fw-bold">Payment Method</h4>
+                        <div class="payment-methods">
+                            <div class="payment-method mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" 
+                                           name="paymentMethod" id="cod" 
+                                           value="COD" checked>
+                                    <label class="form-check-label w-100" for="cod">
+                                        <div class="d-flex align-items-center p-3">
+                                            <div class="payment-icon me-3">
+                                                <i class="fas fa-money-bill-wave fa-lg text-success"></i>
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-1">Cash on Delivery</h6>
+                                                <small class="text-muted">Pay when you receive</small>
+                                            </div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="payment-method">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" 
+                                           name="paymentMethod" id="online" 
+                                           value="Online">
+                                    <label class="form-check-label w-100" for="online">
+                                        <div class="d-flex align-items-center p-3">
+                                            <div class="payment-icon me-3">
+                                                <i class="fas fa-credit-card fa-lg text-primary"></i>
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-1">Online Payment</h6>
+                                                <small class="text-muted">Cards, UPI, Netbanking</small>
+                                            </div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column - Order Summary -->
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm rounded-4 sticky-top" style="top: 2rem;">
+                    <div class="card-body p-4">
+                        <h4 class="fw-bold mb-4">Order Summary</h4>
+                        
+                        <!-- Cart Items -->
+                        <div class="order-items mb-4">
+                            <% cart.items.forEach(item => { %>
+                                <div class="order-item d-flex align-items-center mb-3">
+                                    <img src="/uploads/re-image/<%= item.productId.product_img[0] %>" 
+                                         class="rounded-3" width="50" height="50" 
+                                         style="object-fit: cover;"
+                                         onerror="this.src='/uploads/re-image/default.jpeg'">
+                                    <div class="ms-3 flex-grow-1">
+                                        <h6 class="mb-1"><%= item.productId.name %></h6>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <small class="text-muted">Qty: <%= item.quantity %></small>
+                                            <span class="fw-bold">₹<%= item.productId.Sale_price * item.quantity %></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            <% }); %>
+                        </div>
+
+                        <!-- Price Details -->
+                        <div class="price-details">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted">Subtotal</span>
+                                <span class="fw-bold">₹<%= totalPrice %></span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted">Shipping</span>
+                                <span class="text-success">Free</span>
+                            </div>
+                            <hr class="my-3">
+                            <div class="d-flex justify-content-between mb-4">
+                                <span class="fw-bold">Total</span>
+                                <span class="fw-bold fs-5">₹<%= totalPrice %></span>
+                            </div>
+
+                            <!-- Place Order Button -->
+                            <button onclick="placeOrder()" 
+                                    class="btn btn-dark w-100 btn-lg rounded-pill"
+                                    <%= (!addresses || addresses.length === 0) ? 'disabled' : '' %>>
+                                Place Order
+                            </button>
+
+                            <div class="text-center mt-3">
+                                <small class="text-muted">
+                                    <i class="fas fa-lock me-2"></i>Secure Checkout
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.checkout-container {
+    background-color: #f8f9fa;
+    min-height: 100vh;
+}
+
+/* Address Card Styles */
+.address-card {
+    border: 1px solid #e5e5e5;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    background: #fff;
+}
+
+.address-card:hover {
+    border-color: #212529;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.address-card .form-check {
+    margin: 0;
+    padding: 0;
+}
+
+.address-card .form-check-input {
+    position: absolute;
+    margin: 1.25rem;
+}
+
+.address-card .form-check-label {
+    cursor: pointer;
+    margin: 0;
+    padding-left: 2.5rem;
+}
+
+/* Payment Method Styles */
+.payment-method {
+    border: 1px solid #e5e5e5;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    background: #fff;
+}
+
+.payment-method:hover {
+    border-color: #212529;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transform: translateY(-1px);
+}
+
+.payment-method .form-check {
+    margin: 0;
+    padding: 0;
+}
+
+.payment-method .form-check-input {
+    position: absolute;
+    margin: 1.25rem;
+}
+
+.payment-method .form-check-label {
+    cursor: pointer;
+    margin: 0;
+    padding-left: 2.5rem;
+}
+
+.payment-icon {
+    width: 44px;
+    height: 44px;
+    background: #f8f9fa;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.payment-method:hover .payment-icon {
+    transform: scale(1.1);
+}
+
+/* Order Items */
+.order-item {
+    padding: 0.5rem;
+    border-radius: 8px;
+    transition: background-color 0.2s ease;
+}
+
+.order-item:hover {
+    background-color: #f8f9fa;
+}
+
+.order-item img {
+    border: 1px solid #eee;
+}
+
+/* Active States */
+.address-card .form-check-input:checked ~ .form-check-label,
+.payment-method .form-check-input:checked ~ .form-check-label {
+    background-color: #f8f9fa;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 576px) {
+    .payment-method .form-check-label,
+    .address-card .form-check-label {
+        padding-left: 2rem;
+    }
+    
+    .payment-icon {
+        width: 36px;
+        height: 36px;
+    }
+}
+</style>
+
+<script>
+async function placeOrder() {
+    try {
+        // Get selected address
+        const selectedAddressInput = document.querySelector('input[name="selectedAddress"]:checked');
+        if (!selectedAddressInput) {
+            alert('Please select a delivery address');
+            return;
+        }
+
+        // Get selected payment method
+        const selectedPaymentInput = document.querySelector('input[name="paymentMethod"]:checked');
+        if (!selectedPaymentInput) {
+            alert('Please select a payment method');
+            return;
+        }
+
+        // Show loading state
+        const orderBtn = document.querySelector('.btn-dark');
+        orderBtn.disabled = true;
+        orderBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+
+        // Place order
+        const response = await fetch('/place-order', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                addressId: selectedAddressInput.value,
+                paymentMethod: selectedPaymentInput.value
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            // Redirect to orders page to show success
+            window.location.href = '/orders';
+        } else {
+            throw new Error(data.message || 'Failed to place order');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        const orderBtn = document.querySelector('.btn-dark');
+        orderBtn.disabled = false;
+        orderBtn.innerHTML = 'Place Order';
+        alert('Failed to place order. Please try again.');
+    }
+}
+</script>
+
+<%- include('../layouts/user/footer.ejs') %>

@@ -1,35 +1,28 @@
 const product = require('../../models/productSchema')
 const Category = require('../../models/categorySchema')
-const User=require('../../models/userSchema')
-const fs=require('fs')
-const path=require('path')
+const User = require('../../models/userSchema')
+const Language = require('../../models/languageSchema')
+const fs = require('fs')
+const path = require('path')
 const sharp = require('sharp')
 const { name } = require('ejs')
 
-
-
-const getProductAddPage = async (req,res)=>{
+const getProductAddPage = async (req, res) => {
     try {
 
-        const categor = await Category.find({isListed:true})
-        res.render('addproduct',{
-            cat:categor,
+        const categor = await Category.find({ isListed: true })
+        res.render('addproduct', {
+            cat: categor,
 
         })
-    
+
     } catch (error) {
 
         res.redirect('/pageeeror')
-        
+
     }
 
 }
-
-
-
-
-
-
 
 const addproduct = async (req, res) => {
     try {
@@ -84,7 +77,7 @@ const addproduct = async (req, res) => {
                 images.push(`resized-${req.files[i].filename}`);
             }
         }
-        
+
         const newProduct = new product({
             name: products.productName,
             description: products.description.trim(),
@@ -93,6 +86,10 @@ const addproduct = async (req, res) => {
             Sale_price: products.salePrice || 0,
             available_quantity: products.quantity || 0,
             product_img: images,
+            Published_Date: products.Published_Date || null,
+            writer: products.writer || null,
+            cover_Artist: products.cover_Artist || null,
+            language: products.language || null,
             isBlocked: false
         });
 
@@ -103,7 +100,7 @@ const addproduct = async (req, res) => {
     } catch (error) {
         console.error("Error saving product:", error);
         if (error.name === 'ValidationError') {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 error: Object.values(error.errors).map(err => err.message).join(', ')
             });
         }
@@ -111,22 +108,21 @@ const addproduct = async (req, res) => {
     }
 };
 
-
-const getAllProducts = async (req,res)=>{
+const getAllProducts = async (req, res) => {
     try {
         const search = req.query.search || ""
         const page = req.query.page || 1
         const limit = 4
 
-        const productQuery ={
-            $or:[{name:{$regex:new RegExp(".*"+search+".*","i")}}]
+        const productQuery = {
+            $or: [{ name: { $regex: new RegExp(".*" + search + ".*", "i") } }]
         }
 
         const productData = await product.find(productQuery)
-            .limit(limit*1)
-            .skip((page-1)*limit)
+            .limit(limit * 1)
+            .skip((page - 1) * limit)
             .populate('category_id')
-            .lean()  
+            .lean()
             .exec();
 
         // Handle null categories
@@ -137,28 +133,28 @@ const getAllProducts = async (req,res)=>{
         });
 
         const count = await product.find(productQuery).countDocuments()
-        const category = await Category.find({isListed:true})
+        const category = await Category.find({ isListed: true })
 
-        if(category){
+        if (category) {
             console.log("Found products:", productData);
-            
-            res.render('products',{
+
+            res.render('products', {
                 data: productData,
                 currentPage: page,
-                totalPages: Math.ceil(count/limit),
+                totalPages: Math.ceil(count / limit),
                 cat: category
             })
-        }else{
+        } else {
             res.render("page-404")
         }
-        
+
     } catch (error) {
         console.error("Error getting products:", error);
         res.redirect('/admin/pageerror')
     }
 }
 
-const blockProduct = async(req,res) => {
+const blockProduct = async (req, res) => {
     try {
         const id = req.query.id;
         await product.findByIdAndUpdate(id, { isBlocked: true });
@@ -169,7 +165,7 @@ const blockProduct = async(req,res) => {
     }
 }
 
-const unblockProduct = async(req,res) => {
+const unblockProduct = async (req, res) => {
     try {
         const id = req.query.id;
         await product.findByIdAndUpdate(id, { isBlocked: false });
@@ -180,18 +176,15 @@ const unblockProduct = async(req,res) => {
     }
 }
 
-
-
-
-
-
-
-
 const getEditProduct = async (req, res) => {
     try {
         const id = req.query.id;
         const productData = await product.findOne({ _id: id });
         const categories = await Category.find({});
+        
+        console.log("Product Data for Edit:", productData);
+        console.log("Product Language:", productData.language);
+        
         res.render("editProduct", {
             product: productData,
             cat: categories,
@@ -206,6 +199,9 @@ const editProduct = async (req, res) => {
     try {
         const id = req.params.id;
         const data = req.body;
+        
+        console.log("Edit Product Data:", data);
+        console.log("Language value:", data.language);
 
         // Update fields
         const updateFields = {
@@ -213,8 +209,14 @@ const editProduct = async (req, res) => {
             description: data.description,
             Regular_price: data.regularPrice,
             Sale_price: data.salePrice,
-            available_quantity: data.quantity
+            available_quantity: data.quantity,
+            Published_Date: data.Published_Date || null,
+            writer: data.writer || null,
+            cover_Artist: data.cover_Artist || null,
+            language: data.language || null
         };
+
+        console.log("Update Fields:", updateFields);
 
         // Handle image uploads
         if (req.files && req.files.length > 0) {
@@ -239,7 +241,7 @@ const editProduct = async (req, res) => {
 
                 images.push(`resized-${req.files[i].filename}`);
             }
-            
+
             if (images.length > 0) {
                 updateFields.product_img = images;
             }
@@ -297,7 +299,7 @@ const deleteSingleImage = async (req, res) => {
     }
 };
 
-module.exports={
+module.exports = {
     getProductAddPage,
     addproduct,
     getAllProducts,
