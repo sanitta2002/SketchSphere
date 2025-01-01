@@ -13,12 +13,12 @@ const orderController = {
 
             console.log('Loading orders for user:', req.session.user);
             
-            // Convert string ID to ObjectId
-            const userId = new mongoose.Types.ObjectId(req.session.user);
+            
+            const userId = new mongoose.Types.ObjectId(req.session.user);// Convert string id to ObjectId
             console.log('Converted user ID to ObjectId:', userId.toString());
 
-            // Show regular orders list with populated fields
-            const orders = await Order.find({ userId: userId })
+           
+            const orders = await Order.find({ userId: userId }) // Show regular orders list with populated fields
                 .populate({
                     path: 'orderedItems.product',
                     select: 'name product_img Sale_price'

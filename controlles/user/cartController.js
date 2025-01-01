@@ -13,9 +13,9 @@ const cartController = {
                 .populate('items.productId', 'name Sale_price product_img writer available_quantity');
 
             if (cart) {
-                // Calculate cart total
+                
                 cart.total = cart.items.reduce((total, item) => {
-                    return total + (item.price * item.quantity);
+                    return total + (item.price * item.quantity);  // Calculate cart total
                 }, 0);
             }
 

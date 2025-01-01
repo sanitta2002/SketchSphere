@@ -29,17 +29,21 @@
                                                 <div class="address-details p-3">
                                                     <div class="d-flex justify-content-between align-items-start">
                                                         <div>
+                                                            <div class="mb-2">
+                                                                <span class="badge bg-secondary"><%= address.addressType %></span>
+                                                            </div>
                                                             <h6 class="mb-1 fw-bold"><%= address.name %></h6>
-                                                            <p class="mb-1"><%= address.street %></p>
+                                                            <p class="mb-1"><%= address.landMark %></p>
                                                             <p class="mb-1"><%= address.city %>, <%= address.state %> <%= address.pincode %></p>
                                                             <p class="mb-0">
                                                                 <i class="fas fa-phone-alt me-2 text-muted"></i>
-                                                                <%= address.mobile %>
+                                                                <%= address.phone %>
                                                             </p>
                                                         </div>
-                                                        <a href="/edit-address/<%= address._id %>" class="btn btn-link text-dark p-0">
+                                                        <button type="button" class="btn btn-link text-dark p-0" 
+                                                                onclick="editAddress(<%= index %>)">
                                                             <i class="fas fa-edit"></i>
-                                                        </a>
+                                                        </button>
                                                     </div>
                                                 </div>
                                             </label>
@@ -167,6 +171,111 @@
     </div>
 </div>
 
+<!-- Edit Address Modal -->
+<div class="modal fade" id="editAddressModal" tabindex="-1" aria-labelledby="editAddressModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editAddressModalLabel">Edit Address</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editAddressForm" class="needs-validation" novalidate>
+                    <input type="hidden" id="editAddressIndex" name="addressIndex">
+                    
+                    <!-- Address Type -->
+                    <div class="mb-3">
+                        <label for="editAddressType" class="form-label">Address Type</label>
+                        <select class="form-select" id="editAddressType" name="addressType" required>
+                            <option value="">Select Address Type</option>
+                            <option value="Home">Home</option>
+                            <option value="Work">Work</option>
+                            <option value="Other">Other</option>
+                        </select>
+                        <div class="invalid-feedback">Please select an address type</div>
+                    </div>
+
+                    <!-- Name -->
+                    <div class="mb-3">
+                        <label for="editName" class="form-label">Full Name</label>
+                        <input type="text" class="form-control" id="editName" name="name" pattern="[A-Za-z\s]{3,50}" required>
+                        <div class="invalid-feedback">Please enter a valid name (minimum 3 characters)</div>
+                    </div>
+
+                    <!-- Phone -->
+                    <div class="mb-3">
+                        <label for="editPhone" class="form-label">Phone Number</label>
+                        <input type="tel" class="form-control" id="editPhone" name="phone" pattern="[0-9]{10}" required>
+                        <div class="invalid-feedback">Please enter a valid 10-digit phone number</div>
+                    </div>
+
+                    <!-- Landmark -->
+                    <div class="mb-3">
+                        <label for="editLandmark" class="form-label">Landmark</label>
+                        <input type="text" class="form-control" id="editLandmark" name="landMark" required>
+                        <div class="invalid-feedback">Please enter a landmark</div>
+                    </div>
+
+                    <!-- City -->
+                    <div class="mb-3">
+                        <label for="editCity" class="form-label">City</label>
+                        <input type="text" class="form-control" id="editCity" name="city" required>
+                        <div class="invalid-feedback">Please enter your city</div>
+                    </div>
+
+                    <!-- State -->
+                    <div class="mb-3">
+                        <label for="editState" class="form-label">State</label>
+                        <select class="form-select" id="editState" name="state" required>
+                            <option value="">Select State</option>
+                            <option value="Andhra Pradesh">Andhra Pradesh</option>
+                            <option value="Arunachal Pradesh">Arunachal Pradesh</option>
+                            <option value="Assam">Assam</option>
+                            <option value="Bihar">Bihar</option>
+                            <option value="Chhattisgarh">Chhattisgarh</option>
+                            <option value="Goa">Goa</option>
+                            <option value="Gujarat">Gujarat</option>
+                            <option value="Haryana">Haryana</option>
+                            <option value="Himachal Pradesh">Himachal Pradesh</option>
+                            <option value="Jharkhand">Jharkhand</option>
+                            <option value="Karnataka">Karnataka</option>
+                            <option value="Kerala">Kerala</option>
+                            <option value="Madhya Pradesh">Madhya Pradesh</option>
+                            <option value="Maharashtra">Maharashtra</option>
+                            <option value="Manipur">Manipur</option>
+                            <option value="Meghalaya">Meghalaya</option>
+                            <option value="Mizoram">Mizoram</option>
+                            <option value="Nagaland">Nagaland</option>
+                            <option value="Odisha">Odisha</option>
+                            <option value="Punjab">Punjab</option>
+                            <option value="Rajasthan">Rajasthan</option>
+                            <option value="Sikkim">Sikkim</option>
+                            <option value="Tamil Nadu">Tamil Nadu</option>
+                            <option value="Telangana">Telangana</option>
+                            <option value="Tripura">Tripura</option>
+                            <option value="Uttar Pradesh">Uttar Pradesh</option>
+                            <option value="Uttarakhand">Uttarakhand</option>
+                            <option value="West Bengal">West Bengal</option>
+                        </select>
+                        <div class="invalid-feedback">Please select your state</div>
+                    </div>
+
+                    <!-- Pincode -->
+                    <div class="mb-3">
+                        <label for="editPincode" class="form-label">Pincode</label>
+                        <input type="text" class="form-control" id="editPincode" name="pincode" pattern="[0-9]{6}" required>
+                        <div class="invalid-feedback">Please enter a valid 6-digit pincode</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-dark" onclick="updateAddress()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
 .checkout-container {
     background-color: #f8f9fa;
@@ -280,6 +389,83 @@
         height: 36px;
     }
 }
+
+/* Modal Styles */
+.modal-content {
+    border: none;
+    border-radius: 12px;
+}
+
+.modal-header {
+    border-bottom: 1px solid #e5e5e5;
+    padding: 1.5rem;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-footer {
+    border-top: 1px solid #e5e5e5;
+    padding: 1.5rem;
+}
+
+.form-label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+.form-control,
+.form-select {
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    border: 1px solid #e5e5e5;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #212529;
+    box-shadow: 0 0 0 0.2rem rgba(33, 37, 41, 0.15);
+}
+
+.btn-dark {
+    border-radius: 8px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn-dark:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.invalid-feedback {
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+/* Form validation styles */
+.was-validated .form-control:invalid,
+.form-control.is-invalid {
+    border-color: #dc3545;
+    padding-right: calc(1.5em + 0.75rem);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+.was-validated .form-control:valid,
+.form-control.is-valid {
+    border-color: #198754;
+    padding-right: calc(1.5em + 0.75rem);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%23198754' d='M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
 </style>
 
 <script>
@@ -332,6 +518,112 @@ async function placeOrder() {
         alert('Failed to place order. Please try again.');
     }
 }
+
+async function editAddress(index) {
+    try {
+        const response = await fetch('/get-addresses');
+        const data = await response.json();
+        
+        if (data.addresses && data.addresses[index]) {
+            const address = data.addresses[index];
+            
+            // Fill form with address data
+            document.getElementById('editAddressIndex').value = index;
+            document.getElementById('editAddressType').value = address.addressType;
+            document.getElementById('editName').value = address.name;
+            document.getElementById('editPhone').value = address.phone;
+            document.getElementById('editLandmark').value = address.landMark;
+            document.getElementById('editCity').value = address.city;
+            document.getElementById('editState').value = address.state;
+            document.getElementById('editPincode').value = address.pincode;
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('editAddressModal'));
+            modal.show();
+        }
+    } catch (error) {
+        console.error('Error fetching address:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Failed to load address details'
+        });
+    }
+}
+
+async function updateAddress() {
+    try {
+        const form = document.getElementById('editAddressForm');
+        
+        // Form validation
+        if (!form.checkValidity()) {
+            form.classList.add('was-validated');
+            return;
+        }
+
+        const formData = new FormData(form);
+        const addressData = Object.fromEntries(formData.entries());
+        const index = addressData.addressIndex;
+        delete addressData.addressIndex;
+
+        const response = await fetch(`/edit-address/${index}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(addressData)
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editAddressModal'));
+            modal.hide();
+            
+            // Show success message
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: 'Address updated successfully',
+                showConfirmButton: false,
+                timer: 1500
+            }).then(() => {
+                // Reload page to show updated address
+                window.location.reload();
+            });
+        } else {
+            throw new Error(data.message || 'Failed to update address');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Failed to update address. Please try again.'
+        });
+    }
+}
+
+// Form validation on input
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('editAddressForm');
+    if (form) {
+        const inputs = form.querySelectorAll('input, select');
+        
+        inputs.forEach(input => {
+            input.addEventListener('input', function() {
+                if (this.checkValidity()) {
+                    this.classList.remove('is-invalid');
+                    this.classList.add('is-valid');
+                } else {
+                    this.classList.remove('is-valid');
+                    this.classList.add('is-invalid');
+                }
+            });
+        });
+    }
+});
 </script>
 
 <%- include('../layouts/user/footer.ejs') %>

@@ -17,14 +17,14 @@ const checkoutController = {
                 return res.redirect('/cart');
             }
 
-            // Calculate total price
-            const totalPrice = cart.items.reduce((total, item) => {
+            
+            const totalPrice = cart.items.reduce((total, item) => { // Calculate total price
                 return total + (item.quantity * item.productId.Sale_price);
             }, 0);
 
-            // Fetch user's addresses
-            const userAddress = await Address.findOne({ userId: req.session.user });
-            const addresses = userAddress ? userAddress.address : [];
+            
+            const userAddress = await Address.findOne({ userId: req.session.user });  // Fetch user addresses
+            const addresses = userAddress ? userAddress.address : []; 
 
             res.render('checkout', { 
                 cart, 
@@ -51,15 +51,15 @@ const checkoutController = {
                 paymentMethod
             });
 
-            // Find user's address document
-            const address = await Address.findOne({ userId: req.session.user });
+            
+            const address = await Address.findOne({ userId: req.session.user });// Find user address document
             if (!address) {
                 console.error('No address found for user:', req.session.user);
                 return res.status(400).json({ success: false, message: 'No address found' });
             }
 
-            // Find the specific address from the array
-            const selectedAddress = address.address.find(addr => addr._id.toString() === addressId);
+            
+            const selectedAddress = address.address.find(addr => addr._id.toString() === addressId); // Find the specific address from the array
             if (!selectedAddress) {
                 console.error('Selected address not found:', addressId);
                 return res.status(400).json({ success: false, message: 'Selected address not found' });
@@ -73,8 +73,8 @@ const checkoutController = {
                 return res.status(400).json({ success: false, message: 'Cart is empty' });
             }
 
-            // Create order items
-            const orderedItems = cart.items.map(item => ({
+            
+            const orderedItems = cart.items.map(item => ({    // Create order items
                 product: item.productId._id,
                 quantity: item.quantity,
                 price: item.productId.Sale_price
