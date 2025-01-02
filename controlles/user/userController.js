@@ -492,28 +492,149 @@ const changePassword = async (req, res) => {
 
 const loadShop = async (req, res) => {
     try {
-        // Fetch all active products
-        const products = await Product.find({
-            isBlocked: false,
-            quantity: { $gt: 0 }
-        }).populate('category_id');
+        // Get filter parameters from query
+        const maxPrice = req.query.maxPrice ? parseInt(req.query.maxPrice) : 1000;
+        const selectedCategories = req.query.categories ? req.query.categories.split(',') : [];
+        const sortBy = req.query.sortBy || '';
+        const searchQuery = req.query.search || '';
 
-        // Fetch all categories for filters
-        const categories = await Category.find({ isBlocked: false });
+        // Build filter query
+        let filterQuery = {
+            isBlocked: false,
+            quantity: { $gt: 0 },
+            Sale_price: { $lte: maxPrice }
+        };
+
+        // Add search query if provided
+        if (searchQuery) {
+            filterQuery.$or = [
+                { name: { $regex: searchQuery, $options: 'i' } },
+                { writer: { $regex: searchQuery, $options: 'i' } }
+            ];
+        }
+
+        // Add category filter if categories are selected
+        if (selectedCategories.length > 0) {
+            filterQuery.category_id = { $in: selectedCategories };
+        }
+
+        // Fetch all  active categories
+        const categories = await Category.find({ isListed: true });
+
+        // Build sort options
+        let sortOptions = {};
+        switch (sortBy) {
+            case 'newest':
+                sortOptions = { createdAt: -1 };
+                break;
+            case 'az':
+                sortOptions = { name: 1 };
+                break;
+            case 'za':
+                sortOptions = { name: -1 };
+                break;
+            case 'priceHigh':
+                sortOptions = { Sale_price: -1 };
+                break;
+            case 'priceLow':
+                sortOptions = { Sale_price: 1 };
+                break;
+            default:
+                sortOptions = { createdAt: -1 }; // Default sort
+        }
+
+        // Fetch filtered and sorted products
+        const products = await Product.find(filterQuery)
+            .populate('category_id')
+            .sort(sortOptions);
+
+        // Get user data if logged in
+        let userData = null;
+        if (req.session.user) {
+            userData = await User.findById(req.session.user);
+        }
 
         res.render('shop', {
             products,
-            categories
+            categories,
+            selectedPrice: maxPrice,
+            selectedCategories,
+            sortBy,
+            searchQuery,
+            user: userData
         });
     } catch (error) {
-        console.error(error);
+        console.error("Error in loadShop:", error);
         res.redirect('/pageNotFound');
     }
 };
 
+const searchProducts = async (req, res) => {
+    try {
+        const searchQuery = req.query.search || '';
+        const maxPrice = req.query.maxPrice ? parseInt(req.query.maxPrice) : 1000;
+        const selectedCategories = req.query.categories ? req.query.categories.split(',').filter(id => id) : [];
+        const sortBy = req.query.sortBy || '';
 
+        // Build filter query
+        let filterQuery = {
+            isBlocked: false,
+            quantity: { $gt: 0 },
+            Sale_price: { $lte: maxPrice }
+        };
 
+        // Add search query if provided
+        if (searchQuery) {
+            filterQuery.$or = [
+                { name: { $regex: searchQuery, $options: 'i' } },
+                { writer: { $regex: searchQuery, $options: 'i' } }
+            ];
+        }
 
+        // Add category filter if categories are selected
+        if (selectedCategories.length > 0) {
+            filterQuery.category_id = { $in: selectedCategories };
+        }
+
+        // Build sort options
+        let sortOptions = {};
+        switch (sortBy) {
+            case 'newest':
+                sortOptions = { createdAt: -1 };
+                break;
+            case 'az':
+                sortOptions = { name: 1 };
+                break;
+            case 'za':
+                sortOptions = { name: -1 };
+                break;
+            case 'priceHigh':
+                sortOptions = { Sale_price: -1 };
+                break;
+            case 'priceLow':
+                sortOptions = { Sale_price: 1 };
+                break;
+            default:
+                sortOptions = { createdAt: -1 }; // Default sort
+        }
+
+        // Fetch filtered and sorted products
+        const products = await Product.find(filterQuery)
+            .populate('category_id')
+            .sort(sortOptions);
+
+        res.json({
+            success: true,
+            products: products
+        });
+    } catch (error) {
+        console.error("Error in searchProducts:", error);
+        res.status(500).json({
+            success: false,
+            error: "Internal server error"
+        });
+    }
+};
 
 module.exports = {
     loadHomepage,
@@ -531,5 +652,6 @@ module.exports = {
     changePhone,
     loadChangePassword,
     changePassword,
-    loadShop
+    loadShop,
+    searchProducts
 }

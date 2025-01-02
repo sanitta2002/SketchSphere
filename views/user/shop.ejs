@@ -12,22 +12,41 @@
                         <!-- Categories -->
                         <div class="mb-3">
                             <p class="text-muted mb-2 small">Categories</p>
-                            <% categories.forEach(category => { %>
-                                <div class="form-check custom-checkbox mb-2">
-                                    <input class="form-check-input" type="checkbox" value="<%= category._id %>" id="category<%= category._id %>">
-                                    <label class="form-check-label small" for="category<%= category._id %>">
-                                        <%= category.name %>
-                                    </label>
-                                </div>
-                            <% }); %>
+                            <% if (typeof categories !== 'undefined') { %>
+                                <% if (categories && categories.length > 0) { %>
+                                    <% categories.forEach(category => { %>
+                                        <div class="form-check custom-checkbox mb-2">
+                                            <input class="form-check-input" 
+                                                type="checkbox" 
+                                                value="<%= category._id %>" 
+                                                id="category<%= category._id %>"
+                                                <% if (typeof selectedCategories !== 'undefined' && selectedCategories.includes(category._id.toString())) { %>
+                                                    checked
+                                                <% } %>
+                                            >
+                                            <label class="form-check-label small" for="category<%= category._id %>">
+                                                <%= category.name %>
+                                            </label>
+                                        </div>
+                                    <% }); %>
+                                <% } else { %>
+                                    <p class="text-muted small">No categories found in database</p>
+                                <% } %>
+                            <% } else { %>
+                                <p class="text-muted small">Categories data is undefined</p>
+                            <% } %>
+                            <!-- Debug info -->
+                            <% if (typeof categories !== 'undefined') { %>
+                                <small class="text-muted d-none">Categories count: <%= categories.length %></small>
+                            <% } %>
                         </div>
                         <!-- Price Range -->
                         <div class="mb-3">
                             <p class="text-muted mb-2 small">Price Range</p>
-                            <input type="range" class="form-range custom-range" min="0" max="1000" id="priceRange">
+                            <input type="range" class="form-range custom-range" min="0" max="1000" id="priceRange" value="<%= typeof selectedPrice !== 'undefined' ? selectedPrice : 1000 %>">
                             <div class="d-flex justify-content-between mt-2">
                                 <span class="price-label text-muted small">₹0</span>
-                                <span class="price-label text-muted small">₹1000</span>
+                                <span class="price-label text-muted small">₹<%= typeof selectedPrice !== 'undefined' ? selectedPrice : 1000 %></span>
                             </div>
                         </div>
                         <!-- Apply Button -->
@@ -47,22 +66,31 @@
                             <span class="input-group-text bg-white border-end-0">
                                 <i class="fas fa-search text-muted"></i>
                             </span>
-                            <input type="text" class="form-control border-start-0" placeholder="Search products...">
+                            <input 
+                                type="text" 
+                                class="form-control border-start-0" 
+                                id="searchInput"
+                                placeholder="Search products or writers..."
+                                value="<%= typeof searchQuery !== 'undefined' ? searchQuery : '' %>"
+                            >
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <select class="form-select">
-                            <option selected>Sort by</option>
-                            <option>Newest First</option>
-                            <option>Price: Low to High</option>
-                            <option>Price: High to Low</option>
+                        <select class="form-select" id="sortSelect">
+                            <option value="" selected>Sort by</option>
+                            
+                            <option value="newest" <%= typeof sortBy !== 'undefined' && sortBy === 'newest' ? 'selected' : '' %>>New Arrivals</option>
+                            <option value="az" <%= typeof sortBy !== 'undefined' && sortBy === 'az' ? 'selected' : '' %>>Alphabetically A-Z</option>
+                            <option value="za" <%= typeof sortBy !== 'undefined' && sortBy === 'za' ? 'selected' : '' %>>Alphabetically Z-A</option>
+                            <option value="priceHigh" <%= typeof sortBy !== 'undefined' && sortBy === 'priceHigh' ? 'selected' : '' %>>Price High to Low</option>
+                            <option value="priceLow" <%= typeof sortBy !== 'undefined' && sortBy === 'priceLow' ? 'selected' : '' %>>Price Low to High</option>
                         </select>
                     </div>
                 </div>
             </div>
 
             <!-- Products Grid -->
-            <div class="row row-cols-2 row-cols-md-3 row-cols-lg-5 g-3 p-5">
+            <div class="row row-cols-2 row-cols-md-3 row-cols-lg-5 g-3 p-5" id="products-container">
                 <% products.forEach(product => { %>
                     <div class="col">
                         <div class="card product-card h-100 border-0 shadow-sm rounded-3">
@@ -307,59 +335,124 @@
 </style>
 
 <script>
-function toggleWishlist(button, productId) {
-    button.classList.toggle('active');
-    let icon = button.querySelector('i');
-    if (button.classList.contains('active')) {
-        icon.classList.remove('far');
-        icon.classList.add('fas');
-        // Add to wishlist
-        fetch('/add-to-wishlist', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ productId: productId })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Optional: Show success message
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            // Revert the icon if there's an error
-            button.classList.remove('active');
-            icon.classList.remove('fas');
-            icon.classList.add('far');
-        });
-    } else {
-        icon.classList.remove('fas');
-        icon.classList.add('far');
-        // Remove from wishlist
-        fetch('/remove-from-wishlist', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ productId: productId })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Optional: Show success message
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            // Revert the icon if there's an error
-            button.classList.add('active');
-            icon.classList.remove('far');
-            icon.classList.add('fas');
-        });
+document.addEventListener('DOMContentLoaded', function() {
+    const priceRange = document.getElementById('priceRange');
+    const priceLabels = document.querySelectorAll('.price-label');
+    const applyButton = document.querySelector('.btn-dark.btn-sm');
+    const sortSelect = document.getElementById('sortSelect');
+    const searchInput = document.getElementById('searchInput');
+    const productsContainer = document.querySelector('.row.row-cols-2.row-cols-md-3.row-cols-lg-5');
+    
+    // Update price label when slider moves
+    priceRange.addEventListener('input', function() {
+        priceLabels[1].textContent = '₹' + this.value;
+    });
+
+    // Handle sort selection change
+    sortSelect.addEventListener('change', function() {
+        const params = new URLSearchParams(window.location.search);
+        if (this.value) {
+            params.set('sortBy', this.value);
+        } else {
+            params.delete('sortBy');
+        }
+        window.location.href = window.location.pathname + '?' + params.toString();
+    });
+
+    // Function to render product HTML
+    function renderProduct(product) {
+        return `
+            <div class="col">
+                <div class="card product-card h-100 border-0 shadow-sm rounded-3">
+                    <div class="product-image-container">
+                        <img 
+                            src="${product.product_img && product.product_img.length > 0 ? `/uploads/re-image/${product.product_img[0]}` : '/uploads/re-image/default.jpeg'}" 
+                            class="card-img-top product-image" 
+                            alt="${product.name}"
+                            onerror="this.onerror=null; this.src='/uploads/re-image/default.jpeg';"
+                        >
+                        ${product.quantity <= 0 ? '<div class="out-of-stock-overlay">Out of Stock</div>' : ''}
+                        <button class="wishlist-btn" onclick="toggleWishlist(this, '${product._id}')">
+                            <i class="far fa-heart"></i>
+                        </button>
+                    </div>
+                    <div class="card-body p-3">
+                        <h6 class="product-title mb-1">${product.name}</h6>
+                        <div class="product-details small">
+                            ${product.writer ? `
+                                <div class="text-muted mb-1">
+                                    <i class="fas fa-pen me-1"></i>${product.writer}
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <span class="current-price">₹${product.Sale_price}</span>
+                            ${product.quantity > 0 ? '<span class="badge bg-success-subtle text-success">In Stock</span>' : ''}
+                        </div>
+                        <a href="/productDetails?id=${product._id}" class="btn btn-outline-dark btn-sm w-100 mt-2">View Details</a>
+                    </div>
+                </div>
+            </div>
+        `;
     }
-}
+
+    // Handle search input with debounce
+    let searchTimeout;
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            const searchQuery = this.value.trim();
+            const selectedCategories = Array.from(document.querySelectorAll('.form-check-input:checked'))
+                .map(checkbox => checkbox.value);
+            const maxPrice = priceRange.value;
+            const sortValue = sortSelect.value;
+
+            // Make AJAX request
+            fetch(`/api/search-products?search=${searchQuery}&categories=${selectedCategories.join(',')}&maxPrice=${maxPrice}&sortBy=${sortValue}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Update products container
+                        productsContainer.innerHTML = data.products.map(product => renderProduct(product)).join('');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }, 300); // Wait for 300ms after user stops typing
+    });
+
+    // Apply filters when button is clicked
+    applyButton.addEventListener('click', function() {
+        const selectedPrice = priceRange.value;
+        const selectedCategories = Array.from(document.querySelectorAll('.form-check-input:checked'))
+            .map(checkbox => checkbox.value);
+        const searchQuery = searchInput.value.trim();
+
+        // Create query parameters
+        const params = new URLSearchParams(window.location.search);
+        params.set('maxPrice', selectedPrice);
+        if (selectedCategories.length > 0) {
+            params.set('categories', selectedCategories.join(','));
+        } else {
+            params.delete('categories');
+        }
+        if (searchQuery) {
+            params.set('search', searchQuery);
+        } else {
+            params.delete('search');
+        }
+        
+        // Maintain sort parameter if it exists
+        const currentSort = sortSelect.value;
+        if (currentSort) {
+            params.set('sortBy', currentSort);
+        }
+
+        // Redirect with filters applied
+        window.location.href = window.location.pathname + '?' + params.toString();
+    });
+});
 </script>
 
 <%- include('../layouts/user/footer.ejs') %>

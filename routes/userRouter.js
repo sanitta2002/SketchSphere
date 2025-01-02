@@ -68,4 +68,7 @@ router.get('/orderSuccess/:orderId',orderController.orderSuccess);
 // Order details API
 router.get('/api/orders/:orderId', orderController.getOrderDetails);
 
+// Add this line after other routes
+router.get('/api/search-products', userController.searchProducts);
+
 module.exports = router
