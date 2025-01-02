@@ -452,6 +452,28 @@
     let isZoomed = false;
     const ZOOM_LEVEL = 2.5;
 
+    // Add image switching functionality
+    function changeImage(thumbnail) {
+        const mainImage = document.getElementById('mainImage');
+        mainImage.src = thumbnail.src;
+        
+        // Remove active class from all thumbnails
+        document.querySelectorAll('.thumbnail').forEach(thumb => {
+            thumb.classList.remove('active');
+        });
+        
+        // Add active class to clicked thumbnail
+        thumbnail.classList.add('active');
+    }
+
+    // Set the first thumbnail as active on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        const firstThumbnail = document.querySelector('.thumbnail');
+        if (firstThumbnail) {
+            firstThumbnail.classList.add('active');
+        }
+    });
+
     function changeQuantity(change) {
         const newQuantity = currentQuantity + change;
         if (newQuantity >= 1 && newQuantity <= stockLeft) {
