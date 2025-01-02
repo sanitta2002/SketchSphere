@@ -10,13 +10,47 @@
         .thumbnail {
             margin-right: 10px;
         }
+
         .image-cropper {
             position: relative;
+            max-width: 500px;
+            margin: 20px auto;
         }
  
         .error-message {
             color: red;
             display: none;
+        }
+
+        .cropper-container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+        .image-preview img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .cropper-view-box,
+        .cropper-face {
+            border-radius: 0;
+        }
+
+        .preview-container {
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .btn-crop-group {
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .cropped-image {
+            max-width: 200px;
+            margin: 10px auto;
+            display: block;
         }
     </style>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs/dist/cropper.min.css">
@@ -123,16 +157,35 @@
                             <div class="card-body">
                                 <!-- Image upload inputs -->
                                 <% for(let i = 1; i <= 4; i++) { %>
-                                    <div class="mb-3">
+                                    <div class="mb-4">
+                                        <label class="form-label">Image <%= i %></label>
                                         <input class="form-control" type="file" name="images" id="input<%= i %>"
                                             accept="image/png, image/jpeg, image/jpg"
-                                            onchange="viewImage<%= i %>(event), viewImage(event, <%= i %>)">
-                                        <div class="image-preview mt-2">
-                                            <img src="" alt="" id="imgView<%= i %>" style="max-width: 200px; display: none;">
+                                            onchange="viewImage(event, <%= i %>)">
+                                        
+                                        <!-- Original Image Preview -->
+                                        <div class="image-preview mt-3">
+                                            <img src="" alt="" id="imgView<%= i %>" style="display: none;">
                                         </div>
-                                        <div class="image-cropper d-none align-items-center mt-2">
-                                            <img src="" id="croppedImg<%= i %>" alt="">
-                                            <button type="button" id="saveButton<%= i %>" class="btn btn-primary btn-sm ms-2">Save</button>
+                                        
+                                        <!-- Cropper Container -->
+                                        <div class="image-cropper d-none">
+                                            <div class="cropper-container">
+                                                <img src="" id="cropperImg<%= i %>" alt="">
+                                            </div>
+                                            <div class="btn-crop-group">
+                                                <button type="button" class="btn btn-success btn-sm" onclick="saveCrop(<%= i %>)">
+                                                    <i class="fas fa-check"></i> Save Crop
+                                                </button>
+                                                <button type="button" class="btn btn-danger btn-sm" onclick="cancelCrop(<%= i %>)">
+                                                    <i class="fas fa-times"></i> Cancel
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Cropped Image Preview -->
+                                        <div class="preview-container">
+                                            <img src="" id="croppedImg<%= i %>" class="cropped-image" style="display: none;">
                                         </div>
                                     </div>
                                 <% } %>
@@ -152,59 +205,102 @@
 
 <script src="https://cdn.jsdelivr.net/npm/cropperjs/dist/cropper.min.js"></script>
 <script>
-    function viewImage1(event) {
-        const img = document.getElementById("imgView1");
-        img.src = URL.createObjectURL(event.target.files[0]);
-        img.style.display = "block";
-    }
-
-    function viewImage2(event) {
-        const img = document.getElementById("imgView2");
-        img.src = URL.createObjectURL(event.target.files[0]);
-        img.style.display = "block";
-    }
-
-    function viewImage3(event) {
-        const img = document.getElementById("imgView3");
-        img.src = URL.createObjectURL(event.target.files[0]);
-        img.style.display = "block";
-    }
-
-    function viewImage4(event) {
-        const img = document.getElementById("imgView4");
-        img.src = URL.createObjectURL(event.target.files[0]);
-        img.style.display = "block";
-    }
+    let croppers = {};
 
     function viewImage(event, index) {
         const input = event.target;
         if (input.files && input.files[0]) {
             const reader = new FileReader();
-            reader.onload = function() {
-                const image = document.getElementById("imgView" + index);
-                image.src = reader.result;
+            
+            reader.onload = function(e) {
+                // Hide original preview
+                const originalPreview = document.getElementById(`imgView${index}`);
+                originalPreview.style.display = 'none';
                 
+                // Show and setup cropper
                 const cropperContainer = document.querySelector(`#input${index}`).nextElementSibling.nextElementSibling;
                 cropperContainer.classList.remove('d-none');
-                cropperContainer.classList.add('d-flex');
-
-                const cropper = new Cropper(image, {
+                
+                const cropperImg = document.getElementById(`cropperImg${index}`);
+                cropperImg.src = e.target.result;
+                
+                // Destroy existing cropper if any
+                if (croppers[index]) {
+                    croppers[index].destroy();
+                }
+                
+                // Initialize new cropper
+                croppers[index] = new Cropper(cropperImg, {
                     aspectRatio: 1,
-                    viewMode: 1,
-                    autoCropArea: 1,
-                });
-
-                document.getElementById(`saveButton${index}`).addEventListener('click', function() {
-                    const canvas = cropper.getCroppedCanvas();
-                    const croppedImage = document.getElementById(`croppedImg${index}`);
-                    croppedImage.src = canvas.toDataURL();
-
-                    cropper.destroy();
-                    cropperContainer.classList.remove('d-flex');
-                    cropperContainer.classList.add('d-none');
+                    viewMode: 2,
+                    dragMode: 'move',
+                    autoCropArea: 0.8,
+                    guides: true,
+                    center: true,
+                    cropBoxMovable: true,
+                    cropBoxResizable: true,
                 });
             };
+            
             reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function saveCrop(index) {
+        if (croppers[index]) {
+            const canvas = croppers[index].getCroppedCanvas({
+                width: 600,
+                height: 600,
+                minWidth: 256,
+                minHeight: 256,
+                maxWidth: 4096,
+                maxHeight: 4096,
+                fillColor: '#fff',
+                imageSmoothingEnabled: true,
+                imageSmoothingQuality: 'high',
+            });
+
+            const croppedImage = document.getElementById(`croppedImg${index}`);
+            croppedImage.src = canvas.toDataURL('image/jpeg', 0.9);
+            croppedImage.style.display = 'block';
+
+            // Hide cropper container
+            const cropperContainer = document.querySelector(`#input${index}`).nextElementSibling.nextElementSibling;
+            cropperContainer.classList.add('d-none');
+
+            // Destroy cropper
+            croppers[index].destroy();
+            croppers[index] = null;
+
+            // Create a new file from the cropped image
+            canvas.toBlob(function(blob) {
+                const file = new File([blob], `cropped_image_${index}.jpg`, { type: 'image/jpeg' });
+                
+                // Create a new FileList-like object
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                
+                // Update the input file
+                document.getElementById(`input${index}`).files = dataTransfer.files;
+            }, 'image/jpeg', 0.9);
+        }
+    }
+
+    function cancelCrop(index) {
+        if (croppers[index]) {
+            // Hide cropper container
+            const cropperContainer = document.querySelector(`#input${index}`).nextElementSibling.nextElementSibling;
+            cropperContainer.classList.add('d-none');
+            
+            // Clear the input
+            document.getElementById(`input${index}`).value = '';
+            
+            // Hide the cropped image
+            document.getElementById(`croppedImg${index}`).style.display = 'none';
+            
+            // Destroy cropper
+            croppers[index].destroy();
+            croppers[index] = null;
         }
     }
 

@@ -95,6 +95,7 @@ const addproduct = async (req, res) => {
 
         await newProduct.save();
         console.log("Product saved successfully");
+        req.session.successMessage = "Product added successfully!";
         return res.redirect("/admin/products");
 
     } catch (error) {
@@ -110,49 +111,37 @@ const addproduct = async (req, res) => {
 
 const getAllProducts = async (req, res) => {
     try {
-        const search = req.query.search || ""
-        const page = req.query.page || 1
-        const limit = 4
+        const page = parseInt(req.query.page) || 1;
+        const limit = 10;
+        const skip = (page - 1) * limit;
 
-        const productQuery = {
-            $or: [{ name: { $regex: new RegExp(".*" + search + ".*", "i") } }]
+        let query = {};
+        if (req.query.search) {
+            query.name = { $regex: req.query.search, $options: 'i' };
         }
 
-        const productData = await product.find(productQuery)
-            .limit(limit * 1)
-            .skip((page - 1) * limit)
+        const totalProducts = await product.countDocuments(query);
+        const totalPages = Math.ceil(totalProducts / limit);
+
+        const products = await product.find(query)
             .populate('category_id')
-            .lean()
-            .exec();
+            .skip(skip)
+            .limit(limit);
 
-        // Handle null categories
-        productData.forEach(product => {
-            if (!product.category_id) {
-                product.category_id = { name: 'Uncategorized' };
-            }
+        const successMessage = req.session.successMessage;
+        delete req.session.successMessage;  // Clear the message after use
+
+        res.render('products', {
+            data: products,
+            currentPage: page,
+            totalPages: totalPages,
+            successMessage: successMessage
         });
-
-        const count = await product.find(productQuery).countDocuments()
-        const category = await Category.find({ isListed: true })
-
-        if (category) {
-            console.log("Found products:", productData);
-
-            res.render('products', {
-                data: productData,
-                currentPage: page,
-                totalPages: Math.ceil(count / limit),
-                cat: category
-            })
-        } else {
-            res.render("page-404")
-        }
-
     } catch (error) {
-        console.error("Error getting products:", error);
-        res.redirect('/admin/pageerror')
+        console.error(error);
+        res.redirect('/pageeeror');
     }
-}
+};
 
 const blockProduct = async (req, res) => {
     try {

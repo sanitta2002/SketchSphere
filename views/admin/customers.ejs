@@ -2,68 +2,121 @@
 
 <head>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@10/dist/sweetalert2.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
 </head>
 
-<div class="content-header row">
-    <div class="d-flex justify-content-between align-items-center">
-        <h2 class="content-title card-title">Customers</h2>
-       
-    </div>
-</div>         
-        </div>
-        
-            <header class="card-header text-center mb-20">
-                <form action="/admin/users/" method="get" class="d-inline">
-                    <div class="input-group input-group-sm border border-1 border-grey rounded-pill" style="width: 500px; margin-left: 230px;">
-                        <input type="text" class="form-control border-0 rounded-pill" placeholder="Search customers..." name="search">
-                        <button class="btn  border-0" type="submit">Search</button>
+<section class="content-main">
+    <div class="content-header mb-4">
+        <div class="row align-items-center">
+            <div class="col-auto">
+                <h2 class="content-title">Customer Management</h2>
+                <p class="text-muted mb-0">Manage your customer database</p>
+            </div>
+            <div class="col">
+                <form action="/admin/users/" method="get" class="float-end">
+                    <div class="input-group" style="width: 300px;">
+                        <input type="text" 
+                               class="form-control" 
+                               placeholder="Search customers..." 
+                               name="search">
+                        <button class="btn btn-light" type="submit">
+                            <i class="fas fa-search"></i>
+                        </button>
                     </div>
                 </form>
-            </header>
-            <div class="right mt-5">
-                <table class="table table-striped">
-                    <thead>
-                      <tr>
-                        <th scope="col"><b>Name</b></th>
-                        <th scope="col"><b>Email</b></th>
-                        <th scope="col"><b>Phone No</b></th>
-                        <th scope="col"><b>Action</b></th>
-                      </tr>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Customer Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
                     </thead>
                     <tbody>
-                        <%for(let i=0;i<data.length;i++){%>
+                        <% for(let i=0; i<data.length; i++) { %>
                             <tr>
-                                <td><%=data[i].name%></td>
-                                <td><%=data[i].email%></td>
-                                <td><%=data[i].phone%></td>
-                                <td> 
-                                    <%if(data[i].isBlocked===false){%>
-                                        <button class="btn btn-danger block-btn" data-id="<%=data[i]._id%>" style="width: 80px;">
-                                            Block
+                                <td>
+                                    <span class="fw-bold"><%= data[i].name %></span>
+                                </td>
+                                <td>
+                                    <span class="fw-bold text-dark"><%= data[i].email %></span>
+                                </td>
+                                <td>
+                                    <span class="fw-bold text-dark"><%= data[i].phone %></span>
+                                </td>
+                                <td>
+                                    <% if(data[i].isBlocked === false) { %>
+                                        <span class="badge bg-success-light text-success">
+                                            Active
+                                        </span>
+                                    <% } else { %>
+                                        <span class="badge bg-danger-light text-danger">
+                                            Blocked
+                                        </span>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <% if(data[i].isBlocked === false) { %>
+                                        <button class="btn btn-sm btn-outline-danger block-btn" 
+                                                data-id="<%= data[i]._id %>">
+                                            <i class="fas fa-ban me-2"></i>Block
                                         </button>
-                                    <%}else{%>
-                                        <button class="btn btn-success unblock-btn" data-id="<%=data[i]._id%>" style="width: 80px;">
-                                            Unblock
-                                        </button> 
-                                    <%}%>
+                                    <% } else { %>
+                                        <button class="btn btn-sm btn-outline-success unblock-btn" 
+                                                data-id="<%= data[i]._id %>">
+                                            <i class="fas fa-check me-2"></i>Unblock
+                                        </button>
+                                    <% } %>
                                 </td>
                             </tr>
-                            <%}%>
+                        <% } %>
                     </tbody>
-                  </table>
-        </div>
-        <div class="container mt-3">
-            <nav aria-label="Page navigation">
-                <ul class="pagination justify-content-center mb-20" style="margin-right: 200px;">
-                    <%for(let i=1;i<=totalpages;i++){%>
-                        <li class="page-item <%=(i===currentPage) ? 'active' : '' %>">
-                            <a class="page-link" href="?page=<%=i%>"><%= i %></a>
+                </table>
+            </div>
 
-                        </li>
-                        <%}%>
-                </ul>
-            </nav>
+            <!-- Pagination -->
+            <% if (totalpages > 1) { %>
+                <nav class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        <% for(let i=1; i<=totalpages; i++) { %>
+                            <li class="page-item <%= (i===currentPage) ? 'active' : '' %>">
+                                <a class="page-link rounded-circle mx-1 <%= (i===currentPage) ? 'bg-dark border-dark' : '' %>" 
+                                   href="?page=<%= i %>">
+                                    <%= i %>
+                                </a>
+                            </li>
+                        <% } %>
+                    </ul>
+                </nav>
+            <% } %>
         </div>
+    </div>
+</section>
+
+<!-- Add some custom styles -->
+<style>
+.bg-success-light {
+    background-color: rgba(40, 167, 69, 0.1) !important;
+}
+
+.bg-danger-light {
+    background-color: rgba(220, 53, 69, 0.1) !important;
+}
+
+.badge {
+    padding: 0.5em 1em;
+    font-weight: 500;
+}
+</style>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10/dist/sweetalert2.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>

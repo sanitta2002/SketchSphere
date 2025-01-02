@@ -16,137 +16,349 @@
     <script src="https://kit.fontawesome.com/16d4885483.js" crossorigin="anonymous"></script>
     <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 <style>
-body {
-    background-color: #ffffff;
+:root {
+    --primary-color: #1a1a1a;
+    --secondary-color: #333333;
+    --accent-color: #000000;
+    --text-color: #2c3e50;
+    --light-bg: #f8f9fa;
+    --white: #ffffff;
+    --shadow: 0 2px 15px rgba(0,0,0,0.08);
+    --hover-shadow: 0 5px 20px rgba(0,0,0,0.15);
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+body {
+    background-color: var(--light-bg);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    color: var(--text-color);
+}
+
+/* Navbar Styling */
 .navbar {
-    background-color: #8da7ab;
-    padding: 1rem;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    background-color: var(--white);
+    padding: 1rem 1.5rem;
+    box-shadow: var(--shadow);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
 }
 
 .navbar-aside {
-    background-color: #b0d5de;
+    background-color: var(--white);
+    box-shadow: var(--shadow);
+    width: 280px;
+    transition: var(--transition);
 }
 
+/* Menu Items Styling */
 .menu-item a.menu-link {
-    color: #310505;
-    font-size: 15px;
+    color: var(--text-color);
+    font-size: 0.95rem;
     font-weight: 500;
-    padding: 12px 20px;
+    padding: 1rem 1.5rem;
     display: flex;
     align-items: center;
-    transition: all 0.3s ease;
+    border-radius: 12px;
+    margin: 0.3rem 1rem;
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+}
+
+.menu-item a.menu-link::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 0;
+    background-color: var(--accent-color);
+    opacity: 0.1;
+    transition: var(--transition);
+}
+
+.menu-item a.menu-link:hover::before {
+    width: 100%;
 }
 
 .menu-item a.menu-link i {
-    margin-right: 10px;
-    font-size: 20px;
+    margin-right: 12px;
+    font-size: 1.2rem;
+    color: var(--secondary-color);
+    transition: var(--transition);
 }
 
 .menu-item a.menu-link .text {
-    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-weight: 500;
     letter-spacing: 0.3px;
 }
 
 .menu-item a.menu-link:hover,
 .menu-item a.menu-link.active {
-    background-color: #6e7e6e; 
-    color: #ffffff;
+    background-color: var(--accent-color);
+    color: var(--white);
     transform: translateX(5px);
+    box-shadow: var(--shadow);
 }
 
-.dropdown-menu {
-    background-color: #bb9aaf;
-    border: none;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-    border-radius: 8px;
+.menu-item a.menu-link:hover i,
+.menu-item a.menu-link.active i {
+    color: var(--white);
+    transform: scale(1.1);
 }
 
-.dropdown-item {
-    padding: 8px 20px;
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.dropdown-item:hover {
-    background-color: #33053d;
-    color: #ffffff;
-}
-
+/* Brand Styling */
 .brand-wrap {
-    padding: 15px;
+    padding: 1.5rem;
     display: flex;
     align-items: center;
-    gap: 10px;
+    justify-content: center;
+    background-color: var(--white);
+    border-bottom: 1px solid var(--light-bg);
+    transition: var(--transition);
+}
+
+.brand-wrap:hover {
+    background-color: var(--light-bg);
 }
 
 .brand-wrap .logo {
-    height: 40px;
-    transition: transform 0.3s ease;
+    height: 50px;
+    transition: var(--transition);
 }
 
 .brand-wrap:hover .logo {
     transform: scale(1.05);
 }
 
-.aside-top {
-    border-bottom: 1px solid rgba(0,0,0,0.1);
-    margin-bottom: 1rem;
-}
-
+/* Header Components */
 .main-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 1.5rem;
+    background-color: var(--white);
+    padding: 1rem;
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow);
 }
 
-.page-heading {
-    color: #2c3e50;
-    font-size: 1.5rem;
+.content-header {
+    padding: 2rem;
+    background-color: var(--white);
+    border-radius: 15px;
+    box-shadow: var(--shadow);
+    margin-bottom: 2rem;
+    transition: var(--transition);
+}
+
+.content-header:hover {
+    box-shadow: var(--hover-shadow);
+}
+
+/* Card Styling */
+.card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: var(--shadow);
+    transition: var(--transition);
+    background-color: var(--white);
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--hover-shadow);
+}
+
+.card-header {
+    background-color: var(--white);
+    border-bottom: 1px solid var(--light-bg);
+    padding: 1.5rem;
+    border-radius: 15px 15px 0 0 !important;
+}
+
+/* Button Styling */
+.btn {
+    border-radius: 10px;
+    padding: 0.7rem 1.5rem;
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.btn-primary {
+    background-color: var(--accent-color);
+    border: none;
+}
+
+.btn-primary:hover {
+    background-color: var(--secondary-color);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+}
+
+/* Table Styling */
+.table {
+    background-color: var(--white);
+    border-radius: 15px;
+    overflow: hidden;
+    margin-bottom: 0;
+}
+
+.table th {
+    background-color: var(--light-bg);
+    color: var(--text-color);
     font-weight: 600;
-    margin: 0;
-    padding: 1rem 0;
-    text-transform: capitalize;
+    border: none;
+    padding: 1rem;
 }
 
-.nav-item .img-xs {
-    width: 35px;
-    height: 35px;
+.table td {
+    vertical-align: middle;
+    border-color: var(--light-bg);
+    padding: 1rem;
+}
+
+.table tr {
+    transition: var(--transition);
+}
+
+.table tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* Dropdown Styling */
+.dropdown-menu {
+    background-color: var(--white);
+    border: none;
+    box-shadow: var(--hover-shadow);
+    border-radius: 12px;
+    padding: 0.8rem;
+    min-width: 200px;
+    margin-top: 10px;
+}
+
+.dropdown-item {
+    padding: 0.8rem 1.2rem;
+    border-radius: 8px;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 500;
+}
+
+.dropdown-item:hover {
+    background-color: var(--accent-color);
+    color: var(--white);
+    transform: translateX(5px);
+}
+
+.dropdown-item i {
+    font-size: 1.1rem;
+}
+
+/* Form Controls */
+.form-control {
+    border-radius: 10px;
+    border: 1px solid var(--light-bg);
+    padding: 0.8rem 1.2rem;
+    transition: var(--transition);
+}
+
+.form-control:focus {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 0.2rem rgba(0, 0, 0, 0.1);
+}
+
+/* Search Bar */
+.searchform .input-group {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+}
+
+.searchform .form-control {
+    border: none;
+    padding: 0.8rem 1.2rem;
+}
+
+.searchform .btn {
+    background-color: var(--light-bg);
+    border: none;
+    padding: 0.8rem 1.5rem;
+}
+
+.searchform .btn:hover {
+    background-color: var(--accent-color);
+    color: var(--white);
+}
+
+/* Navigation Icons */
+.nav-link.btn-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     border-radius: 50%;
-    border: 2px solid #ffffff;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    transition: transform 0.3s ease;
+    transition: var(--transition);
+    margin: 0 5px;
 }
 
-.nav-item .img-xs:hover {
+.nav-link.btn-icon:hover {
+    background-color: var(--accent-color);
+    color: var(--white);
+    transform: translateY(-2px);
+}
+
+.nav-link.btn-icon i {
+    font-size: 1.2rem;
+}
+
+/* Profile Image */
+.img-xs {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--light-bg);
+    transition: var(--transition);
+}
+
+.img-xs:hover {
     transform: scale(1.1);
+    border-color: var(--accent-color);
 }
 
-.menu-aside {
-    padding: 0.5rem;
+/* Aside Minimized State */
+.aside-mini .navbar-aside {
+    width: 80px;
 }
 
-.menu-item {
-    margin-bottom: 0.5rem;
+.aside-mini .menu-link .text {
+    display: none;
 }
 
-/* Smooth transitions */
-.menu-link, .dropdown-item, .btn-icon {
-    transition: all 0.3s ease;
+.aside-mini .menu-link i {
+    margin: 0;
 }
 
+/* Responsive Adjustments */
+@media (max-width: 992px) {
+    .navbar-aside {
+        width: 100%;
+        position: fixed;
+        left: -100%;
+    }
+    
+    .navbar-aside.show {
+        left: 0;
+    }
+}
 </style>
 </head>
 <body>
     <div class="screen-overlay"></div>
     <aside class="navbar-aside" id="offcanvas_aside">
         <div class="aside-top">
-            <a href="#" class="brand-wrap">
+            <a href="/admin/dashboard" class="brand-wrap">
                 <h3>SKETCHSPHERE</h3>
             </a>
             <div>
@@ -161,43 +373,37 @@ body {
                     </a>
                 </li>
                 <li class="menu-item">
-                    <a class="menu-link" href="/admin/users"> <i class="icon material-icons md-person"></i>
+                    <a class="menu-link" href="/admin/users"> <i class="icon fas fa-users"></i>
                         <span class="text">Customers</span>
                     </a>
-
                 </li>
                 <li class="menu-item">
-                    <a class="menu-link" href="/admin/category"> <i class="icon material-icons md-person"></i>
+                    <a class="menu-link" href="/admin/category"> <i class="icon fas fa-list"></i>
                         <span class="text">Category</span>
                     </a>
-
                 </li>
-                <!-- <li class="menu-item">
-                    <a class="menu-link" href="/admin/brands"> <i class="icon material-icons md-stars"></i>
-                        <span class="text">Brands</span> </a>
-                </li> -->
                 <li class="menu-item">
-                    <a class="menu-link" href="/admin/addProducts"> <i class="icon material-icons md-add_box"></i>
+                    <a class="menu-link" href="/admin/addProducts"> <i class="icon fas fa-plus-circle"></i>
                         <span class="text">Add product</span>
                     </a>
                 </li>
                 <li class="menu-item">
-                    <a class="menu-link" href="/admin/products"> <i class="icon material-icons md-shopping_bag"></i>
+                    <a class="menu-link" href="/admin/products"> <i class="icon fas fa-box"></i>
                         <span class="text">Products</span>
                     </a>
                 </li>
             
                 <li class="menu-item">
-                    <a class="menu-link" href="/admin/coupon"> <i class="icon material-icons md-class"></i>
+                    <a class="menu-link" href="/admin/coupon"> <i class="icon fas fa-ticket-alt"></i>
                         <span class="text">Coupon</span> </a>
                 </li>
                 <li class="menu-item">
-                    <a class="menu-link" href="/admin/banner"> <i class="icon material-icons md-photo_size_select_actual"></i>
+                    <a class="menu-link" href="/admin/banner"> <i class="icon fas fa-image"></i>
                         <span class="text">Banner</span> </a>
                 </li>
 
                 <li class="menu-item">
-                    <a class="menu-link" href="/admin/orders"> <i class="icon material-icons md-shopping_cart"></i>
+                    <a class="menu-link" href="/admin/orders"> <i class="icon fas fa-shopping-cart"></i>
                         <span class="text">Orders</span>
                     </a>
                 </li>
