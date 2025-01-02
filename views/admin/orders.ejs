@@ -1,0 +1,94 @@
+<%- include('../layouts/admin/header.ejs') %>
+
+<section class="content-main">
+    <div class="content-header">
+        <div>
+            <h2 class="content-title card-title">Orders List</h2>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Customer</th>
+                            <th>Date</th>
+                            <th>Total Amount</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% orders.forEach(order => { %>
+                            <tr>
+                                <td><b><%= order._id %></b></td>
+                                <td><%= order.userId ? order.userId.name : 'Unknown' %></td>
+                                <td><%= new Date(order.createdOn).toLocaleDateString() %></td>
+                                <td>₹<%= order.totalPrice.toFixed(2) %></td>
+                                <td>
+                                    <select class="form-select order-status" data-order-id="<%= order._id %>">
+                                        <option value="Pending" <%= order.status === 'Pending' ? 'selected' : '' %>>Pending</option>
+                                        <option value="Processing" <%= order.status === 'Processing' ? 'selected' : '' %>>Processing</option>
+                                        <option value="Shipped" <%= order.status === 'Shipped' ? 'selected' : '' %>>Shipped</option>
+                                        <option value="Delivered" <%= order.status === 'Delivered' ? 'selected' : '' %>>Delivered</option>
+                                        <option value="Cancelled" <%= order.status === 'Cancelled' ? 'selected' : '' %>>Cancelled</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <a href="/admin/order/<%= order._id %>" class="btn btn-light">Details</a>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+document.querySelectorAll('.order-status').forEach(select => {
+    select.addEventListener('change', async function() {
+        const orderId = this.dataset.orderId;
+        const newStatus = this.value;
+        
+        try {
+            const response = await fetch('/admin/order/status', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    orderId: orderId,
+                    status: newStatus
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                alert('Order status updated successfully');
+            } else {
+                alert('Failed to update order status');
+                // Reset to previous value
+                this.value = this.getAttribute('data-previous-value');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An error occurred while updating the order status');
+            // Reset to previous value
+            this.value = this.getAttribute('data-previous-value');
+        }
+    });
+    
+    // Store the current value before change
+    select.addEventListener('focus', function() {
+        this.setAttribute('data-previous-value', this.value);
+    });
+});
+</script>
+
+<%- include('../layouts/admin/footer.ejs') %>

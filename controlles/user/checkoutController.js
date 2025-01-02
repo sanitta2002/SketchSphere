@@ -88,6 +88,24 @@ const checkoutController = {
             // Convert string ID to ObjectId
             const userId = new mongoose.Types.ObjectId(req.session.user);
 
+            // Update product quantities
+            for (const item of cart.items) {
+                const product = item.productId;
+                const newQuantity = product.available_quantity - item.quantity;
+                
+                if (newQuantity < 0) {
+                    return res.status(400).json({ 
+                        success: false, 
+                        message: `Not enough stock available for ${product.name}` 
+                    });
+                }
+                
+                await mongoose.model('Product').findByIdAndUpdate(
+                    product._id,
+                    { $set: { available_quantity: newQuantity } }
+                );
+            }
+
             // Create new order
             const order = new Order({
                 userId: userId,

@@ -1,0 +1,122 @@
+<%- include('../layouts/admin/header.ejs') %>
+
+<section class="content-main">
+    <div class="content-header">
+        <div>
+            <h2 class="content-title card-title">Order Details</h2>
+            <a href="/admin/orders" class="btn btn-light rounded btn-sm">Back to Orders</a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4>Order Information</h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Order ID</label>
+                        <div class="form-control-plaintext"><%= order._id %></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Order Date</label>
+                        <div class="form-control-plaintext"><%= new Date(order.createdOn).toLocaleDateString() %></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <div class="form-control-plaintext"><%= order.status %></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Total Amount</label>
+                        <div class="form-control-plaintext">₹<%= order.totalPrice.toFixed(2) %></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4>Customer Information</h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Customer Name</label>
+                        <div class="form-control-plaintext"><%= order.userId.name %></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <div class="form-control-plaintext"><%= order.userId.email %></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>Ordered Items</h4>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Image</th>
+                            <th>Quantity</th>
+                            <th>Price</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% order.orderedItems.forEach(item => { %>
+                            <tr>
+                                <td><%= item.product.name %></td>
+                                <td>
+                                    <img src="/uploads/<%= item.product.product_img[0] %>" 
+                                        alt="<%= item.product.name %>" 
+                                        class="img-sm img-thumbnail">
+                                </td>
+                                <td><%= item.quantity %></td>
+                                <td>₹<%= item.price.toFixed(2) %></td>
+                                <td>₹<%= (item.quantity * item.price).toFixed(2) %></td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="4" class="text-end"><strong>Total Amount:</strong></td>
+                            <td><strong>₹<%= order.totalPrice.toFixed(2) %></strong></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>Shipping Address</h4>
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <label class="form-label">Name</label>
+                <div class="form-control-plaintext"><%= order.address.name %></div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">City</label>
+                <div class="form-control-plaintext"><%= order.address.city %></div>
+            </div>
+            <% if (order.address.landMark) { %>
+                <div class="mb-3">
+                    <label class="form-label">Landmark</label>
+                    <div class="form-control-plaintext"><%= order.address.landMark %></div>
+                </div>
+            <% } %>
+        </div>
+    </div>
+</section>
+
+<%- include('../layouts/admin/footer.ejs') %>
