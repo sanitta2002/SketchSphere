@@ -5,6 +5,13 @@ const orderController = {
     // Get all orders for admin
     getAllOrders: async (req, res) => {
         try {
+            const page = parseInt(req.query.page) || 1;
+            const limit = 7;
+            const skip = (page - 1) * limit;
+
+            const totalOrders = await Order.countDocuments();
+            const totalPages = Math.ceil(totalOrders / limit);
+
             const orders = await Order.find()
                 .populate({
                     path: 'userId',
@@ -14,10 +21,14 @@ const orderController = {
                     path: 'orderedItems.product',
                     select: 'name product_img Sale_price'
                 })
-                .sort({ createdOn: -1 });
+                .sort({ createdOn: -1 })
+                .skip(skip)
+                .limit(limit);
 
             res.render('orders', {
                 orders,
+                currentPage: page,
+                totalPages,
                 pageTitle: 'All Orders',
                 admin: req.session.admin
             });

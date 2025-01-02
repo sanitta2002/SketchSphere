@@ -75,9 +75,17 @@
                             <tr>
                                 <td><%= item.product.name %></td>
                                 <td>
-                                    <img src="/uploads/<%= item.product.product_img[0] %>" 
-                                        alt="<%= item.product.name %>" 
-                                        class="img-sm img-thumbnail">
+                                    <% if (item.product && item.product.product_img && item.product.product_img.length > 0) { %>
+                                        <img src="/uploads/re-image/<%= item.product.product_img[0] %>" 
+                                            alt="<%= item.product.name %>" 
+                                            style="width: 80px; height: 80px; object-fit: cover;"
+                                            class="img-thumbnail">
+                                    <% } else { %>
+                                        <img src="/admin-assets/imgs/theme/no-image.png" 
+                                            alt="No Image Available"
+                                            style="width: 80px; height: 80px; object-fit: cover;"
+                                            class="img-thumbnail">
+                                    <% } %>
                                 </td>
                                 <td><%= item.quantity %></td>
                                 <td>₹<%= item.price.toFixed(2) %></td>
