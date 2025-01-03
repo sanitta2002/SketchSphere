@@ -2,6 +2,7 @@ const express= require('express')
 const app=express()
 const path=require('path')
 const session = require('express-session')
+const nocache=require('nocache')
 const passport = require('./config/passport')
 const env= require('dotenv').config()
 const db = require('./config/db')
@@ -9,7 +10,7 @@ db()
 const userRouter=require('./routes/userRouter')
 const adminRouter=require('./routes/adminRouter')
 
-
+app.use(nocache())
 app.use(express.json());
 app.use(express.urlencoded({extended:true}))
 
