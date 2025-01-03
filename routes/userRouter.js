@@ -28,6 +28,11 @@ router.get('/login',userController.loadLogin)
 router.post('/login',userController.login)
 router.get("/logout",userController.logout);
 
+// Forgot Password route
+router.get("/forgot-password", userController.loadForgotPassword);
+router.post("/forgot-password", userController.forgotPassword);
+router.post("/reset-password", userController.resetPassword);
+
 router.get("/productDetails",productController.productDetail); 
 
 router.get('/shop', userController.loadShop);
