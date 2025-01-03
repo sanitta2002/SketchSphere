@@ -262,18 +262,129 @@ const resendOtp = async (req, res) => {
 
 const loadLogin = async (req, res) => {
     try {
-        // Check if user is already logged in
         let userData = null;
         if (req.session.user) {
             userData = await User.findById(req.session.user);
         }
-        return res.render('login', { user: userData });
+        res.render('login', { user: userData });
     } catch (error) {
         console.log(error.message);
         res.render('login', { user: null });
     }
 }
 
+const loadForgotPassword = async (req, res) => {
+    try {
+        let userData = null;
+        if (req.session.user) {
+            userData = await User.findById(req.session.user);
+        }
+        res.render('forgot-password', { user: userData, message: '' });
+    } catch (error) {
+        console.log(error.message);
+        res.render('forgot-password', { user: null, message: '' });
+    }
+}
+
+const forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body;
+        const user = await User.findOne({ email: email });
+
+        if (!user) {
+            return res.render('forgot-password', { 
+                user: null, 
+                message: 'No account found with this email address.' 
+            });
+        }
+
+        // Generate OTP
+        const otp = generateOtp();
+        
+        // Save OTP to session with expiry
+        req.session.resetPasswordOtp = {
+            email: email,
+            code: otp,
+            expiresAt: Date.now() + 10 * 60 * 1000 // 10 minutes expiry
+        };
+
+        // Send OTP via email
+        await sendVerificationEmail(email, otp);
+
+        // Redirect to reset password page
+        return res.render('reset-password', { 
+            user: null,
+            email: email,
+            message: 'Please check your email for the OTP to reset your password.'
+        });
+
+    } catch (error) {
+        console.error('Error in forgot password:', error);
+        return res.render('forgot-password', { 
+            user: null, 
+            message: 'An error occurred. Please try again.' 
+        });
+    }
+}
+
+const resetPassword = async (req, res) => {
+    try {
+        const { email, otp, newPassword, confirmPassword } = req.body;
+
+        // Verify OTP
+        if (!req.session.resetPasswordOtp || 
+            req.session.resetPasswordOtp.email !== email || 
+            req.session.resetPasswordOtp.code !== otp ||
+            Date.now() > req.session.resetPasswordOtp.expiresAt) {
+            return res.render('reset-password', {
+                user: null,
+                email: email,
+                message: 'Invalid or expired verification code. Please try again.'
+            });
+        }
+
+        // Verify passwords match
+        if (newPassword !== confirmPassword) {
+            return res.render('reset-password', {
+                user: null,
+                email: email,
+                message: 'Passwords do not match.'
+            });
+        }
+
+        // Find user and update password
+        const user = await User.findOne({ email: email });
+        if (!user) {
+            return res.render('reset-password', {
+                user: null,
+                email: email,
+                message: 'User not found.'
+            });
+        }
+
+        // Hash new password
+        const passwordHash = await securePassword(newPassword);
+        user.password = passwordHash;
+        await user.save();
+
+        // Clear reset password OTP from session
+        delete req.session.resetPasswordOtp;
+
+        // Redirect to login with success message
+        return res.render('login', {
+            user: null,
+            message: 'Password reset successful. Please login with your new password.'
+        });
+
+    } catch (error) {
+        console.error('Error in reset password:', error);
+        return res.render('reset-password', {
+            user: null,
+            email: req.body.email,
+            message: 'An error occurred while resetting your password. Please try again.'
+        });
+    }
+}
 
 const login = async (req, res) => {
     try {
@@ -644,6 +755,9 @@ module.exports = {
     verifyOtp,
     resendOtp,
     loadLogin,
+    loadForgotPassword,
+    forgotPassword,
+    resetPassword,
     login,
     logout,
     profile,
