@@ -24,29 +24,29 @@
                             <!-- Name -->
                             <div class="mb-3">
                                 <label for="name" class="form-label">Full Name</label>
-                                <input type="text" class="form-control" id="name" name="name" pattern="[A-Za-z\s]{3,50}" required>
-                                <div class="invalid-feedback">Please enter a valid name (minimum 3 characters)</div>
+                                <input type="text" class="form-control" id="name" name="name" required>
+                                <div class="invalid-feedback">Name should be 3-50 characters long and contain only letters</div>
                             </div>
 
                             <!-- Phone -->
                             <div class="mb-3">
                                 <label for="phone" class="form-label">Phone Number</label>
-                                <input type="tel" class="form-control" id="phone" name="phone" pattern="[0-9]{10}" required>
-                                <div class="invalid-feedback">Please enter a valid 10-digit phone number</div>
+                                <input type="tel" class="form-control" id="phone" name="phone" required>
+                                <div class="invalid-feedback">Please enter a valid 10-digit mobile number</div>
                             </div>
 
                             <!-- Landmark -->
                             <div class="mb-3">
                                 <label for="landMark" class="form-label">Landmark</label>
                                 <input type="text" class="form-control" id="landMark" name="landMark" required>
-                                <div class="invalid-feedback">Please enter a landmark</div>
+                                <div class="invalid-feedback">Landmark should be at least 3 characters long</div>
                             </div>
 
                             <!-- City -->
                             <div class="mb-3">
                                 <label for="city" class="form-label">City</label>
                                 <input type="text" class="form-control" id="city" name="city" required>
-                                <div class="invalid-feedback">Please enter your city</div>
+                                <div class="invalid-feedback">City should contain only letters</div>
                             </div>
 
                             <!-- State -->
@@ -89,7 +89,7 @@
                             <!-- Pincode -->
                             <div class="mb-3">
                                 <label for="pincode" class="form-label">Pincode</label>
-                                <input type="text" class="form-control" id="pincode" name="pincode" pattern="[0-9]{6}" required>
+                                <input type="text" class="form-control" id="pincode" name="pincode" required>
                                 <div class="invalid-feedback">Please enter a valid 6-digit pincode</div>
                             </div>
 
@@ -143,6 +143,36 @@
     font-size: 0.875rem;
     margin-top: 0.25rem;
 }
+
+.form-control.is-invalid,
+.form-select.is-invalid {
+    border-color: #dc3545;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+.form-control.is-valid,
+.form-select.is-valid {
+    border-color: #198754;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%23198754' d='M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+.invalid-feedback {
+    display: none;
+    color: #dc3545;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+.form-control.is-invalid ~ .invalid-feedback,
+.form-select.is-invalid ~ .invalid-feedback {
+    display: block;
+}
 </style>
 
 <script>
@@ -150,17 +180,108 @@ document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('addressForm');
     
     if (form) {
-        // Form validation on input
         const inputs = form.querySelectorAll('input, select');
+        
+        // Function to validate single input
+        function validateInput(input) {
+            const value = input.value.trim();
+            let isValid = true;
+            let errorMessage = '';
+
+            // Remove previous validation classes
+            input.classList.remove('is-valid', 'is-invalid');
+
+            // Required field validation
+            if (input.hasAttribute('required') && !value) {
+                isValid = false;
+                errorMessage = 'This field is required';
+            }
+
+            // Specific validations based on input id
+            switch (input.id) {
+                case 'name':
+                    if (value && !/^[A-Za-z\s]{3,50}$/.test(value)) {
+                        isValid = false;
+                        errorMessage = 'Name should be 3-50 characters long and contain only letters';
+                    }
+                    break;
+
+                case 'phone':
+                    if (value && !/^[6-9]\d{9}$/.test(value)) {
+                        isValid = false;
+                        errorMessage = 'Please enter a valid 10-digit mobile number';
+                    }
+                    break;
+
+                case 'landMark':
+                    if (value && value.length < 3) {
+                        isValid = false;
+                        errorMessage = 'Landmark should be at least 3 characters long';
+                    }
+                    break;
+
+                case 'city':
+                    if (value && !/^[A-Za-z\s]{3,50}$/.test(value)) {
+                        isValid = false;
+                        errorMessage = 'City should contain only letters';
+                    }
+                    break;
+
+                case 'pincode':
+                    if (value && !/^[1-9][0-9]{5}$/.test(value)) {
+                        isValid = false;
+                        errorMessage = 'Please enter a valid 6-digit pincode';
+                    }
+                    break;
+            }
+
+            // Update validation classes and feedback
+            const feedback = input.nextElementSibling;
+            if (feedback && feedback.classList.contains('invalid-feedback')) {
+                feedback.textContent = errorMessage;
+            }
+
+            if (!isValid) {
+                input.classList.add('is-invalid');
+            } else if (value) {
+                input.classList.add('is-valid');
+            }
+
+            return isValid;
+        }
+
+        // Input event listeners
         inputs.forEach(input => {
-            input.addEventListener('input', function() {
-                if (this.checkValidity()) {
-                    this.classList.remove('is-invalid');
-                    this.classList.add('is-valid');
-                } else {
-                    this.classList.remove('is-valid');
-                    this.classList.add('is-invalid');
-                }
+            // Prevent non-letter characters in name and city fields
+            if (input.id === 'name' || input.id === 'city') {
+                input.addEventListener('input', function(e) {
+                    this.value = this.value.replace(/[^A-Za-z\s]/g, '');
+                    validateInput(this);
+                });
+            }
+            // Prevent non-numeric characters in phone and pincode fields
+            else if (input.id === 'phone' || input.id === 'pincode') {
+                input.addEventListener('input', function(e) {
+                    this.value = this.value.replace(/[^0-9]/g, '');
+                    if (this.id === 'phone' && this.value.length > 10) {
+                        this.value = this.value.slice(0, 10);
+                    }
+                    if (this.id === 'pincode' && this.value.length > 6) {
+                        this.value = this.value.slice(0, 6);
+                    }
+                    validateInput(this);
+                });
+            }
+            // For other fields
+            else {
+                input.addEventListener('input', function() {
+                    validateInput(this);
+                });
+            }
+
+            // Validate on blur
+            input.addEventListener('blur', function() {
+                validateInput(this);
             });
         });
 
@@ -168,9 +289,21 @@ document.addEventListener('DOMContentLoaded', function() {
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            if (!form.checkValidity()) {
-                e.stopPropagation();
-                form.classList.add('was-validated');
+            // Validate all fields
+            let isValid = true;
+            inputs.forEach(input => {
+                if (!validateInput(input)) {
+                    isValid = false;
+                }
+            });
+
+            if (!isValid) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Validation Error',
+                    text: 'Please fill all required fields correctly',
+                    confirmButtonColor: '#3085d6'
+                });
                 return;
             }
 
@@ -189,7 +322,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 const data = await response.json();
 
                 if (data.success) {
-                    // Show success message
                     Swal.fire({
                         icon: 'success',
                         title: 'Success!',
@@ -197,18 +329,16 @@ document.addEventListener('DOMContentLoaded', function() {
                         showConfirmButton: false,
                         timer: 1500
                     }).then(() => {
-                        // Redirect back
                         window.history.back();
                     });
                 } else {
                     throw new Error(data.message || 'Failed to save address');
                 }
             } catch (error) {
-                console.error('Error:', error);
                 Swal.fire({
                     icon: 'error',
                     title: 'Error',
-                    text: 'Failed to save address. Please try again.'
+                    text: error.message || 'Failed to save address. Please try again.'
                 });
             }
         });

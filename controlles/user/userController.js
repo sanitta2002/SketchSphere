@@ -26,8 +26,15 @@ const pageNotFound = async (req, res) => {
 //render home page
 const loadHomepage = async (req, res) => {
     try {
-        // Fetch products with all necessary fields
-        const products = await Product.find({ isBlocked: false })
+        // Get active categories first
+        const activeCategories = await Category.find({ isListed: true });
+        const activeCategoryIds = activeCategories.map(cat => cat._id);
+
+        // Fetch products from active categories only
+        const products = await Product.find({ 
+            isBlocked: false,
+            category_id: { $in: activeCategoryIds }
+        })
             .populate('category_id')
             .select('name description product_img quantity Regular_price Sale_price offerPrice')
             .sort({ createdAt: -1 })
@@ -41,7 +48,7 @@ const loadHomepage = async (req, res) => {
 
         return res.render('home', {
             products,
-            categories: [],
+            categories: activeCategories,
             user: userData
         });
     } catch (error) {
@@ -608,12 +615,20 @@ const loadShop = async (req, res) => {
         const selectedCategories = req.query.categories ? req.query.categories.split(',') : [];
         const sortBy = req.query.sortBy || '';
         const searchQuery = req.query.search || '';
+        const page = parseInt(req.query.page) || 1;
+        const limit = 15; // Products per page
+        const skip = (page - 1) * limit;
+
+        // Get active categories first
+        const activeCategories = await Category.find({ isListed: true });
+        const activeCategoryIds = activeCategories.map(cat => cat._id);
 
         // Build filter query
         let filterQuery = {
             isBlocked: false,
             quantity: { $gt: 0 },
-            Sale_price: { $lte: maxPrice }
+            Sale_price: { $lte: maxPrice },
+            category_id: { $in: activeCategoryIds } // Only show products from active categories
         };
 
         // Add search query if provided
@@ -626,11 +641,14 @@ const loadShop = async (req, res) => {
 
         // Add category filter if categories are selected
         if (selectedCategories.length > 0) {
-            filterQuery.category_id = { $in: selectedCategories };
+            // Only allow filtering by categories that are still active
+            const validSelectedCategories = selectedCategories.filter(id => 
+                activeCategoryIds.some(activeId => activeId.toString() === id)
+            );
+            if (validSelectedCategories.length > 0) {
+                filterQuery.category_id = { $in: validSelectedCategories };
+            }
         }
-
-        // Fetch all  active categories
-        const categories = await Category.find({ isListed: true });
 
         // Build sort options
         let sortOptions = {};
@@ -654,10 +672,16 @@ const loadShop = async (req, res) => {
                 sortOptions = { createdAt: -1 }; // Default sort
         }
 
-        // Fetch filtered and sorted products
+        // Get total count of products for pagination
+        const totalProducts = await Product.countDocuments(filterQuery);
+        const totalPages = Math.ceil(totalProducts / limit);
+
+        // Fetch filtered and sorted products with pagination
         const products = await Product.find(filterQuery)
             .populate('category_id')
-            .sort(sortOptions);
+            .sort(sortOptions)
+            .skip(skip)
+            .limit(limit);
 
         // Get user data if logged in
         let userData = null;
@@ -667,12 +691,16 @@ const loadShop = async (req, res) => {
 
         res.render('shop', {
             products,
-            categories,
+            categories: activeCategories, // Only pass active categories to the view
             selectedPrice: maxPrice,
             selectedCategories,
             sortBy,
             searchQuery,
-            user: userData
+            user: userData,
+            currentPage: page,
+            totalPages: totalPages,
+            hasNextPage: page < totalPages,
+            hasPreviousPage: page > 1
         });
     } catch (error) {
         console.error("Error in loadShop:", error);

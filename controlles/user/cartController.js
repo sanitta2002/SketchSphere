@@ -12,14 +12,32 @@ const cartController = {
             const cart = await Cart.findOne({ userId: req.session.user })
                 .populate('items.productId', 'name Sale_price product_img writer available_quantity');
 
+            let hasInsufficientStock = false;
+
             if (cart) {
+                // Check each item's stock and update quantities if necessary
+                let needsUpdate = false;
+                cart.items = cart.items.map(item => {
+                    if (item.productId && item.quantity > item.productId.available_quantity) {
+                        hasInsufficientStock = true;
+                        item.quantity = item.productId.available_quantity;
+                        needsUpdate = true;
+                    }
+                    return item;
+                });
+
+                // Update cart in database if quantities were adjusted
+                if (needsUpdate) {
+                    await cart.save();
+                }
                 
+                // Calculate total after potential quantity adjustments
                 cart.total = cart.items.reduce((total, item) => {
-                    return total + (item.price * item.quantity);  // Calculate cart total
+                    return total + (item.price * item.quantity);
                 }, 0);
             }
 
-            res.render('cart', { cart });
+            res.render('cart', { cart, hasInsufficientStock });
         } catch (error) {
             console.error('Error loading cart:', error);
             res.status(500).render('user/pageNotFound', { error: 'Failed to load cart' });

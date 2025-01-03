@@ -36,10 +36,8 @@
                                         <div class="col-lg-4 col-md-4">
                                             <h6 class="product-name mb-2"><%= item.productId.name %></h6>
                                             <p class="text-muted mb-0">₹<%= item.price %></p>
-                                            <% if (item.productId.writer) { %>
-                                                <small class="text-muted d-flex align-items-center mt-1">
-                                                    <i class="fas fa-pen me-2"></i><%= item.productId.writer %>
-                                                </small>
+                                            <% if (item.quantity > item.productId.available_quantity) { %>
+                                                <p class="text-danger mb-0">Only <%= item.productId.available_quantity %> items in stock</p>
                                             <% } %>
                                         </div>
                                         <!-- Quantity Controls -->
@@ -94,30 +92,25 @@
             <div class="card border-0 shadow-sm rounded-4">
                 <div class="card-body p-4">
                     <h5 class="fw-bold mb-4">Order Summary</h5>
-                    <div class="summary-item d-flex justify-content-between mb-3">
-                        <span class="text-muted">Subtotal (<%= cart ? cart.items.length : 0 %> items)</span>
-                        <span class="fw-bold cart-total">₹<%= cart ? cart.total : 0 %></span>
-                    </div>
-                    <div class="summary-item d-flex justify-content-between mb-3">
-                        <span class="text-muted">Shipping</span>
-                        <span class="text-success fw-medium">Free</span>
-                    </div>
-                    <hr class="my-4">
-                    <div class="summary-item d-flex justify-content-between mb-4">
-                        <span class="fw-bold">Total</span>
-                        <span class="fw-bold fs-5 cart-total">₹<%= cart ? cart.total : 0 %></span>
-                    </div>
-                    <button class="btn btn-dark w-100 btn-lg rounded-pill" 
-                            onclick="proceedToCheckout()"
-                            <%= (!cart || !cart.items || cart.items.length === 0) ? 'disabled' : '' %>>
-                        Proceed to Checkout
-                    </button>
                     <% if (cart && cart.items && cart.items.length > 0) { %>
-                        <div class="secure-checkout text-center mt-4">
-                            <small class="text-muted d-flex align-items-center justify-content-center">
-                                <i class="fas fa-lock me-2"></i>Secure Checkout
-                            </small>
+                        <div class="d-flex justify-content-between mb-3">
+                            <span>Subtotal</span>
+                            <span>₹<%= cart.total %></span>
                         </div>
+                        <hr>
+                        <div class="d-flex justify-content-between mb-4">
+                            <span class="fw-bold">Total</span>
+                            <span class="fw-bold">₹<%= cart.total %></span>
+                        </div>
+                        <% if (typeof hasInsufficientStock !== 'undefined' && hasInsufficientStock) { %>
+                            <button class="btn btn-dark w-100 rounded-pill" disabled onclick="showStockAlert()">
+                                Proceed to Checkout
+                            </button>
+                        <% } else { %>
+                            <a href="/checkout" class="btn btn-dark w-100 rounded-pill">
+                                Proceed to Checkout
+                            </a>
+                        <% } %>
                     <% } %>
                 </div>
             </div>
@@ -486,6 +479,27 @@ function removeItem(productId) {
 function proceedToCheckout() {
     window.location.href = '/checkout';
 }
+
+function showStockAlert() {
+    Swal.fire({
+        icon: 'error',
+        title: 'Insufficient Stock',
+        text: 'Some items in your cart have insufficient stock. Please update the quantities to proceed.',
+        confirmButtonColor: '#3085d6',
+        confirmButtonText: 'OK'
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Check for stock issues on page load
+    const hasStockIssues = <%= typeof hasInsufficientStock !== 'undefined' ? hasInsufficientStock : false %>;
+    if (hasStockIssues) {
+        const checkoutBtn = document.querySelector('.btn-dark.w-100');
+        if (checkoutBtn) {
+            checkoutBtn.addEventListener('click', showStockAlert);
+        }
+    }
+});
 </script>
 
 <%- include('../layouts/user/footer.ejs') %>
