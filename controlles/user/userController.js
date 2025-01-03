@@ -218,9 +218,9 @@ const verifyOtp = async (req, res) => {
             req.session.user = saveUserData._id;
 
             console.log("User registered successfully.");
-            return res.redirect('/login');
+            return res.json({ success: true, message: "OTP verified successfully" });
         } else {
-            return res.status(400).json({ success: false, message: "Invalid OTP, please try again." });
+            return res.status(400).json({ success: false, message: "Invalid OTP. Please try again." });
         }
     } catch (error) {
         console.error("Error verifying OTP:", error);
