@@ -15,14 +15,14 @@ const cartController = {
             let hasInsufficientStock = false;
 
             if (cart) {
-                // Check each item's stock and update quantities if necessary
+                // Check each item stock and update quantities is necessary
                 let needsUpdate = false;
                 cart.items = cart.items.map(item => {
                     if (item.productId && item.quantity > item.productId.available_quantity) {
                         hasInsufficientStock = true;
                         item.quantity = item.productId.available_quantity;
                         needsUpdate = true;
-                    }
+                    } 
                     return item;
                 });
 
