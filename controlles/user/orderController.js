@@ -39,14 +39,14 @@ const orderController = {
                     items: latestOrder.orderedItems
                 });
 
-                // Render order success page for the latest order
+                // Render order success page - latest order
                 res.render('orderSuccess', {
                     order: latestOrder,
                     user: req.session.user,
                     pageTitle: 'Order Successful'
                 });
             } else {
-                // If no orders, redirect to orders page
+                // If no orders redirect to orders page
                 res.redirect('/orders');
             }
         } catch (error) {
@@ -136,6 +136,7 @@ const orderController = {
                 _id: orderId,
                 userId: userId
             });
+            
 
             if (!order) {
                 return res.status(404).json({ success: false, message: 'Order not found' });
