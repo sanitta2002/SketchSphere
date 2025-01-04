@@ -91,6 +91,7 @@ const checkoutController = {
             // Update product quantities
             for (const item of cart.items) {
                 const product = item.productId;
+                console.log('this is product',product )
                 const newQuantity = product.available_quantity - item.quantity;
                 
                 if (newQuantity < 0) {

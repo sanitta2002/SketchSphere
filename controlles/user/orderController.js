@@ -2,6 +2,7 @@ const Order = require('../../models/orderSchema');
 const Address = require('../../models/addressSchema');
 const mongoose = require('mongoose');
 const Cart = require('../../models/cartSchema');
+const Product = require('../../models/productSchema')
 
 const orderController = {
     // View all orders
@@ -136,7 +137,17 @@ const orderController = {
                 _id: orderId,
                 userId: userId
             });
-            
+
+            console.log(order)
+            //update quantity
+            for(item of order.orderedItems){
+                await Product.findOneAndUpdate(
+                    {_id:item.product},
+                    {$inc:{available_quantity : item.quantity}}
+                )
+               
+            }
+
 
             if (!order) {
                 return res.status(404).json({ success: false, message: 'Order not found' });
