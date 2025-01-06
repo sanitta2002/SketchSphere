@@ -93,7 +93,7 @@
             <div class="row row-cols-2 row-cols-md-3 row-cols-lg-5 g-3 p-5" id="products-container">
                 <% products.forEach(product => { %>
                     <div class="col">
-                        <div class="card product-card h-100 border-0 shadow-sm rounded-3">
+                        <div class="card product-card h-100 border-0 shadow-sm rounded-3" data-out-of-stock="<%= product.available_quantity === 0 %>">
                             <div class="product-image-container">
                                 <img 
                                     src="<%= product.product_img && product.product_img.length > 0 ? `/uploads/re-image/${product.product_img[0]}` : '/uploads/re-image/default.jpeg' %>" 
@@ -101,7 +101,7 @@
                                     alt="<%= product.name %>"
                                     onerror="this.onerror=null; this.src='/uploads/re-image/default.jpeg';"
                                 >
-                                <% if (product.quantity <= 0) { %>
+                                <% if (product.available_quantity === 0) { %>
                                     <div class="out-of-stock-overlay">Out of Stock</div>
                                 <% } %>
                                 <button class="wishlist-btn" onclick="toggleWishlist(this, '<%= product._id %>')">
@@ -119,7 +119,9 @@
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center mt-2">
                                     <span class="current-price">₹<%= product.Sale_price %></span>
-                                    <% if (product.quantity > 0) { %>
+                                    <% if (product.available_quantity === 0) { %>
+                                        <span class="badge bg-danger-subtle text-danger">Out of Stock</span>
+                                    <% } else { %>
                                         <span class="badge bg-success-subtle text-success">In Stock</span>
                                     <% } %>
                                 </div>
@@ -170,12 +172,14 @@
     /* Product Card Styling */
     .product-card {
         transition: all 0.3s ease;
-        background: #ffffff;
     }
 
-    .product-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1) !important;
+    .product-card[data-out-of-stock="true"] {
+        opacity: 0.85;
+    }
+
+    .product-card[data-out-of-stock="true"] .product-image {
+        opacity: 0.7;
     }
 
     .product-image-container {
@@ -218,9 +222,8 @@
 
     /* Stock Badge */
     .badge {
-        font-size: 0.7rem;
         font-weight: 500;
-        padding: 0.35em 0.65em;
+        padding: 6px 12px;
     }
 
     .bg-success-subtle {
@@ -228,7 +231,15 @@
     }
 
     .text-success {
-        color: #000000 !important;
+        color: #20c997 !important;
+    }
+
+    .bg-danger-subtle {
+        background-color: #ffe5e5;
+    }
+
+    .text-danger {
+        color: #dc3545 !important;
     }
 
     /* Button Styling */
@@ -343,6 +354,10 @@
     .wishlist-btn.active .far.fa-heart {
         font-weight: 900;
     }
+
+    .text-warning {
+        color: #ffa502 !important;
+    }
 </style>
 
 <script>
@@ -359,22 +374,79 @@ document.addEventListener('DOMContentLoaded', function() {
         priceLabels[1].textContent = '₹' + this.value;
     });
 
+    // Function to update URL and fetch products
+    function updateProducts(keepPage = false) {
+        const params = new URLSearchParams(window.location.search);
+        
+        // Get current values
+        const searchQuery = searchInput.value.trim();
+        const selectedCategories = Array.from(document.querySelectorAll('.form-check-input:checked'))
+            .map(checkbox => checkbox.value);
+        const maxPrice = priceRange.value;
+        const sortValue = sortSelect.value;
+
+        // Update parameters
+        if (searchQuery) params.set('search', searchQuery);
+        else params.delete('search');
+        
+        if (selectedCategories.length > 0) params.set('categories', selectedCategories.join(','));
+        else params.delete('categories');
+        
+        params.set('maxPrice', maxPrice);
+        
+        if (sortValue) params.set('sortBy', sortValue);
+        else params.delete('sortBy');
+
+        // Reset to page 1 unless keepPage is true
+        if (!keepPage) {
+            params.delete('page');
+        }
+
+        // Update URL without reloading
+        const newUrl = window.location.pathname + '?' + params.toString();
+        window.history.pushState({ path: newUrl }, '', newUrl);
+
+        // Fetch and render products
+        fetch('/api/search-products?' + params.toString())
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    productsContainer.innerHTML = data.products.map(renderProduct).join('');
+                    // Update pagination if provided
+                    if (data.pagination) {
+                        document.querySelector('.pagination-container').innerHTML = data.pagination;
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+    }
+
     // Handle sort selection change
     sortSelect.addEventListener('change', function() {
-        const params = new URLSearchParams(window.location.search);
-        if (this.value) {
-            params.set('sortBy', this.value);
-        } else {
-            params.delete('sortBy');
-        }
-        window.location.href = window.location.pathname + '?' + params.toString();
+        updateProducts();
+    });
+
+    // Handle search with debounce
+    let searchTimeout;
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            updateProducts();
+        }, 300);
+    });
+
+    // Handle filter application
+    applyButton.addEventListener('click', function() {
+        updateProducts();
     });
 
     // Function to render product HTML
     function renderProduct(product) {
         return `
             <div class="col">
-                <div class="card product-card h-100 border-0 shadow-sm rounded-3">
+                <div class="card product-card h-100 border-0 shadow-sm rounded-3" data-out-of-stock="${product.available_quantity === 0}">
                     <div class="product-image-container">
                         <img 
                             src="${product.product_img && product.product_img.length > 0 ? `/uploads/re-image/${product.product_img[0]}` : '/uploads/re-image/default.jpeg'}" 
@@ -382,7 +454,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             alt="${product.name}"
                             onerror="this.onerror=null; this.src='/uploads/re-image/default.jpeg';"
                         >
-                        ${product.quantity <= 0 ? '<div class="out-of-stock-overlay">Out of Stock</div>' : ''}
+                        ${product.available_quantity === 0 ? '<div class="out-of-stock-overlay">Out of Stock</div>' : ''}
                         <button class="wishlist-btn" onclick="toggleWishlist(this, '${product._id}')">
                             <i class="far fa-heart"></i>
                         </button>
@@ -398,7 +470,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                         <div class="d-flex justify-content-between align-items-center mt-2">
                             <span class="current-price">₹${product.Sale_price}</span>
-                            ${product.quantity > 0 ? '<span class="badge bg-success-subtle text-success">In Stock</span>' : ''}
+                            ${product.available_quantity === 0 ? 
+                                '<span class="badge bg-danger-subtle text-danger">Out of Stock</span>' : 
+                                '<span class="badge bg-success-subtle text-success">In Stock</span>'
+                            }
                         </div>
                         <a href="/productDetails?id=${product._id}" class="btn btn-outline-dark btn-sm w-100 mt-2">View Details</a>
                     </div>
@@ -406,63 +481,6 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         `;
     }
-
-    // Handle search input with debounce
-    let searchTimeout;
-    searchInput.addEventListener('input', function() {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-            const searchQuery = this.value.trim();
-            const selectedCategories = Array.from(document.querySelectorAll('.form-check-input:checked'))
-                .map(checkbox => checkbox.value);
-            const maxPrice = priceRange.value;
-            const sortValue = sortSelect.value;
-
-            // Make AJAX request
-            fetch(`/api/search-products?search=${searchQuery}&categories=${selectedCategories.join(',')}&maxPrice=${maxPrice}&sortBy=${sortValue}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Update products container
-                        productsContainer.innerHTML = data.products.map(product => renderProduct(product)).join('');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                });
-        }, 300); // Wait for 300ms after user stops typing
-    });
-
-    // Apply filters when button is clicked
-    applyButton.addEventListener('click', function() {
-        const selectedPrice = priceRange.value;
-        const selectedCategories = Array.from(document.querySelectorAll('.form-check-input:checked'))
-            .map(checkbox => checkbox.value);
-        const searchQuery = searchInput.value.trim();
-
-        // Create query parameters
-        const params = new URLSearchParams(window.location.search);
-        params.set('maxPrice', selectedPrice);
-        if (selectedCategories.length > 0) {
-            params.set('categories', selectedCategories.join(','));
-        } else {
-            params.delete('categories');
-        }
-        if (searchQuery) {
-            params.set('search', searchQuery);
-        } else {
-            params.delete('search');
-        }
-        
-        // Maintain sort parameter if it exists
-        const currentSort = sortSelect.value;
-        if (currentSort) {
-            params.set('sortBy', currentSort);
-        }
-
-        // Redirect with filters applied
-        window.location.href = window.location.pathname + '?' + params.toString();
-    });
 });
 </script>
 

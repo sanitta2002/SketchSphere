@@ -4,7 +4,7 @@ const User = require('../../models/userSchema')
 const Category = require('../../models/categorySchema')
 const Product = require('../../models/productSchema')
 const Order = require('../../models/orderSchema')  
-
+const Cart = require('../../models/cartSchema')
 const nodemailer = require('nodemailer')
 const env = require("dotenv").config()
 const bcrypt = require('bcrypt')
@@ -42,14 +42,17 @@ const loadHomepage = async (req, res) => {
 
         // Get user data if logged in
         let userData = null;
+        let cartData = null;
         if (req.session.user) {
             userData = await User.findById(req.session.user);
+            cartData = await Cart.findOne({ user: req.session.user }).populate('items.productId');
         }
 
         return res.render('home', {
             products,
             categories: activeCategories,
-            user: userData
+            user: userData,
+            cart: cartData
         });
     } catch (error) {
         console.log("Error loading home page:", error);
@@ -683,20 +686,23 @@ const loadShop = async (req, res) => {
             .skip(skip)
             .limit(limit);
 
-        // Get user data if logged in
+        // Get user data and cart if logged in
         let userData = null;
+        let cartData = null;
         if (req.session.user) {
             userData = await User.findById(req.session.user);
+            cartData = await Cart.findOne({ user: req.session.user }).populate('items.productId');
         }
 
         res.render('shop', {
             products,
-            categories: activeCategories, // Only pass active categories to the view
+            categories: activeCategories,
             selectedPrice: maxPrice,
             selectedCategories,
             sortBy,
             searchQuery,
             user: userData,
+            cart: cartData,
             currentPage: page,
             totalPages: totalPages,
             hasNextPage: page < totalPages,
@@ -710,16 +716,24 @@ const loadShop = async (req, res) => {
 
 const searchProducts = async (req, res) => {
     try {
-        const searchQuery = req.query.search || '';
+        // Get filter parameters from query
         const maxPrice = req.query.maxPrice ? parseInt(req.query.maxPrice) : 1000;
-        const selectedCategories = req.query.categories ? req.query.categories.split(',').filter(id => id) : [];
+        const selectedCategories = req.query.categories ? req.query.categories.split(',') : [];
         const sortBy = req.query.sortBy || '';
+        const searchQuery = req.query.search || '';
+        const page = parseInt(req.query.page) || 1;
+        const limit = 15;
+        const skip = (page - 1) * limit;
+
+        // Get active categories first
+        const activeCategories = await Category.find({ isListed: true });
+        const activeCategoryIds = activeCategories.map(cat => cat._id);
 
         // Build filter query
         let filterQuery = {
             isBlocked: false,
-            quantity: { $gt: 0 },
-            Sale_price: { $lte: maxPrice }
+            Sale_price: { $lte: maxPrice },
+            category_id: { $in: activeCategoryIds }
         };
 
         // Add search query if provided
@@ -732,7 +746,12 @@ const searchProducts = async (req, res) => {
 
         // Add category filter if categories are selected
         if (selectedCategories.length > 0) {
-            filterQuery.category_id = { $in: selectedCategories };
+            const validSelectedCategories = selectedCategories.filter(id => 
+                activeCategoryIds.some(activeId => activeId.toString() === id)
+            );
+            if (validSelectedCategories.length > 0) {
+                filterQuery.category_id = { $in: validSelectedCategories };
+            }
         }
 
         // Build sort options
@@ -754,23 +773,64 @@ const searchProducts = async (req, res) => {
                 sortOptions = { Sale_price: 1 };
                 break;
             default:
-                sortOptions = { createdAt: -1 }; // Default sort
+                sortOptions = { createdAt: -1 };
         }
 
-        // Fetch filtered and sorted products
+        // Get total count and fetch products
+        const totalProducts = await Product.countDocuments(filterQuery);
+        const totalPages = Math.ceil(totalProducts / limit);
+
         const products = await Product.find(filterQuery)
             .populate('category_id')
-            .sort(sortOptions);
+            .sort(sortOptions)
+            .skip(skip)
+            .limit(limit);
+
+        // Generate pagination HTML
+        let paginationHtml = '';
+        if (totalPages > 1) {
+            paginationHtml = `
+                <nav aria-label="Page navigation">
+                    <ul class="pagination pagination-sm">
+                        ${page > 1 ? `
+                            <li class="page-item">
+                                <a class="page-link" href="#" data-page="${page - 1}">Previous</a>
+                            </li>
+                        ` : ''}
+                        
+                        ${Array.from({ length: totalPages }, (_, i) => i + 1)
+                            .map(p => `
+                                <li class="page-item ${p === page ? 'active' : ''}">
+                                    <a class="page-link" href="#" data-page="${p}">${p}</a>
+                                </li>
+                            `).join('')}
+                        
+                        ${page < totalPages ? `
+                            <li class="page-item">
+                                <a class="page-link" href="#" data-page="${page + 1}">Next</a>
+                            </li>
+                        ` : ''}
+                    </ul>
+                </nav>
+            `;
+        }
 
         res.json({
             success: true,
-            products: products
+            products,
+            pagination: paginationHtml,
+            currentPage: page,
+            totalPages,
+            hasNextPage: page < totalPages,
+            hasPreviousPage: page > 1
         });
+
     } catch (error) {
-        console.error("Error in searchProducts:", error);
+        console.error("Search products error:", error);
         res.status(500).json({
             success: false,
-            error: "Internal server error"
+            message: "Error searching products",
+            error: error.message
         });
     }
 };

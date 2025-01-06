@@ -1,6 +1,6 @@
 const Order = require('../../models/orderSchema');
 const mongoose = require('mongoose');
-
+const Product = require('../../models/productSchema')
 const orderController = {
     // Get all orders for admin
     getAllOrders: async (req, res) => {
@@ -71,12 +71,26 @@ const orderController = {
     updateOrderStatus: async (req, res) => {
         try {
             const { orderId, status } = req.body;
+            const order = await Order.findById(orderId)
             
-            const order = await Order.findByIdAndUpdate(
-                orderId,
-                { $set: { status: status } },
-                { new: true }
-            );
+            if(status == 'Cancelled'){
+                for(item of order.orderedItems){
+                    await Product.findOneAndUpdate(
+                        {_id:item.product},
+                        {$inc:{available_quantity : item.quantity}}
+                    )
+                }
+            }
+            order.status=status
+            await order.save()
+
+            // const order = await Order.findByIdAndUpdate(
+            //     orderId,
+            //     { $set: { status: status } },
+            //     { new: true }
+            // );
+            
+            
 
             if (!order) {
                 return res.status(404).json({ 

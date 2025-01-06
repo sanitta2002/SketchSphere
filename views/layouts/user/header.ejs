@@ -53,6 +53,36 @@
     .hover-effect:hover span {
         color: #333;
     }
+
+    /* Cart Badge Styles */
+    .badge {
+        font-size: 0.75rem;
+        padding: 0.25em 0.6em;
+    }
+    
+    .bg-danger {
+        background-color: #dc3545 !important;
+    }
+
+    .position-relative {
+        position: relative !important;
+    }
+
+    .position-absolute {
+        position: absolute !important;
+    }
+
+    .top-0 {
+        top: 0 !important;
+    }
+
+    .start-100 {
+        left: 100% !important;
+    }
+
+    .translate-middle {
+        transform: translate(-50%, -50%) !important;
+    }
 </style>
 </head>
 <body class="animsition">
@@ -173,11 +203,16 @@
 							<i class="fa-solid fa-magnifying-glass" style="color: #000000;"></i>
 						</div>
 
-						<div class="icon-header-item cl2 hov-cl1 trans-04 p-l-22 p-r-11 icon-header-noti js-show-cart" data-notify="">
-							<a href="/cart">
-								<i class="fa-solid fa-cart-plus" style="color: #000000;"></i>
+						<div class="icon-header-item cl2 hov-cl1 trans-04 p-l-22 p-r-11 icon-header-noti position-relative">
+							<a href="/cart" class="text-dark">
+								<i class="fa-solid fa-cart-plus"></i>
+								<% if (typeof cart !== 'undefined' && cart && cart.items && cart.items.length > 0) { %>
+									<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+										<%= cart.items.length %>
+										<span class="visually-hidden">items in cart</span>
+									</span>
+								<% } %>
 							</a>
-							<!-- <i class="zmdi zmdi-shopping-cart"></i> -->
 						</div>
 
 						<a href="#" class="dis-block icon-header-item cl2 hov-cl1 trans-04 p-l-22 p-r-11 icon-header-noti" data-notify="">
