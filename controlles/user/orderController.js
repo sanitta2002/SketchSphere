@@ -74,7 +74,11 @@ const orderController = {
             })
             .populate({
                 path: 'orderedItems.product',
-                select: 'name product_img Sale_price'
+                select: 'name product_img description price Sale_price category_id language brand',
+                populate: {
+                    path: 'category_id',
+                    select: 'name'
+                }
             });
 
             console.log('Found order:', order ? {
@@ -240,7 +244,11 @@ const orderController = {
             const order = await Order.findById(orderId)
                 .populate({
                     path: 'orderedItems.product',
-                    select: 'name product_img Sale_price'
+                    select: 'name product_img description price Sale_price category_id language brand',
+                    populate: {
+                        path: 'category_id',
+                        select: 'name'
+                    }
                 })
                 .populate('address'); // Populate the address field
 
@@ -274,7 +282,11 @@ const orderController = {
             const order = await Order.findById(orderId)
                 .populate({
                     path: 'orderedItems.product',
-                    select: 'name product_img Sale_price'
+                    select: 'name product_img description price Sale_price category_id language brand',
+                    populate: {
+                        path: 'category_id',
+                        select: 'name'
+                    }
                 })
                 .populate('address');
 
@@ -304,7 +316,11 @@ const orderController = {
             const order = await Order.findById(orderId)
                 .populate({
                     path: 'orderedItems.product',
-                    select: 'name product_img description price Sale_price category brand'
+                    select: 'name product_img description price Sale_price category_id language brand',
+                    populate: {
+                        path: 'category_id',
+                        select: 'name'
+                    }
                 });
 
             if (!order) {
@@ -335,45 +351,36 @@ const orderController = {
     updateOrderItemStatus: async (req, res) => {
         try {
             const { orderId, itemId } = req.params;
-            const { status } = req.body;
+            const { status, returnReason } = req.body;
             const userId = req.session.user;
 
             // Find the order
-            const order = await Order.findById(orderId);
+            const order = await Order.findOne({ 
+                _id: orderId,
+                userId: userId
+            });
+
             if (!order) {
                 return res.status(404).json({ success: false, message: 'Order not found' });
             }
 
-            // Verify user authorization
-            if (order.userId.toString() !== userId) {
-                return res.status(403).json({ success: false, message: 'Unauthorized access' });
-            }
-
-            // Find and update the specific item
-            const orderItem = order.orderedItems.id(itemId);
+            // Find the specific item
+            const orderItem = order.orderedItems.find(item => item._id.toString() === itemId);
             if (!orderItem) {
                 return res.status(404).json({ success: false, message: 'Order item not found' });
             }
 
-            // Update item status
+            // Update the status
             orderItem.status = status;
-
-            // If all items have the same status, update order status
-            const allItemsStatus = order.orderedItems.every(item => item.status === status);
-            if (allItemsStatus) {
-                order.status = status;
+            
+            // Add return reason if provided
+            if (status === 'Return' && returnReason) {
+                orderItem.returnReason = returnReason;
             }
 
-            // Save changes
             await order.save();
 
-            res.json({
-                success: true,
-                message: 'Status updated successfully',
-                newStatus: status,
-                orderStatus: order.status
-            });
-
+            res.json({ success: true, message: 'Status updated successfully' });
         } catch (error) {
             console.error('Error updating order item status:', error);
             res.status(500).json({ success: false, message: 'Failed to update status' });
