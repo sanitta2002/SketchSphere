@@ -30,13 +30,45 @@
                                 <td><%= new Date(order.createdOn).toLocaleDateString() %></td>
                                 <td>₹<%= order.totalPrice.toFixed(2) %></td>
                                 <td>
-                                    <select class="form-select order-status" data-order-id="<%= order._id %>">
-                                        <option value="Pending" <%= order.status === 'Pending' ? 'selected' : '' %>>Pending</option>
-                                        <option value="Processing" <%= order.status === 'Processing' ? 'selected' : '' %>>Processing</option>
-                                        <option value="Shipped" <%= order.status === 'Shipped' ? 'selected' : '' %>>Shipped</option>
-                                        <option value="Delivered" <%= order.status === 'Delivered' ? 'selected' : '' %>>Delivered</option>
-                                        <option value="Cancelled" <%= order.status === 'Cancelled' ? 'selected' : '' %>>Cancelled</option>
-                                    </select>
+                                    <% 
+                                    let orderStatus;
+                                    if (order.orderedItems && order.orderedItems.length > 0) {
+                                        const statuses = order.orderedItems.map(item => item.status);
+                                        const uniqueStatuses = [...new Set(statuses)];
+                                        
+                                        if (uniqueStatuses.length === 1) {
+                                            // All items have same status
+                                            orderStatus = uniqueStatuses[0];
+                                        } else if (statuses.every(status => ['Cancelled', 'Returned'].includes(status))) {
+                                            // All items are either cancelled or returned
+                                            orderStatus = 'Cancelled';
+                                        } else if (statuses.some(status => status === 'Processing')) {
+                                            // If any item is processing
+                                            orderStatus = 'Processing';
+                                        } else if (statuses.some(status => status === 'Shipped')) {
+                                            // If any item is shipped
+                                            orderStatus = 'Shipped';
+                                        } else if (statuses.every(status => status === 'Delivered')) {
+                                            // All items delivered
+                                            orderStatus = 'Delivered';
+                                        } else {
+                                            // Mixed status
+                                            orderStatus = 'Mixed';
+                                        }
+                                    } else {
+                                        orderStatus = 'Pending';
+                                    }
+                                    %>
+                                    <span class="badge <%= 
+                                        orderStatus === 'Delivered' ? 'bg-success' : 
+                                        orderStatus === 'Cancelled' ? 'bg-danger' : 
+                                        orderStatus === 'Returned' ? 'bg-warning' :
+                                        orderStatus === 'Shipped' ? 'bg-info' :
+                                        orderStatus === 'Processing' ? 'bg-primary' :
+                                        orderStatus === 'Mixed' ? 'bg-secondary' :
+                                        'bg-secondary' %>">
+                                        <%= orderStatus %>
+                                    </span>
                                 </td>
                                 <td>
                                     <a href="/admin/order/<%= order._id %>" class="btn btn-light">Details</a>

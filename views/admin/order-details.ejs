@@ -1,0 +1,193 @@
+<%- include('../layouts/admin/header.ejs') %>
+
+<div class="content-main">
+    <div class="content-header">
+        <div>
+            <h2 class="content-title card-title">Order Details</h2>
+            <p>Order ID: <%= order._id %></p>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <!-- Customer Info -->
+            <div class="mb-4">
+                <h5 class="card-title mb-3">Customer Information</h5>
+                <p><strong>Name:</strong> <%= order.userId.name %></p>
+                <p><strong>Email:</strong> <%= order.userId.email %></p>
+                <p><strong>Order Date:</strong> <%= new Date(order.createdOn).toLocaleString() %></p>
+            </div>
+
+            <!-- Shipping Address -->
+            <div class="mb-4">
+                <h5 class="card-title mb-3">Shipping Address</h5>
+                <p><%= order.address.name %></p>
+                <p><%= order.address.street %></p>
+                <p><%= order.address.city %>, <%= order.address.state %> <%= order.address.pincode %></p>
+                <p>Phone: <%= order.address.mobile %></p>
+            </div>
+
+            <!-- Order Items -->
+            <div class="mb-4">
+                <h5 class="card-title mb-3">Order Items</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Image</th>
+                                <th>Price</th>
+                                <th>Quantity</th>
+                                <th>Total</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% order.orderedItems.forEach(item => { %>
+                                <tr>
+                                    <td><%= item.product.name %></td>
+                                    <td>
+                                        <img src="/uploads/re-image/<%= item.product.product_img[0] %>" 
+                                             alt="<%= item.product.name %>"
+                                             style="width: 50px; height: 50px; object-fit: cover;"
+                                             onerror="this.src='/uploads/re-image/default.jpeg'">
+                                    </td>
+                                    <td>₹<%= item.product.Sale_price.toFixed(2) %></td>
+                                    <td><%= item.quantity %></td>
+                                    <td>₹<%= (item.product.Sale_price * item.quantity).toFixed(2) %></td>
+                                    <td>
+                                        <span class="status-badge badge <%= 
+                                            item.status === 'Delivered' ? 'bg-success' :
+                                            item.status === 'Cancelled' ? 'bg-danger' :
+                                            item.status === 'Returned' ? 'bg-warning' :
+                                            item.status === 'Shipped' ? 'bg-info' :
+                                            item.status === 'Processing' ? 'bg-primary' :
+                                            'bg-secondary' %>">
+                                            <%= item.status || 'Pending' %>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <select class="form-select form-select-sm item-status-select" 
+                                                data-order-id="<%= order._id %>" 
+                                                data-item-id="<%= item._id %>"
+                                                <%= ['Cancelled', 'Returned', 'Delivered'].includes(item.status) ? 'disabled' : '' %>>
+                                            <option value="Pending" <%= item.status === 'Pending' ? 'selected' : '' %>>Pending</option>
+                                            <option value="Processing" <%= item.status === 'Processing' ? 'selected' : '' %>>Processing</option>
+                                            <option value="Shipped" <%= item.status === 'Shipped' ? 'selected' : '' %>>Shipped</option>
+                                            <option value="Delivered" <%= item.status === 'Delivered' ? 'selected' : '' %>>Delivered</option>
+                                            <option value="Cancelled" <%= item.status === 'Cancelled' ? 'selected' : '' %>>Cancelled</option>
+                                            <option value="Returned" <%= item.status === 'Returned' ? 'selected' : '' %>>Returned</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Order Summary -->
+            <div class="mb-4">
+                <h5 class="card-title mb-3">Order Summary</h5>
+                <div class="row">
+                    <div class="col-lg-3">
+                        <p><strong>Subtotal:</strong> ₹<%= order.totalPrice.toFixed(2) %></p>
+                        <p><strong>Shipping:</strong> Free</p>
+                        <p><strong>Total:</strong> ₹<%= order.totalPrice.toFixed(2) %></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+document.querySelectorAll('.item-status-select').forEach(select => {
+    select.addEventListener('change', async function() {
+        const orderId = this.dataset.orderId;
+        const itemId = this.dataset.itemId;
+        const newStatus = this.value;
+        const statusCell = this.closest('tr').querySelector('.status-badge');
+        const originalStatus = statusCell.textContent.trim();
+
+        try {
+            const result = await Swal.fire({
+                title: 'Update Status',
+                text: `Are you sure you want to update this item's status to ${newStatus}?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, update it!'
+            });
+
+            if (result.isConfirmed) {
+                const response = await fetch(`/admin/order/${orderId}/item/${itemId}/status`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ status: newStatus })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Update the status badge
+                    const badgeClass = 
+                        newStatus === 'Delivered' ? 'bg-success' :
+                        newStatus === 'Cancelled' ? 'bg-danger' :
+                        newStatus === 'Returned' ? 'bg-warning' :
+                        newStatus === 'Shipped' ? 'bg-info' :
+                        newStatus === 'Processing' ? 'bg-primary' :
+                        'bg-secondary';
+                    
+                    statusCell.className = `status-badge badge ${badgeClass}`;
+                    statusCell.textContent = newStatus;
+
+                    // Disable select if status is final
+                    if (['Delivered', 'Cancelled', 'Returned'].includes(newStatus)) {
+                        this.disabled = true;
+                    }
+
+                    // Show success message
+                    await Swal.fire({
+                        title: 'Updated!',
+                        text: 'Item status has been updated successfully.',
+                        icon: 'success',
+                        timer: 1500
+                    });
+
+                    // Reload the page to reflect all changes
+                    window.location.reload();
+                } else {
+                    throw new Error(data.message || 'Failed to update status');
+                }
+            } else {
+                // Reset select to previous value if cancelled
+                this.value = originalStatus;
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            await Swal.fire({
+                title: 'Error!',
+                text: error.message || 'Failed to update status',
+                icon: 'error'
+            });
+            // Reset select to previous value on error
+            this.value = originalStatus;
+        }
+    });
+});
+</script>
+
+<%- include('../layouts/admin/footer.ejs') %>

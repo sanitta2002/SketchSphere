@@ -365,12 +365,20 @@ const orderController = {
             }
 
             // Find the specific item
-            const orderItem = order.orderedItems.find(item => item._id.toString() === itemId);
+            const orderItem = order.orderedItems.id(itemId);
             if (!orderItem) {
                 return res.status(404).json({ success: false, message: 'Order item not found' });
             }
 
-            // Update the status
+            // Handle inventory for cancellations
+            if (status === 'Cancelled' && orderItem.status !== 'Cancelled') {
+                await Product.findByIdAndUpdate(
+                    orderItem.product,
+                    { $inc: { available_quantity: orderItem.quantity } }
+                );
+            }
+
+            // Update the item status
             orderItem.status = status;
             
             // Add return reason if provided
@@ -378,19 +386,47 @@ const orderController = {
                 orderItem.returnReason = returnReason;
             }
 
+            // Check if all items have the same status
+            const allSameStatus = order.orderedItems.every(item => item.status === status);
+            if (allSameStatus) {
+                order.status = status;
+            } else {
+                // If items have different statuses, set a composite status
+                const hasDelivered = order.orderedItems.some(item => item.status === 'Delivered');
+                const hasCancelled = order.orderedItems.some(item => item.status === 'Cancelled');
+                const hasReturned = order.orderedItems.some(item => item.status === 'Returned');
+                const hasShipped = order.orderedItems.some(item => item.status === 'Shipped');
+                const hasProcessing = order.orderedItems.some(item => item.status === 'Processing');
+
+                if (hasDelivered && (hasCancelled || hasReturned)) {
+                    order.status = 'Partially Delivered';
+                } else if (hasShipped) {
+                    order.status = 'Partially Shipped';
+                } else if (hasProcessing) {
+                    order.status = 'Processing';
+                } else {
+                    order.status = 'Pending';
+                }
+            }
+
             await order.save();
 
-            res.json({ success: true, message: 'Status updated successfully' });
+            res.json({ 
+                success: true, 
+                message: status === 'Cancelled' ? 'Order has been cancelled successfully' : 'Return request has been submitted successfully',
+                orderStatus: order.status 
+            });
+
         } catch (error) {
             console.error('Error updating order item status:', error);
             res.status(500).json({ success: false, message: 'Failed to update status' });
         }
     },
-};
 
-// Function to generate order ID
-function generateOrderId() {
-    return 'ORD' + Date.now() + Math.floor(Math.random() * 1000);
-}
+    // Function to generate order ID
+    generateOrderId: function() {
+        return 'ORD' + Date.now() + Math.floor(Math.random() * 1000);
+    }
+};
 
 module.exports = orderController;

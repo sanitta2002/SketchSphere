@@ -80,26 +80,78 @@
                                         </div>
 
                                         <!-- Status Section -->
-                                        <div class="status-section mt-4">
-                                            <h6 class="fw-bold mb-3">Status</h6>
+                                        <div class="mb-4">
+                                            <h5 class="mb-3">Order Status</h5>
                                             <div class="d-flex align-items-center gap-3">
                                                 <span class="badge <%= 
                                                     orderItem.status === 'Delivered' ? 'bg-success' : 
                                                     orderItem.status === 'Cancelled' ? 'bg-danger' : 
-                                                    orderItem.status === 'Returned' ? 'bg-warning' : 
-                                                    'bg-warning' %>">
+                                                    orderItem.status === 'Returned' ? 'bg-warning' :
+                                                    orderItem.status === 'Shipped' ? 'bg-info' :
+                                                    orderItem.status === 'Processing' ? 'bg-primary' :
+                                                    'bg-secondary' %>">
                                                     <%= orderItem.status || 'Pending' %>
                                                 </span>
+                                                
                                                 <% if (!['Delivered', 'Cancelled', 'Returned'].includes(orderItem.status)) { %>
-                                                    <div class="d-flex gap-2">
-                                                        <button class="btn btn-outline-primary btn-sm" onclick="confirmReturn()">
-                                                            <i class="fas fa-undo me-1"></i>Return
-                                                        </button>
-                                                        <button class="btn btn-outline-danger btn-sm" onclick="confirmCancel()">
-                                                            <i class="fas fa-times me-1"></i>Cancel
-                                                        </button>
-                                                    </div>
+                                                    <button onclick="confirmCancel()" class="btn btn-sm btn-outline-danger">
+                                                        Cancel Order
+                                                    </button>
                                                 <% } %>
+                                                
+                                                <% if (orderItem.status === 'Delivered') { %>
+                                                    <% if (!orderItem.returnRequested && !orderItem.returnReason) { %>
+                                                        <button onclick="confirmReturn()" class="btn btn-sm btn-outline-primary">
+                                                            Return Item
+                                                        </button>
+                                                    <% } else if (orderItem.returnReason) { %>
+                                                        <div class="text-muted">
+                                                            <small>Return Reason: <%= orderItem.returnReason %></small>
+                                                        </div>
+                                                    <% } %>
+                                                <% } %>
+                                            </div>
+
+                                            <!-- Status Timeline -->
+                                            <div class="mt-4">
+                                                <div class="order-timeline">
+                                                    <% 
+                                                    const statuses = ['Pending', 'Processing', 'Shipped', 'Delivered'];
+                                                    const currentIndex = statuses.indexOf(orderItem.status);
+                                                    const icons = {
+                                                        'Pending': 'clock',
+                                                        'Processing': 'cog',
+                                                        'Shipped': 'truck',
+                                                        'Delivered': 'check-circle'
+                                                    };
+                                                    %>
+                                                    
+                                                    <div class="timeline-progress">
+                                                        <div class="progress-track"></div>
+                                                        <div class="progress-fill" style="width: <%= (currentIndex / (statuses.length - 1)) * 100 %>%"></div>
+                                                    </div>
+
+                                                    <div class="timeline-points">
+                                                        <% statuses.forEach((status, index) => { %>
+                                                            <div class="timeline-point <%= index <= currentIndex ? 'active' : '' %>">
+                                                                <div class="point-icon">
+                                                                    <i class="fas fa-<%= icons[status] %>"></i>
+                                                                </div>
+                                                                <div class="point-label">
+                                                                    <span class="status"><%= status %></span>
+                                                                    <% if (index <= currentIndex) { %>
+                                                                        <span class="date">
+                                                                            <%= new Date().toLocaleDateString('en-US', {
+                                                                                month: 'short',
+                                                                                day: 'numeric'
+                                                                            }) %>
+                                                                        </span>
+                                                                    <% } %>
+                                                                </div>
+                                                            </div>
+                                                        <% }); %>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -120,17 +172,52 @@
 <script>
     function confirmCancel() {
         Swal.fire({
-            title: 'Cancel Order?',
-            text: 'Are you sure you want to cancel this order? This action cannot be undone.',
+            title: 'Cancel Order',
+            text: 'Are you sure you want to cancel this order?',
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#dc3545',
-            cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Yes, Cancel Order',
-            cancelButtonText: 'No, Keep Order'
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, cancel it!',
+            cancelButtonText: 'No, keep it'
         }).then((result) => {
             if (result.isConfirmed) {
-                updateItemStatus('Cancelled');
+                // Get the current URL parameters
+                const urlParams = new URLSearchParams(window.location.search);
+                const orderId = urlParams.get('orderId');
+                const itemId = urlParams.get('itemId');
+
+                // Make the API call
+                fetch(`/update-order-item-status/${orderId}/${itemId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ status: 'Cancelled' })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire({
+                            title: 'Cancelled!',
+                            text: 'Your order has been cancelled successfully.',
+                            icon: 'success',
+                            confirmButtonColor: '#28a745'
+                        }).then(() => {
+                            window.location.reload();
+                        });
+                    } else {
+                        throw new Error(data.message || 'Failed to cancel order');
+                    }
+                })
+                .catch(error => {
+                    Swal.fire({
+                        title: 'Error!',
+                        text: error.message || 'Something went wrong. Please try again.',
+                        icon: 'error',
+                        confirmButtonColor: '#dc3545'
+                    });
+                });
             }
         });
     }
@@ -243,5 +330,121 @@
 </script>
 
 <style>
-    /* ... existing styles ... */
+.order-timeline {
+    position: relative;
+    padding: 20px 0;
+    margin: 30px 0;
+}
+
+.timeline-progress {
+    position: absolute;
+    top: 50px;
+    left: 0;
+    width: 100%;
+    height: 4px;
+}
+
+.progress-track {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-color: #e9ecef;
+    border-radius: 4px;
+}
+
+.progress-fill {
+    position: absolute;
+    width: 0;
+    height: 100%;
+    background-color: #28a745;
+    border-radius: 4px;
+    transition: width 0.5s ease;
+}
+
+.timeline-points {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-top: 20px;
+}
+
+.timeline-point {
+    position: relative;
+    text-align: center;
+    min-width: 80px;
+    z-index: 1;
+}
+
+.point-icon {
+    width: 40px;
+    height: 40px;
+    background: white;
+    border: 2px solid #dee2e6;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 10px;
+    color: #6c757d;
+    transition: all 0.3s ease;
+}
+
+.point-label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.point-label .status {
+    font-weight: 600;
+    color: #495057;
+    font-size: 0.9rem;
+}
+
+.point-label .date {
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+/* Active state */
+.timeline-point.active .point-icon {
+    background: #28a745;
+    border-color: #28a745;
+    color: white;
+    transform: scale(1.1);
+}
+
+.timeline-point.active .status {
+    color: #28a745;
+}
+
+/* Hover effect */
+.timeline-point:hover .point-icon {
+    transform: scale(1.1);
+}
+
+/* Responsive adjustments */
+@media (max-width: 576px) {
+    .timeline-points {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 20px;
+    }
+
+    .timeline-point {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        text-align: left;
+    }
+
+    .point-icon {
+        margin: 0 15px 0 0;
+    }
+
+    .timeline-progress {
+        display: none;
+    }
+}
 </style>

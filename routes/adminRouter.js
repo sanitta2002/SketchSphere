@@ -40,6 +40,6 @@ router.post('/deleteImage',adminAuth,productController.deleteSingleImage)
 // Order Management Routes
 router.get('/orders', adminAuth, orderController.getAllOrders)
 router.get('/order/:orderId', adminAuth, orderController.getOrderDetails)
-router.post('/order/status', adminAuth, orderController.updateOrderStatus)
+router.post('/order/:orderId/item/:itemId/status', adminAuth, orderController.updateOrderItemStatus)
 
 module.exports= router
