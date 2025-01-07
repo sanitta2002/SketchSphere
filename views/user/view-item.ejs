@@ -1,147 +1,105 @@
 <%- include('../layouts/user/header.ejs') %>
 
-<main class="main">
-    <div class="page-header breadcrumb-wrap">
-        <div class="container">
-            <div class="breadcrumb">
-                <a href="/" rel="nofollow">Home</a>
-                <span>/</span> 
-                <a href="/profile#orders">Orders</a>
-                <span>/</span> Item Details
-            </div>
-        </div>
-    </div>
+<style>
+    /* ... existing styles ... */
+</style>
 
-    <section class="mt-50 mb-50">
+<main class="main pb-5 p-5">
+    <!-- Breadcrumb -->
+    <!-- ... existing breadcrumb code ... -->
+
+    <!-- Main Content -->
+    <section class="py-5 mb-5">
         <div class="container">
             <div class="row">
-                <div class="col-lg-10 m-auto">
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <h5 class="mb-0">Order Item Details</h5>
-                                <a href="/profile#orders" class="btn btn-sm btn-outline-secondary">
-                                    <i class="fas fa-arrow-left me-1"></i> Back to Orders
+                <div class="col-lg-10 mx-auto">
+                    <div class="card p-5">
+                        <!-- Header -->
+                        <div class="card-header bg-white border-0 py-3 p-3">
+                            <div class="d-flex justify-content-between align-items-center px-3">
+                                <h5 class="mb-0 fw-bold">Order Item Details</h5>
+                                <a href="/profile#orders" class="btn btn-modern btn-outline-secondary">
+                                    <i class="fas fa-arrow-left me-2"></i>Back
                                 </a>
                             </div>
                         </div>
-                        <div class="card-body">
-                            <div class="row">
+
+                        <!-- Content -->
+                        <div class="card-body p-5">
+                            <div class="row g-4">
                                 <!-- Product Image -->
-                                <div class="col-md-4 mb-4 mb-md-0">
-                                    <div class="product-image-container">
-                                        <img src="<%= orderItem.product.product_img && orderItem.product.product_img.length > 0 ? `/uploads/re-image/${orderItem.product.product_img[0]}` : '/uploads/re-image/default.jpeg' %>" 
+                                <div class="col-md-4">
+                                    <div class="product-image-wrap">
+                                        <img src="<%= orderItem.product.product_img && orderItem.product.product_img.length > 0 ? 
+                                                     `/uploads/re-image/${orderItem.product.product_img[0]}` : 
+                                                     '/uploads/re-image/default.jpeg' %>" 
                                              alt="<%= orderItem.product.name %>"
-                                             class="img-fluid rounded"
+                                             class="img-fluid rounded-3"
                                              onerror="this.src='/uploads/re-image/default.jpeg'">
                                     </div>
                                 </div>
+                            
 
                                 <!-- Product Details -->
                                 <div class="col-md-8">
-                                    <div class="product-details">
-                                        <h4 class="product-title mb-3"><%= orderItem.product.name %></h4>
+                                    <div class="p-4">
+                                        <h4 class="fw-bold mb-4"><%= orderItem.product.name %></h4>
                                         
-                                        <div class="product-meta mb-4">
-                                            <div class="row">
-                                                <div class="col-6 mb-3">
-                                                    <label class="text-muted">Brand</label>
-                                                    <div><%= orderItem.product.brand || 'N/A' %></div>
+                                        <!-- Info Cards -->
+                                        <div class="row g-3">
+                                            <div class="col-6">
+                                                <div class="info-box">
+                                                    <small class="text-muted d-block mb-1">Language</small>
+                                                    <div class="fw-semibold"><%= orderItem.product.language || 'N/A' %></div>
                                                 </div>
-                                                <div class="col-6 mb-3">
-                                                    <label class="text-muted">Category</label>
-                                                    <div><%= orderItem.product.category || 'N/A' %></div>
-                                                </div>
-                                                <div class="col-6 mb-3">
-                                                    <label class="text-muted">Price</label>
-                                                    <div class="product-price">
-                                                        <span class="current-price">₹<%= orderItem.price %></span>
-                                                        <% if (orderItem.product.Sale_price && orderItem.product.Sale_price < orderItem.product.price) { %>
-                                                            <span class="original-price text-decoration-line-through text-muted ms-2">
-                                                                ₹<%= orderItem.product.price %>
-                                                            </span>
-                                                        <% } %>
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="info-box">
+                                                    <small class="text-muted d-block mb-1">Category</small>
+                                                    <div class="fw-semibold">
+                                                        <%= orderItem.product.category_id ? orderItem.product.category_id.name : 'N/A' %>
                                                     </div>
                                                 </div>
-                                                <div class="col-6 mb-3">
-                                                    <label class="text-muted">Quantity</label>
-                                                    <div><%= orderItem.quantity %></div>
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="info-box">
+                                                    <small class="text-muted d-block mb-1">Price</small>
+                                                    <div class="fw-bold text-success fs-5">₹<%= (orderItem.product.Sale_price * orderItem.quantity).toFixed(2) %>
+                                                        <small class="text-muted">
+                                                            (₹<%= orderItem.product.Sale_price.toFixed(2) %> × <%= orderItem.quantity %> items)
+                                                        </small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="info-box">
+                                                    <small class="text-muted d-block mb-1">Quantity</small>
+                                                    <div class="fw-semibold"><%= orderItem.quantity %> items</div>
                                                 </div>
                                             </div>
                                         </div>
 
                                         <!-- Status Section -->
-                                        <div class="order-status mb-4">
-                                            <h6 class="mb-3">Item Status</h6>
-                                            <div class="d-flex align-items-center mb-3">
+                                        <div class="status-section mt-4">
+                                            <h6 class="fw-bold mb-3">Status</h6>
+                                            <div class="d-flex align-items-center gap-3">
                                                 <span class="badge <%= 
                                                     orderItem.status === 'Delivered' ? 'bg-success' : 
                                                     orderItem.status === 'Cancelled' ? 'bg-danger' : 
-                                                    'bg-warning' %> me-3">
+                                                    orderItem.status === 'Returned' ? 'bg-warning' : 
+                                                    'bg-warning' %>">
                                                     <%= orderItem.status || 'Pending' %>
                                                 </span>
-                                                <% if (!['Delivered', 'Cancelled'].includes(orderItem.status)) { %>
-                                                    <div class="dropdown">
-                                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                                            Update Status
+                                                <% if (!['Delivered', 'Cancelled', 'Returned'].includes(orderItem.status)) { %>
+                                                    <div class="d-flex gap-2">
+                                                        <button class="btn btn-outline-primary btn-sm" onclick="confirmReturn()">
+                                                            <i class="fas fa-undo me-1"></i>Return
                                                         </button>
-                                                        <ul class="dropdown-menu">
-                                                            <li><a class="dropdown-item" href="#" onclick="updateItemStatus('Pending')">Pending</a></li>
-                                                            <li><a class="dropdown-item" href="#" onclick="updateItemStatus('Processing')">Processing</a></li>
-                                                            <li><a class="dropdown-item" href="#" onclick="updateItemStatus('Shipped')">Shipped</a></li>
-                                                            <li><a class="dropdown-item" href="#" onclick="updateItemStatus('Delivered')">Delivered</a></li>
-                                                            <li><hr class="dropdown-divider"></li>
-                                                            <li><a class="dropdown-item text-danger" href="#" onclick="updateItemStatus('Cancelled')">Cancel Item</a></li>
-                                                        </ul>
+                                                        <button class="btn btn-outline-danger btn-sm" onclick="confirmCancel()">
+                                                            <i class="fas fa-times me-1"></i>Cancel
+                                                        </button>
                                                     </div>
                                                 <% } %>
-                                            </div>
-                                            <div id="statusTimeline" class="status-timeline">
-                                                <div class="timeline-item <%= orderItem.status === 'Pending' ? 'active' : '' %>">
-                                                    <div class="timeline-point"></div>
-                                                    <div class="timeline-content">Pending</div>
-                                                </div>
-                                                <div class="timeline-item <%= orderItem.status === 'Processing' ? 'active' : '' %>">
-                                                    <div class="timeline-point"></div>
-                                                    <div class="timeline-content">Processing</div>
-                                                </div>
-                                                <div class="timeline-item <%= orderItem.status === 'Shipped' ? 'active' : '' %>">
-                                                    <div class="timeline-point"></div>
-                                                    <div class="timeline-content">Shipped</div>
-                                                </div>
-                                                <div class="timeline-item <%= orderItem.status === 'Delivered' ? 'active' : '' %>">
-                                                    <div class="timeline-point"></div>
-                                                    <div class="timeline-content">Delivered</div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <!-- Order Information -->
-                                        <div class="order-info bg-light p-3 rounded">
-                                            <h6 class="mb-3">Order Information</h6>
-                                            <div class="row g-3">
-                                                <div class="col-sm-6">
-                                                    <label class="text-muted">Order ID</label>
-                                                    <div><%= order.orderId %></div>
-                                                </div>
-                                                <div class="col-sm-6">
-                                                    <label class="text-muted">Order Date</label>
-                                                    <div>
-                                                        <%= new Date(order.createdOn).toLocaleDateString('en-US', {
-                                                            year: 'numeric',
-                                                            month: 'long',
-                                                            day: 'numeric'
-                                                        }) %>
-                                                    </div>
-                                                </div>
-                                                <div class="col-sm-6">
-                                                    <label class="text-muted">Payment Method</label>
-                                                    <div><%= order.paymentMethod %></div>
-                                                </div>
-                                                <div class="col-sm-6">
-                                                    <label class="text-muted">Payment Status</label>
-                                                    <div><%= order.paymentStatus %></div>
-                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -157,137 +115,133 @@
 
 <%- include('../layouts/user/footer.ejs') %>
 
-<style>
-.product-image-container {
-    background: #f8f9fa;
-    padding: 1rem;
-    border-radius: 0.5rem;
-}
-
-.product-title {
-    color: #333;
-    font-weight: 600;
-}
-
-.product-meta label {
-    font-size: 0.875rem;
-    margin-bottom: 0.25rem;
-}
-
-.current-price {
-    color: #198754;
-    font-size: 1.25rem;
-    font-weight: 600;
-}
-
-.original-price {
-    font-size: 1rem;
-}
-
-.status-timeline {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 1.5rem;
-    position: relative;
-    padding: 0 1rem;
-}
-
-.status-timeline::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 2rem;
-    right: 2rem;
-    height: 2px;
-    background: #dee2e6;
-    transform: translateY(-50%);
-    z-index: 1;
-}
-
-.timeline-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    position: relative;
-    z-index: 2;
-}
-
-.timeline-point {
-    width: 1rem;
-    height: 1rem;
-    border-radius: 50%;
-    background: #dee2e6;
-    margin-bottom: 0.5rem;
-}
-
-.timeline-content {
-    font-size: 0.875rem;
-    color: #6c757d;
-    text-align: center;
-}
-
-.timeline-item.active .timeline-point {
-    background: #198754;
-}
-
-.timeline-item.active .timeline-content {
-    color: #198754;
-    font-weight: 600;
-}
-
-.order-info label {
-    font-size: 0.875rem;
-    margin-bottom: 0.25rem;
-}
-</style>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
-async function updateItemStatus(status) {
-    try {
-        const result = await Swal.fire({
-            title: 'Update Status',
-            text: `Are you sure you want to update the status to ${status}?`,
+    function confirmCancel() {
+        Swal.fire({
+            title: 'Cancel Order?',
+            text: 'Are you sure you want to cancel this order? This action cannot be undone.',
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#198754',
+            confirmButtonColor: '#dc3545',
             cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Yes, update it!'
-        });
-
-        if (result.isConfirmed) {
-            const response = await fetch('/update-order-item-status/<%= order._id %>/<%= orderItem._id %>', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ status })
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                await Swal.fire({
-                    icon: 'success',
-                    title: 'Updated!',
-                    text: 'Item status has been updated.',
-                    showConfirmButton: false,
-                    timer: 1500
-                });
-                
-                // Refresh the page to show updated status
-                window.location.reload();
-            } else {
-                throw new Error(data.message || 'Failed to update status');
+            confirmButtonText: 'Yes, Cancel Order',
+            cancelButtonText: 'No, Keep Order'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                updateItemStatus('Cancelled');
             }
-        }
-    } catch (error) {
-        console.error('Error updating status:', error);
-        Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: error.message || 'Failed to update status'
         });
     }
-}
+
+    function confirmReturn() {
+        Swal.fire({
+            title: 'Return Item',
+            html: `
+                <div class="mb-3">
+                    <label class="form-label">Please tell us why you want to return this item:</label>
+                    <select class="form-select mb-3" id="returnReasonSelect">
+                        <option value="">Select a reason</option>
+                        <option value="Damaged Product">Product is damaged</option>
+                        <option value="Wrong Item">Received wrong item</option>
+                        <option value="Not as Described">Item not as described</option>
+                        <option value="Changed Mind">Changed my mind</option>
+                        <option value="Other">Other reason</option>
+                    </select>
+                    <textarea id="returnReasonText" class="form-control" 
+                        placeholder="Please provide additional details..." 
+                        style="display: none;"
+                        rows="3"></textarea>
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonColor: '#0d6efd',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Submit Return Request',
+            cancelButtonText: 'Cancel',
+            didOpen: () => {
+                // Show textarea when "Other" is selected
+                const select = document.getElementById('returnReasonSelect');
+                const textarea = document.getElementById('returnReasonText');
+                select.addEventListener('change', (e) => {
+                    textarea.style.display = e.target.value === 'Other' ? 'block' : 'none';
+                });
+            },
+            preConfirm: () => {
+                const select = document.getElementById('returnReasonSelect');
+                const textarea = document.getElementById('returnReasonText');
+                if (!select.value) {
+                    Swal.showValidationMessage('Please select a reason for return');
+                    return false;
+                }
+                const reason = select.value === 'Other' ? textarea.value : select.value;
+                if (select.value === 'Other' && !textarea.value.trim()) {
+                    Swal.showValidationMessage('Please provide details for other reason');
+                    return false;
+                }
+                return reason;
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                updateItemStatus('Return', result.value);
+            }
+        });
+    }
+
+    function updateItemStatus(status, returnReason = null) {
+        // Get the current URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const orderId = urlParams.get('orderId');
+        const itemId = urlParams.get('itemId');
+
+        // Prepare the request body
+        const body = { status };
+        if (returnReason) {
+            body.returnReason = returnReason;
+        }
+
+        // Make the API call
+        fetch(`/update-order-item-status/${orderId}/${itemId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(body)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                Swal.fire({
+                    title: 'Success!',
+                    text: status === 'Cancelled' ? 
+                          'Order has been cancelled successfully.' : 
+                          'Return request has been submitted successfully. We will review your request.',
+                    icon: 'success',
+                    confirmButtonColor: '#198754'
+                }).then(() => {
+                    window.location.reload();
+                });
+            } else {
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'Something went wrong. Please try again.',
+                    icon: 'error',
+                    confirmButtonColor: '#dc3545'
+                });
+            }
+        })
+        .catch(error => {
+            Swal.fire({
+                title: 'Error!',
+                text: 'Something went wrong. Please try again.',
+                icon: 'error',
+                confirmButtonColor: '#dc3545'
+            });
+        });
+    }
 </script>
+
+<style>
+    /* ... existing styles ... */
+</style>
