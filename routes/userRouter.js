@@ -70,6 +70,8 @@ router.get('/orders', userAuth,orderController.viewOrders);
 router.get('/orderDetails/:orderId', userAuth,orderController.viewOrder);
 router.post('/cancel-order/:orderId', userAuth,orderController.cancelOrder);
 router.get('/orderSuccess/:orderId',userAuth,orderController.orderSuccess);
+router.get('/view-order-item', userAuth, orderController.viewOrderItemDetails);
+router.post('/update-order-item-status/:orderId/:itemId', userAuth, orderController.updateOrderItemStatus);
 
 // Order details API
 router.get('/api/orders/:orderId', orderController.getOrderDetails);

@@ -295,6 +295,90 @@ const orderController = {
             res.status(500).json({ success: false, message: 'Failed to get order details' });
         }
     },
+
+    viewOrderItemDetails: async (req, res) => {
+        try {
+            const { orderId, itemId } = req.query;
+            const userId = req.session.user;
+
+            const order = await Order.findById(orderId)
+                .populate({
+                    path: 'orderedItems.product',
+                    select: 'name product_img description price Sale_price category brand'
+                });
+
+            if (!order) {
+                return res.status(404).render('error', { message: 'Order not found' });
+            }
+
+            if (order.userId.toString() !== userId) {
+                return res.status(403).render('error', { message: 'Unauthorized access' });
+            }
+
+            const orderItem = order.orderedItems.find(item => item._id.toString() === itemId);
+            if (!orderItem) {
+                return res.status(404).render('error', { message: 'Order item not found' });
+            }
+
+            res.render('view-item', {
+                orderItem,
+                order,
+                user: req.session.user
+            });
+
+        } catch (error) {
+            console.error('Error viewing order item:', error);
+            res.status(500).render('error', { message: 'Failed to load order item details' });
+        }
+    },
+
+    updateOrderItemStatus: async (req, res) => {
+        try {
+            const { orderId, itemId } = req.params;
+            const { status } = req.body;
+            const userId = req.session.user;
+
+            // Find the order
+            const order = await Order.findById(orderId);
+            if (!order) {
+                return res.status(404).json({ success: false, message: 'Order not found' });
+            }
+
+            // Verify user authorization
+            if (order.userId.toString() !== userId) {
+                return res.status(403).json({ success: false, message: 'Unauthorized access' });
+            }
+
+            // Find and update the specific item
+            const orderItem = order.orderedItems.id(itemId);
+            if (!orderItem) {
+                return res.status(404).json({ success: false, message: 'Order item not found' });
+            }
+
+            // Update item status
+            orderItem.status = status;
+
+            // If all items have the same status, update order status
+            const allItemsStatus = order.orderedItems.every(item => item.status === status);
+            if (allItemsStatus) {
+                order.status = status;
+            }
+
+            // Save changes
+            await order.save();
+
+            res.json({
+                success: true,
+                message: 'Status updated successfully',
+                newStatus: status,
+                orderStatus: order.status
+            });
+
+        } catch (error) {
+            console.error('Error updating order item status:', error);
+            res.status(500).json({ success: false, message: 'Failed to update status' });
+        }
+    },
 };
 
 // Function to generate order ID

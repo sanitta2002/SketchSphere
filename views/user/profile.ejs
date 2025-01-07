@@ -1,4 +1,3 @@
-
 <%- include('../../Views/layouts/user/header.ejs') %>
 
 <link rel="stylesheet" href="/styles/profile.css">
@@ -808,14 +807,18 @@ async function viewOrderDetails(orderId) {
                 row.innerHTML = `
                     <td>
                         <div class="d-flex align-items-center">
-                            <img src="${productImage}" 
-                                 alt="${item.product.name}" 
-                                 class="rounded-3" 
-                                 width="50" 
-                                 height="50" 
-                                 style="object-fit: cover;"
-                                 onerror="this.src='/uploads/re-image/default.jpeg'">
-                            <span class="ms-3">${item.product.name}</span>
+                            <a href="/view-order-item?orderId=${order._id}&itemId=${item._id}" class="text-decoration-none text-dark">
+                                <div class="d-flex align-items-center">
+                                    <img src="${productImage}" 
+                                         alt="${item.product.name}" 
+                                         class="rounded-3" 
+                                         width="50" 
+                                         height="50" 
+                                         style="object-fit: cover;"
+                                         onerror="this.src='/uploads/re-image/default.jpeg'">
+                                    <span class="ms-3">${item.product.name}</span>
+                                </div>
+                            </a>
                         </div>
                     </td>
                     <td>₹${item.price}</td>
