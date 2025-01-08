@@ -93,8 +93,15 @@
                 <div class="row">
                     <div class="col-lg-3">
                         <p><strong>Subtotal:</strong> ₹<%= order.totalPrice.toFixed(2) %></p>
+                        <% if (order.couponCode) { %>
+                            <p>
+                                <strong>Coupon Applied:</strong> 
+                                <span class="badge bg-success"><%= order.couponCode %></span>
+                            </p>
+                            <p><strong>Discount:</strong> -₹<%= order.discountAmount.toFixed(2) %></p>
+                        <% } %>
                         <p><strong>Shipping:</strong> Free</p>
-                        <p><strong>Total:</strong> ₹<%= order.totalPrice.toFixed(2) %></p>
+                        <p class="fw-bold fs-5"><strong>Final Total:</strong> ₹<%= order.finalAmount.toFixed(2) %></p>
                     </div>
                 </div>
             </div>

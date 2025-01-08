@@ -1,0 +1,150 @@
+<%- include('../../Views/layouts/admin/header.ejs') %>
+<head>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@10/dist/sweetalert2.min.css">
+</head>
+
+<section class="content-main">
+    <% if (typeof successMessage !== 'undefined' && successMessage) { %>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <%= successMessage %>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    <% } %>
+
+    <div class="content-header mb-4">
+        <div class="row align-items-center">
+            <div class="col-auto">
+                <h2 class="content-title">Coupons List</h2>
+            </div>
+            <div class="col">
+                <a href="/admin/coupons/add" class="btn btn-primary float-end">
+                    <i class="fas fa-plus"></i> Add New Coupon
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Coupon Name</th>
+                            <th>Offer Price</th>
+                            <th>Minimum Price</th>
+                            <th>Created On</th>
+                            <th>Expires On</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% if (coupons && coupons.length > 0) { %>
+                            <% coupons.forEach(coupon => { %>
+                                <tr>
+                                    <td>
+                                        <b><%= coupon.name %></b>
+                                    </td>
+                                    <td>₹<%= coupon.offerPrice %></td>
+                                    <td>₹<%= coupon.minimumPrice %></td>
+                                    <td><%= new Date(coupon.createdOn).toLocaleDateString() %></td>
+                                    <td>
+                                        <% 
+                                        const expireDate = new Date(coupon.expireOn);
+                                        const today = new Date();
+                                        const isExpired = expireDate < today;
+                                        %>
+                                        <span class="<%= isExpired ? 'text-danger' : '' %>">
+                                            <%= expireDate.toLocaleDateString() %>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge <%= coupon.isList ? 'bg-success' : 'bg-danger' %>">
+                                            <%= coupon.isList ? 'Active' : 'Inactive' %>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="/admin/coupons/edit/<%= coupon._id %>" 
+                                           class="btn btn-sm btn-outline-dark">
+                                            Edit
+                                        </a>
+                                        <% if(coupon.isList) { %>
+                                            <button class="btn btn-sm btn-outline-danger block-btn" 
+                                                    onclick="toggleCouponStatus('<%= coupon._id %>')">
+                                                Block
+                                            </button>
+                                        <% } else { %>
+                                            <button class="btn btn-sm btn-outline-success unblock-btn" 
+                                                    onclick="toggleCouponStatus('<%= coupon._id %>')">
+                                                Unblock
+                                            </button>
+                                        <% } %>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        <% } else { %>
+                            <tr>
+                                <td colspan="7" class="text-center">No coupons found</td>
+                            </tr>
+                        <% } %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
+<script>
+function toggleCouponStatus(couponId) {
+    Swal.fire({
+        title: 'Are you sure?',
+        text: "This will change the coupon's status!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, change it!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch(`/admin/coupons/toggle/${couponId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: data.message,
+                        showConfirmButton: false,
+                        timer: 1500
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: data.message
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: 'Failed to update coupon status'
+                });
+            });
+        }
+    });
+}
+</script>
+
+<%- include('../../Views/layouts/admin/footer.ejs') %>

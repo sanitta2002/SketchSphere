@@ -1,4 +1,4 @@
-const mongoose = require('mogoose')
+const mongoose = require('mongoose')
 
 const couponSchema=new mongoose.Schema({
     name:{
@@ -28,7 +28,7 @@ const couponSchema=new mongoose.Schema({
         default:true
     },
     userId:{
-        type:Schema.Type.ObjectId,
+        type:mongoose.Schema.Types.ObjectId,
         ref:"User",
     }
 

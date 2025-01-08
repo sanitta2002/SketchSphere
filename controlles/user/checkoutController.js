@@ -1,6 +1,8 @@
 const Cart = require('../../models/cartSchema');
 const Order = require('../../models/orderSchema');
 const Address = require('../../models/addressSchema');
+const Coupon = require('../../models/couponSchema');
+const CouponUsage = require('../../models/couponUsageSchema');
 const mongoose = require('mongoose');
 
 const checkoutController = {
@@ -17,24 +19,129 @@ const checkoutController = {
                 return res.redirect('/cart');
             }
 
-            
-            const totalPrice = cart.items.reduce((total, item) => { // Calculate total price
+            const totalPrice = cart.items.reduce((total, item) => {
                 return total + (item.quantity * item.productId.Sale_price);
             }, 0);
 
-            
-            const userAddress = await Address.findOne({ userId: req.session.user });  // Fetch user addresses
-            const addresses = userAddress ? userAddress.address : []; 
+            const userAddress = await Address.findOne({ userId: req.session.user });
+            const addresses = userAddress ? userAddress.address : [];
 
-            res.render('checkout', { 
-                cart, 
+            // Get used coupons from CouponUsage
+            const usedCoupons = await CouponUsage.distinct('couponCode', { 
+                userId: req.session.user 
+            });
+
+            // Get all active coupons
+            const allActiveCoupons = await Coupon.find({
+                isList: true,
+                expireOn: { $gt: new Date() },
+                minimumPrice: { $lte: totalPrice }
+            });
+
+            // Filter out used coupons
+            const activeCoupons = allActiveCoupons.filter(coupon => 
+                !usedCoupons.includes(coupon.name.toUpperCase())
+            );
+
+            res.render('checkout', {
+                cart,
                 addresses,
                 totalPrice,
+                activeCoupons,
                 pageTitle: 'Checkout'
             });
         } catch (error) {
             console.error('Error loading checkout:', error);
             res.status(500).render('error', { error: 'Failed to load checkout page' });
+        }
+    },
+
+    applyCoupon: async (req, res) => {
+        try {
+            const { couponCode, totalAmount } = req.body;
+            const userId = req.session.user;
+
+            // Check if user already has an active coupon in their current checkout session
+            if (req.session.appliedCoupon) {
+                return res.json({
+                    success: false,
+                    message: 'A coupon is already applied. Please remove it first to apply a different coupon.'
+                });
+            }
+
+            const coupon = await Coupon.findOne({
+                name: couponCode.toUpperCase(),
+                isList: true,
+                expireOn: { $gt: new Date() }
+            });
+
+            if (!coupon) {
+                return res.json({
+                    success: false,
+                    message: 'Invalid or expired coupon code'
+                });
+            }
+
+            if (totalAmount < coupon.minimumPrice) {
+                return res.json({
+                    success: false,
+                    message: `Minimum purchase amount of ₹${coupon.minimumPrice} required`
+                });
+            }
+
+            // Check if coupon has been used before
+            const couponUsage = await CouponUsage.findOne({
+                userId,
+                couponCode: couponCode.toUpperCase()
+            });
+
+            if (couponUsage) {
+                return res.json({
+                    success: false,
+                    message: 'You have already used this coupon before'
+                });
+            }
+
+            const discount = Math.min(coupon.offerPrice, totalAmount);
+
+            // Store the applied coupon in session
+            req.session.appliedCoupon = {
+                code: coupon.name,
+                discount: discount,
+                couponId: coupon._id
+            };
+
+            return res.json({
+                success: true,
+                message: 'Coupon applied successfully!',
+                discount,
+                couponId: coupon._id
+            });
+
+        } catch (error) {
+            console.error('Error applying coupon:', error);
+            return res.json({
+                success: false,
+                message: 'Failed to apply coupon'
+            });
+        }
+    },
+
+    removeCoupon: async (req, res) => {
+        try {
+            // Remove the applied coupon from session
+            delete req.session.appliedCoupon;
+            
+            return res.json({
+                success: true,
+                message: 'Coupon removed successfully'
+            });
+        } catch (error) {
+            console.error('Error removing coupon:', error);
+            return res.json({
+                success: false,
+                message: 'Failed to remove coupon'
+            });
         }
     },
 
@@ -44,24 +151,15 @@ const checkoutController = {
                 return res.status(401).json({ success: false, message: 'Please login first' });
             }
 
-            const { addressId, paymentMethod } = req.body;
-            console.log('Placing order with:', {
-                userId: req.session.user,
-                addressId,
-                paymentMethod
-            });
+            const { addressId, paymentMethod, finalAmount } = req.body;
 
-            
-            const address = await Address.findOne({ userId: req.session.user });// Find user address document
+            const address = await Address.findOne({ userId: req.session.user });
             if (!address) {
-                console.error('No address found for user:', req.session.user);
                 return res.status(400).json({ success: false, message: 'No address found' });
             }
 
-            
-            const selectedAddress = address.address.find(addr => addr._id.toString() === addressId); // Find the specific address from the array
+            const selectedAddress = address.address.find(addr => addr._id.toString() === addressId);
             if (!selectedAddress) {
-                console.error('Selected address not found:', addressId);
                 return res.status(400).json({ success: false, message: 'Selected address not found' });
             }
 
@@ -69,35 +167,46 @@ const checkoutController = {
                 .populate('items.productId');
 
             if (!cart || !cart.items || cart.items.length === 0) {
-                console.error('Cart is empty for user:', req.session.user);
                 return res.status(400).json({ success: false, message: 'Cart is empty' });
             }
 
-            
-            const orderedItems = cart.items.map(item => ({    // Create order items
+            const orderedItems = cart.items.map(item => ({
                 product: item.productId._id,
                 quantity: item.quantity,
                 price: item.productId.Sale_price
             }));
 
-            // Calculate total price
             const totalPrice = orderedItems.reduce((total, item) => {
                 return total + (item.quantity * item.price);
             }, 0);
 
-            // Convert string ID to ObjectId
+            let discountAmount = 0;
+            let appliedCoupon = null;
+            if (req.session.appliedCoupon) {
+                const coupon = await Coupon.findById(req.session.appliedCoupon.couponId);
+                if (coupon && totalPrice >= coupon.minimumPrice) {
+                    discountAmount = Math.min(coupon.offerPrice, totalPrice);
+                    appliedCoupon = req.session.appliedCoupon.code;
+
+                    // Record coupon usage
+                    await new CouponUsage({
+                        userId: req.session.user,
+                        couponCode: appliedCoupon
+                    }).save();
+                }
+            }
+
             const userId = new mongoose.Types.ObjectId(req.session.user);
 
             // Update product quantities
             for (const item of cart.items) {
                 const product = item.productId;
-                console.log('this is product',product )
                 const newQuantity = product.available_quantity - item.quantity;
                 
                 if (newQuantity < 0) {
-                    return res.status(400).json({ 
-                        success: false, 
-                        message: `Not enough stock available for ${product.name}` 
+                    return res.status(400).json({
+                        success: false,
+                        message: `Not enough stock available for ${product.name}`
                     });
                 }
                 
@@ -107,12 +216,13 @@ const checkoutController = {
                 );
             }
 
-            // Create new order
             const order = new Order({
-                userId: userId,
+                userId,
                 orderedItems,
                 totalPrice,
-                finalAmount: totalPrice,
+                discountAmount,
+                finalAmount: finalAmount || (totalPrice - discountAmount),
+                couponCode: appliedCoupon,
                 address: {
                     addressType: selectedAddress.addressType,
                     name: selectedAddress.name,
@@ -128,36 +238,19 @@ const checkoutController = {
                 paymentStatus: paymentMethod === 'COD' ? 'Pending' : 'Processing'
             });
 
-            console.log('Saving order:', {
-                userId: order.userId.toString(),
-                totalPrice: order.totalPrice,
-                address: order.address,
-                items: order.orderedItems.length,
-                status: order.status,
-                paymentMethod: order.paymentMethod,
-                paymentStatus: order.paymentStatus
-            });
-
-            // Save the order
             const savedOrder = await order.save();
-            console.log('Order saved successfully with ID:', savedOrder._id);
-
-            // Verify the order was saved
-            const verifyOrder = await Order.findById(savedOrder._id);
-            if (!verifyOrder) {
-                console.error('Failed to verify saved order');
-                throw new Error('Order verification failed');
+            if (!savedOrder) {
+                throw new Error('Failed to save order');
             }
-            console.log('Order verified in database');
 
-            // Clear cart
             cart.items = [];
             await cart.save();
-            console.log('Cart cleared successfully');
 
-            // Return success with redirect URL
-            res.json({ 
-                success: true, 
+            // Clear the applied coupon from session
+            delete req.session.appliedCoupon;
+
+            res.json({
+                success: true,
                 message: 'Order placed successfully',
                 redirectUrl: '/orders'
             });

@@ -17,7 +17,9 @@
                             <th>Order ID</th>
                             <th>Customer</th>
                             <th>Date</th>
-                            <th>Total Amount</th>
+                            <th>Amount</th>
+                            <th>Discount</th>
+                            <th>Final Amount</th>
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
@@ -29,6 +31,15 @@
                                 <td><%= order.userId ? order.userId.name : 'Unknown' %></td>
                                 <td><%= new Date(order.createdOn).toLocaleDateString() %></td>
                                 <td>₹<%= order.totalPrice.toFixed(2) %></td>
+                                <td>
+                                    <% if (order.couponCode) { %>
+                                        -₹<%= order.discountAmount.toFixed(2) %>
+                                        <small class="text-muted d-block"><%= order.couponCode %></small>
+                                    <% } else { %>
+                                        -
+                                    <% } %>
+                                </td>
+                                <td class="fw-bold">₹<%= order.finalAmount.toFixed(2) %></td>
                                 <td>
                                     <% 
                                     let orderStatus;

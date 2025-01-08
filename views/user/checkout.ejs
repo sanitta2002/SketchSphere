@@ -141,6 +141,44 @@
                                 <span class="text-muted">Subtotal</span>
                                 <span class="fw-bold">₹<%= totalPrice %></span>
                             </div>
+                            
+                            <!-- Coupon Section -->
+                            <div class="coupon-section mb-3">
+                                <div class="input-group">
+                                    <select class="form-select" id="couponCode">
+                                        <option value="">Select a coupon</option>
+                                        <% if (activeCoupons && activeCoupons.length > 0) { %>
+                                            <% activeCoupons.forEach(coupon => { %>
+                                                <option value="<%= coupon.name %>">
+                                                    <%= coupon.name %> - Save ₹<%= coupon.offerPrice %> (Min: ₹<%= coupon.minimumPrice %>)
+                                                </option>
+                                            <% }); %>
+                                        <% } %>
+                                    </select>
+                                    <button class="btn btn-outline-dark" type="button" onclick="applyCoupon()" id="applyCouponBtn">Apply</button>
+                                    <button class="btn btn-outline-danger d-none" type="button" onclick="removeCoupon()" id="removeCouponBtn">Remove</button>
+                                </div>
+                                <div id="couponMessage" class="small mt-2"></div>
+                                
+                                <% if (activeCoupons && activeCoupons.length > 0) { %>
+                                    <div class="mt-2">
+                                        <small class="text-muted">
+                                            Available coupons: <%= activeCoupons.length %>
+                                            <i class="fas fa-info-circle ms-1" data-bs-toggle="tooltip" data-bs-placement="top" 
+                                               title="Select a coupon from the dropdown to apply discount"></i>
+                                        </small>
+                                    </div>
+                                <% } %>
+                            </div>
+
+                            <!-- Coupon Discount -->
+                            <div id="couponDiscount" class="d-none">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-success">Coupon Discount</span>
+                                    <span class="text-success">-₹<span id="discountAmount">0</span></span>
+                                </div>
+                            </div>
+
                             <div class="d-flex justify-content-between mb-2">
                                 <span class="text-muted">Shipping</span>
                                 <span class="text-success">Free</span>
@@ -148,7 +186,7 @@
                             <hr class="my-3">
                             <div class="d-flex justify-content-between mb-4">
                                 <span class="fw-bold">Total</span>
-                                <span class="fw-bold fs-5">₹<%= totalPrice %></span>
+                                <span class="fw-bold fs-5">₹<span id="finalPrice"><%= totalPrice %></span></span>
                             </div>
 
                             <!-- Place Order Button -->
@@ -485,6 +523,10 @@ async function placeOrder() {
             return;
         }
 
+        // Get coupon code
+        const couponCode = document.getElementById('couponCode')?.value || '';
+        const finalPrice = document.getElementById('finalPrice').textContent;
+
         // Show loading state
         const orderBtn = document.querySelector('.btn-dark');
         orderBtn.disabled = true;
@@ -498,7 +540,9 @@ async function placeOrder() {
             },
             body: JSON.stringify({
                 addressId: selectedAddressInput.value,
-                paymentMethod: selectedPaymentInput.value
+                paymentMethod: selectedPaymentInput.value,
+                couponCode: couponCode,
+                finalAmount: parseFloat(finalPrice)
             })
         });
 
@@ -605,6 +649,100 @@ async function updateAddress() {
     }
 }
 
+async function applyCoupon() {
+    const select = document.getElementById('couponCode');
+    const couponCode = select.value.trim();
+    const totalAmount = <%= totalPrice %>;
+    
+    if (!couponCode) {
+        showCouponMessage('Please select a coupon', 'text-danger');
+        return;
+    }
+
+    try {
+        const response = await fetch('/apply-coupon', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ 
+                couponCode: couponCode,
+                totalAmount: totalAmount
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            // Show discount section
+            document.getElementById('couponDiscount').classList.remove('d-none');
+            document.getElementById('discountAmount').textContent = data.discount;
+            
+            // Update final price
+            const finalPrice = totalAmount - data.discount;
+            document.getElementById('finalPrice').textContent = finalPrice;
+            
+            // Show success message
+            showCouponMessage(data.message, 'text-success');
+            
+            // Update UI for applied coupon
+            select.disabled = true;
+            document.getElementById('applyCouponBtn').classList.add('d-none');
+            document.getElementById('removeCouponBtn').classList.remove('d-none');
+        } else {
+            showCouponMessage(data.message, 'text-danger');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showCouponMessage('Failed to apply coupon. Please try again.', 'text-danger');
+    }
+}
+
+async function removeCoupon() {
+    try {
+        const response = await fetch('/remove-coupon', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            // Hide discount section
+            document.getElementById('couponDiscount').classList.add('d-none');
+            document.getElementById('discountAmount').textContent = '0';
+            
+            // Reset final price
+            document.getElementById('finalPrice').textContent = <%= totalPrice %>;
+            
+            // Reset coupon select
+            const select = document.getElementById('couponCode');
+            select.value = '';
+            select.disabled = false;
+            
+            // Reset buttons
+            document.getElementById('applyCouponBtn').classList.remove('d-none');
+            document.getElementById('removeCouponBtn').classList.add('d-none');
+            
+            // Clear message
+            document.getElementById('couponMessage').textContent = '';
+        } else {
+            showCouponMessage(data.message, 'text-danger');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showCouponMessage('Failed to remove coupon. Please try again.', 'text-danger');
+    }
+}
+
+function showCouponMessage(message, className) {
+    const messageDiv = document.getElementById('couponMessage');
+    messageDiv.textContent = message;
+    messageDiv.className = 'small mt-2 ' + className;
+}
+
 // Form validation on input
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('editAddressForm');
@@ -623,6 +761,14 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
+});
+
+// Initialize tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
 });
 </script>
 

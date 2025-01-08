@@ -62,8 +62,10 @@ router.post('/update-cart', userAuth,cartController.updateCart);
 router.post('/remove-from-cart', userAuth,cartController.removeFromCart);
 
 // Checkout routes
-router.get('/checkout', userAuth,checkoutController.loadCheckout);
-router.post('/place-order', userAuth,checkoutController.placeOrder);
+router.get('/checkout', userAuth, checkoutController.loadCheckout);
+router.post('/place-order', userAuth, checkoutController.placeOrder);
+router.post('/apply-coupon', userAuth, checkoutController.applyCoupon);
+router.post('/remove-coupon', userAuth, checkoutController.removeCoupon);
 
 // Order routes
 router.get('/orders', userAuth,orderController.viewOrders);
