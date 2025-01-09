@@ -13,164 +13,147 @@ const orderController = {
             }
 
             console.log('Loading orders for user:', req.session.user);
-            
-            
-            const userId = new mongoose.Types.ObjectId(req.session.user);// Convert string id to ObjectId
+            const userId = new mongoose.Types.ObjectId(req.session.user);
             console.log('Converted user ID to ObjectId:', userId.toString());
 
-           
-            const orders = await Order.find({ userId: userId }) // Show regular orders list with populated fields
+            const orders = await Order.find({ userId: userId })
                 .populate({
                     path: 'orderedItems.product',
+                    model: 'Product',
                     select: 'name product_img Sale_price'
-                })
-                .populate({
-                    path: 'address',
-                    select: 'name street city state pincode mobile'
                 })
                 .sort({ createdOn: -1 });
 
-            // Get the latest order for success page
-            const latestOrder = orders[0];
+            console.log('Found orders:', orders.map(order => ({
+                id: order._id,
+                items: order.orderedItems.length,
+                total: order.finalAmount
+            })));
 
-            if (latestOrder) {
-                console.log('Latest order:', {
-                    id: latestOrder._id,
-                    address: latestOrder.address,
-                    items: latestOrder.orderedItems
-                });
-
-                // Render order success page - latest order
-                res.render('orderSuccess', {
-                    order: latestOrder,
-                    user: req.session.user,
-                    pageTitle: 'Order Successful'
-                });
-            } else {
-                // If no orders redirect to orders page
-                res.redirect('/orders');
-            }
+            res.render('orders', {
+                orders,
+                user: req.session.user,
+                pageTitle: 'My Orders'
+            });
         } catch (error) {
             console.error('Error viewing orders:', error);
-            res.redirect('/');
+            res.status(500).render('error', {
+                error: 'Failed to load orders'
+            });
         }
     },
 
     // View single order details
     viewOrder: async (req, res) => {
         try {
-            if (!req.session.user) {
-                return res.redirect('/login');
-            }
-
             const orderId = req.params.orderId;
-            console.log('Looking for order:', orderId);
+            console.log('Loading order details for:', orderId);
 
-            const userId = new mongoose.Types.ObjectId(req.session.user);
-
-            const order = await Order.findOne({ 
-                _id: orderId,
-                userId: userId
-            })
-            .populate({
-                path: 'orderedItems.product',
-                select: 'name product_img description price Sale_price category_id language brand',
-                populate: {
-                    path: 'category_id',
-                    select: 'name'
-                }
-            });
-
-            console.log('Found order:', order ? {
-                id: order._id.toString(),
-                status: order.status,
-                items: order.orderedItems.length,
-                hasProducts: order.orderedItems.every(item => item.product)
-            } : 'No order found');
+            const order = await Order.findById(orderId)
+                .populate({
+                    path: 'orderedItems.product',
+                    model: 'Product',
+                    select: 'name product_img Sale_price'
+                });
 
             if (!order) {
-                return res.redirect('/orders');
+                console.log('Order not found:', orderId);
+                return res.status(404).render('error', {
+                    error: 'Order not found'
+                });
             }
 
-            // Filter out any null products and provide default values
-            order.orderedItems = order.orderedItems.map(item => ({
-                ...item,
-                product: item.product || {
-                    name: 'Product Unavailable',
-                    product_img: ['default.jpeg'],
-                    Sale_price: item.price
-                }
-            }));
-
-            // Get address details
-            const userAddresses = await Address.findOne({ userId: userId });
-            let orderAddress = null;
-            
-            if (userAddresses && userAddresses.address) {
-                orderAddress = userAddresses.address.find(addr => addr._id.toString() === order.address.toString());
-                console.log('Found address:', orderAddress ? {
-                    id: orderAddress._id.toString(),
-                    name: orderAddress.name,
-                    city: orderAddress.city
-                } : 'No matching address found');
-            }
+            console.log('Found order:', {
+                id: order._id,
+                items: order.orderedItems.length,
+                total: order.finalAmount
+            });
 
             res.render('orderDetails', {
                 order,
-                orderAddress,
-                pageTitle: 'Order Details',
-                user: req.session.user
+                user: req.session.user,
+                pageTitle: 'Order Details'
             });
         } catch (error) {
-            console.error('Error viewing order:', error);
-            res.redirect('/orders');
+            console.error('Error viewing order details:', error);
+            res.status(500).render('error', {
+                error: 'Failed to load order details'
+            });
+        }
+    },
+
+    // Order success page
+    orderSuccess: async (req, res) => {
+        try {
+            const orderId = req.params.orderId;
+            console.log('Loading order success page for:', orderId);
+
+            const order = await Order.findById(orderId)
+                .populate({
+                    path: 'orderedItems.product',
+                    model: 'Product',
+                    select: 'name product_img Sale_price'
+                });
+
+            if (!order) {
+                console.log('Order not found:', orderId);
+                return res.status(404).render('error', {
+                    error: 'Order not found'
+                });
+            }
+
+            console.log('Found order for success page:', {
+                id: order._id,
+                items: order.orderedItems.length,
+                total: order.finalAmount
+            });
+
+            res.render('orderSuccess', {
+                order,
+                user: req.session.user,
+                pageTitle: 'Order Successful'
+            });
+        } catch (error) {
+            console.error('Error loading order success page:', error);
+            res.status(500).render('error', {
+                error: 'Failed to load order success page'
+            });
         }
     },
 
     // Cancel order
     cancelOrder: async (req, res) => {
         try {
-            if (!req.session.user) {
-                return res.status(401).json({ success: false, message: 'Please login first' });
-            }
-
             const orderId = req.params.orderId;
-            const userId = new mongoose.Types.ObjectId(req.session.user);
+            console.log('Cancelling order:', orderId);
 
-            const order = await Order.findOne({ 
-                _id: orderId,
-                userId: userId
-            });
-
-            console.log(order)
-            //update quantity
-            for(item of order.orderedItems){
-                await Product.findOneAndUpdate(
-                    {_id:item.product},
-                    {$inc:{available_quantity : item.quantity}}
-                )
-               
-            }
-
-
+            const order = await Order.findById(orderId);
             if (!order) {
-                return res.status(404).json({ success: false, message: 'Order not found' });
-            }
-
-            if (!['Pending', 'Processing'].includes(order.status)) {
-                return res.status(400).json({ 
-                    success: false, 
-                    message: 'Order cannot be cancelled at this stage' 
+                return res.status(404).json({
+                    success: false,
+                    message: 'Order not found'
                 });
             }
 
+            // Update order status
             order.status = 'Cancelled';
-            await order.save();
+            order.orderedItems.forEach(item => {
+                item.status = 'Cancelled';
+            });
 
-            res.json({ success: true, message: 'Order cancelled successfully' });
+            await order.save();
+            console.log('Order cancelled successfully:', orderId);
+
+            res.json({
+                success: true,
+                message: 'Order cancelled successfully'
+            });
         } catch (error) {
             console.error('Error cancelling order:', error);
-            res.status(500).json({ success: false, message: 'Failed to cancel order' });
+            res.status(500).json({
+                success: false,
+                message: 'Failed to cancel order'
+            });
         }
     },
 
@@ -178,6 +161,7 @@ const orderController = {
         try {
             const userId = req.session.user;
             const { addressId, paymentMethod } = req.body;
+            console.log('this is payment method',paymentMethod)
 
             // Validate address
             const address = await Address.findById(addressId);
@@ -233,43 +217,6 @@ const orderController = {
         } catch (error) {
             console.error('Error placing order:', error);
             res.status(500).json({ success: false, message: 'Failed to place order' });
-        }
-    },
-
-    orderSuccess: async (req, res) => {
-        try {
-            const orderId = req.params.orderId;
-            
-            // Get order with populated fields
-            const order = await Order.findById(orderId)
-                .populate({
-                    path: 'orderedItems.product',
-                    select: 'name product_img description price Sale_price category_id language brand',
-                    populate: {
-                        path: 'category_id',
-                        select: 'name'
-                    }
-                })
-                .populate('address'); // Populate the address field
-
-            if (!order) {
-                return res.status(404).redirect('/404');
-            }
-
-            // Log for debugging
-            console.log('Order:', {
-                id: order._id,
-                address: order.address,
-                items: order.orderedItems.length
-            });
-
-            res.render('user/orderSuccess', {
-                order: order,
-                address: order.address
-            });
-        } catch (error) {
-            console.error('Error in order success:', error);
-            res.status(500).json({ success: false, message: 'Failed to load order success page' });
         }
     },
 

@@ -9,7 +9,7 @@ const orderController=require('../controlles/user/orderController')
 const wishlistController=require('../controlles/user/wishlistController')
 const {userAuth}=require('../middleware/auth')
 const passport = require('passport')
-
+const paymentController = require('../controlles/user/paymentController')
 
 
 router.get('/pageNotFound',userController.pageNotFound)
@@ -85,7 +85,9 @@ router.post('/update-order-item-status/:orderId/:itemId', userAuth, orderControl
 // Order details API
 router.get('/api/orders/:orderId', orderController.getOrderDetails);
 
-
+// Payment routes
+router.post('/create-razorpay-order', userAuth, paymentController.createOrder);
+router.post('/verify-payment', userAuth, paymentController.verifyPayment);
 
 // Add this line after other routes
 router.get('/api/search-products', userController.searchProducts);

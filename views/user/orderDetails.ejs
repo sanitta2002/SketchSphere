@@ -1,0 +1,174 @@
+<%- include('../layouts/user/header.ejs') %>
+
+<div class="container-fluid py-5">
+    <div class="container pt-5">
+        <div class="mb-4">
+            <h2>Order Details</h2>
+            <p class="text-muted">Order #<%= order._id.toString().slice(-6) %></p>
+        </div>
+
+        <div class="row">
+            <!-- Order Items -->
+            <div class="col-lg-8">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4">Items</h5>
+                        
+                        <% order.orderedItems.forEach(item => { %>
+                            <div class="d-flex align-items-center mb-3 pb-3 border-bottom">
+                                <img src="/uploads/products/<%= item.product.product_img[0] %>" 
+                                     alt="<%= item.product.name %>"
+                                     class="img-thumbnail me-3"
+                                     style="width: 80px; height: 80px; object-fit: cover;">
+                                
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1"><%= item.product.name %></h6>
+                                    <p class="mb-1 text-muted">
+                                        Quantity: <%= item.quantity %>
+                                    </p>
+                                    <p class="mb-0">
+                                        Price: ₹<%= item.price %>
+                                    </p>
+                                </div>
+
+                                <div class="text-end">
+                                    <p class="mb-1 fw-bold">
+                                        ₹<%= item.quantity * item.price %>
+                                    </p>
+                                    <span class="badge bg-<%= 
+                                        item.status === 'Delivered' ? 'success' : 
+                                        item.status === 'Cancelled' ? 'danger' : 
+                                        'warning' %>">
+                                        <%= item.status %>
+                                    </span>
+                                </div>
+                            </div>
+                        <% }); %>
+
+                        <!-- Price Details -->
+                        <div class="mt-4">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted">Subtotal</span>
+                                <span>₹<%= order.totalPrice %></span>
+                            </div>
+                            <% if (order.totalPrice !== order.finalAmount) { %>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="text-success">Discount</span>
+                                    <span class="text-success">-₹<%= order.totalPrice - order.finalAmount %></span>
+                                </div>
+                            <% } %>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted">Shipping</span>
+                                <span class="text-success">Free</span>
+                            </div>
+                            <hr>
+                            <div class="d-flex justify-content-between">
+                                <span class="fw-bold">Total</span>
+                                <span class="fw-bold">₹<%= order.finalAmount %></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order Info -->
+            <div class="col-lg-4">
+                <!-- Order Status -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4">Order Status</h5>
+                        <div class="d-flex justify-content-between mb-3">
+                            <span>Order Status</span>
+                            <span class="badge bg-<%= 
+                                order.status === 'Delivered' ? 'success' : 
+                                order.status === 'Cancelled' ? 'danger' : 
+                                'warning' %>">
+                                <%= order.status %>
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-3">
+                            <span>Payment Method</span>
+                            <span class="text-capitalize"><%= order.paymentMethod %></span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Payment Status</span>
+                            <span class="badge bg-<%= 
+                                order.paymentStatus === 'Paid' ? 'success' : 
+                                order.paymentStatus === 'Failed' ? 'danger' : 
+                                'warning' %>">
+                                <%= order.paymentStatus %>
+                            </span>
+                        </div>
+
+                        <% if (order.status === 'Pending' || order.status === 'Processing') { %>
+                            <button onclick="cancelOrder('<%= order._id %>')" 
+                                    class="btn btn-outline-danger w-100 mt-4">
+                                Cancel Order
+                            </button>
+                        <% } %>
+                    </div>
+                </div>
+
+                <!-- Delivery Address -->
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4">Delivery Address</h5>
+                        <h6 class="mb-2"><%= order.address.name %></h6>
+                        <p class="mb-1"><%= order.address.street %></p>
+                        <p class="mb-1"><%= order.address.city %>, <%= order.address.state %></p>
+                        <p class="mb-1">PIN: <%= order.address.pincode %></p>
+                        <p class="mb-0">Phone: <%= order.address.mobile %></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function cancelOrder(orderId) {
+    try {
+        const result = await Swal.fire({
+            title: 'Cancel Order?',
+            text: "Are you sure you want to cancel this order?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Yes, cancel it!'
+        });
+
+        if (result.isConfirmed) {
+            const response = await fetch(`/order/${orderId}/cancel`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                Swal.fire(
+                    'Cancelled!',
+                    'Your order has been cancelled.',
+                    'success'
+                ).then(() => {
+                    window.location.reload();
+                });
+            } else {
+                throw new Error(data.message);
+            }
+        }
+    } catch (error) {
+        console.error('Error cancelling order:', error);
+        Swal.fire(
+            'Error!',
+            error.message || 'Failed to cancel order',
+            'error'
+        );
+    }
+}
+</script>
+
+<%- include('../layouts/user/footer.ejs') %>
