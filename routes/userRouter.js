@@ -78,7 +78,7 @@ router.post('/remove-coupon', userAuth, checkoutController.removeCoupon);
 router.get('/orders', userAuth,orderController.viewOrders);
 router.get('/orderDetails/:orderId', userAuth,orderController.viewOrder);
 router.post('/cancel-order/:orderId', userAuth,orderController.cancelOrder);
-router.get('/orderSuccess/:orderId',userAuth,orderController.orderSuccess);
+router.get('/orderSuccess',userAuth,orderController.orderSuccess);
 router.get('/view-order-item', userAuth, orderController.viewOrderItemDetails);
 router.post('/update-order-item-status/:orderId/:itemId', userAuth, orderController.updateOrderItemStatus);
 

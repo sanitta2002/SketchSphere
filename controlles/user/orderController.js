@@ -85,7 +85,7 @@ const orderController = {
     // Order success page
     orderSuccess: async (req, res) => {
         try {
-            const orderId = req.params.orderId;
+            const orderId = req.query.orderId;
             console.log('Loading order success page for:', orderId);
 
             const order = await Order.findById(orderId)

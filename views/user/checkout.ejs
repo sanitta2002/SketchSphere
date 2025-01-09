@@ -635,7 +635,7 @@ async function placeOrder() {
                                 text: 'Your payment has been verified.',
                                 showConfirmButton: true
                             }).then(() => {
-                                window.location.href = `/orderSuccess/${orderResult.orderId}`;
+                                window.location.href = `/orderSuccess?orderId=${orderResult.orderId}`;
                             });
 
                         } catch (error) {
@@ -645,6 +645,9 @@ async function placeOrder() {
                                 title: 'Payment Failed',
                                 text: error.message || 'Failed to process payment'
                             });
+                            // Reset button state
+                            orderBtn.disabled = false;
+                            orderBtn.innerHTML = 'Place Order';
                         }
                     },
                     prefill: {
@@ -693,7 +696,7 @@ async function placeOrder() {
                 const result = await response.json();
                 
                 if (result.success) {
-                    window.location.href = `/order-success/${result.orderId}`;
+                    window.location.href = `/orderSuccess?orderId=${result.orderId}`;
                 } else {
                     throw new Error(result.message);
                 }
