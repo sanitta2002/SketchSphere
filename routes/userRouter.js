@@ -11,6 +11,7 @@ const {userAuth}=require('../middleware/auth')
 const passport = require('passport')
 
 
+
 router.get('/pageNotFound',userController.pageNotFound)
 router.get('/',userController.loadHomepage)
 
@@ -83,6 +84,8 @@ router.post('/update-order-item-status/:orderId/:itemId', userAuth, orderControl
 
 // Order details API
 router.get('/api/orders/:orderId', orderController.getOrderDetails);
+
+
 
 // Add this line after other routes
 router.get('/api/search-products', userController.searchProducts);
