@@ -6,6 +6,7 @@ const addressController=require('../controlles/user/addressController')
 const cartController=require('../controlles/user/cartController')
 const checkoutController=require('../controlles/user/checkoutController')
 const orderController=require('../controlles/user/orderController')
+const wishlistController=require('../controlles/user/wishlistController')
 const {userAuth}=require('../middleware/auth')
 const passport = require('passport')
 
@@ -60,6 +61,11 @@ router.get('/cart', userAuth,cartController.loadCart);
 router.post('/add-to-cart', userAuth,cartController.addToCart);
 router.post('/update-cart', userAuth,cartController.updateCart);
 router.post('/remove-from-cart', userAuth,cartController.removeFromCart);
+
+// Wishlist routes
+router.get('/wishlist', userAuth, wishlistController.loadWishlist);
+router.post('/toggle-wishlist', userAuth, wishlistController.toggleWishlist);
+router.get('/wishlist-status/:productId', wishlistController.getWishlistStatus);
 
 // Checkout routes
 router.get('/checkout', userAuth, checkoutController.loadCheckout);

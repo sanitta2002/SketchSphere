@@ -47,7 +47,7 @@ const userschema=new Schema({
     },
     wishlist:[{
         type: Schema.Types.ObjectId,
-        ref:"Wishlist"
+        ref:"Product"
     }],
     orderHistory:[{
         type: Schema.Types.ObjectId,

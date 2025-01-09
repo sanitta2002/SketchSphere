@@ -80,10 +80,53 @@
         max-width: 50%;
     }
 
+    .product-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 15px;
+    }
+
     .product-title {
         font-size: 28px;
-        margin-bottom: 15px;
         color: #333;
+        margin: 0;
+        flex: 1;
+        padding-right: 20px;
+    }
+
+    .wishlist-btn {
+        background: none;
+        border: none;
+        padding: 10px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        background: #f8f9fa;
+    }
+
+    .wishlist-btn:hover {
+        background: #f1f1f1;
+        transform: scale(1.05);
+    }
+
+    .wishlist-btn i {
+        font-size: 20px;
+        color: #333;
+        transition: all 0.3s ease;
+    }
+
+    .wishlist-btn.active i {
+        color: #ff4444;
+    }
+
+    .wishlist-btn:hover i {
+        transform: scale(1.1);
     }
 
     .product-brand {
@@ -325,7 +368,12 @@
 
         <!-- Product Info Section -->
         <div class="product-info">
-            <h1 class="product-title"><%= product.name %></h1>
+            <div class="product-header">
+                <h1 class="product-title"><%= product.name %></h1>
+                <button class="wishlist-btn" onclick="toggleWishlist(this, '<%= product._id %>')">
+                    <i class="far fa-heart"></i>
+                </button>
+            </div>
             
             <div class="product-brand">
                 <% if (product.writer) { %>
@@ -573,6 +621,78 @@
             });
         }
     }
+
+    // Add this function for wishlist functionality
+    async function toggleWishlist(button, productId) {
+        try {
+            const response = await fetch('/toggle-wishlist', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    productId: productId
+                })
+            });
+
+            const data = await response.json();
+            
+            if (response.ok) {
+                button.classList.toggle('active');
+                const icon = button.querySelector('i');
+                if (button.classList.contains('active')) {
+                    icon.classList.remove('far');
+                    icon.classList.add('fas');
+                } else {
+                    icon.classList.remove('fas');
+                    icon.classList.add('far');
+                }
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: data.message,
+                    showConfirmButton: false,
+                    timer: 1500
+                });
+            } else {
+                throw new Error(data.message || 'Failed to toggle wishlist');
+            }
+        } catch (error) {
+            if (error.message === 'Please login to add items to wishlist') {
+                window.location.href = '/login';
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Oops...',
+                    text: error.message || 'Something went wrong!',
+                });
+            }
+        }
+    }
+
+    // Add this function to check initial wishlist status
+    async function checkWishlistStatus() {
+        const wishlistButton = document.querySelector('.wishlist-btn');
+        const productId = '<%= product._id %>';
+        try {
+            const response = await fetch(`/wishlist-status/${productId}`);
+            const data = await response.json();
+            if (data.inWishlist) {
+                wishlistButton.classList.add('active');
+                const icon = wishlistButton.querySelector('i');
+                icon.classList.remove('far');
+                icon.classList.add('fas');
+            }
+        } catch (error) {
+            console.error('Error checking wishlist status:', error);
+        }
+    }
+
+    // Call on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        checkWishlistStatus();
+    });
 
     // Initialize quantity buttons state
     document.addEventListener('DOMContentLoaded', function() {

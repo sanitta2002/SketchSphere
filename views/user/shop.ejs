@@ -104,7 +104,7 @@
                                 <% if (product.available_quantity === 0) { %>
                                     <div class="out-of-stock-overlay">Out of Stock</div>
                                 <% } %>
-                                <button class="wishlist-btn" onclick="toggleWishlist(this, '<%= product._id %>')">
+                                <button class="wishlist-btn" onclick="toggleWishlist(this, '<%= product._id %>')" data-product-id="<%= product._id %>">
                                     <i class="far fa-heart"></i>
                                 </button>
                             </div>
@@ -455,7 +455,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             onerror="this.onerror=null; this.src='/uploads/re-image/default.jpeg';"
                         >
                         ${product.available_quantity === 0 ? '<div class="out-of-stock-overlay">Out of Stock</div>' : ''}
-                        <button class="wishlist-btn" onclick="toggleWishlist(this, '${product._id}')">
+                        <button class="wishlist-btn" onclick="toggleWishlist(this, '${product._id}')" data-product-id="${product._id}">
                             <i class="far fa-heart"></i>
                         </button>
                     </div>
@@ -481,6 +481,79 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         `;
     }
+});
+
+async function toggleWishlist(button, productId) {
+    try {
+        const response = await fetch('/toggle-wishlist', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                productId: productId
+            })
+        });
+
+        const data = await response.json();
+        
+        if (response.ok) {
+            button.classList.toggle('active');
+            const icon = button.querySelector('i');
+            if (button.classList.contains('active')) {
+                icon.classList.remove('far');
+                icon.classList.add('fas');
+            } else {
+                icon.classList.remove('fas');
+                icon.classList.add('far');
+            }
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: data.message,
+                showConfirmButton: false,
+                timer: 1500
+            });
+        } else {
+            throw new Error(data.message || 'Failed to toggle wishlist');
+        }
+    } catch (error) {
+        if (error.message === 'Please login to add items to wishlist') {
+            window.location.href = '/login';
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Oops...',
+                text: error.message || 'Something went wrong!',
+            });
+        }
+    }
+}
+
+// Check initial wishlist status for all products
+async function checkWishlistStatus() {
+    const wishlistButtons = document.querySelectorAll('.wishlist-btn');
+    wishlistButtons.forEach(async (button) => {
+        const productId = button.getAttribute('data-product-id');
+        try {
+            const response = await fetch(`/wishlist-status/${productId}`);
+            const data = await response.json();
+            if (data.inWishlist) {
+                button.classList.add('active');
+                const icon = button.querySelector('i');
+                icon.classList.remove('far');
+                icon.classList.add('fas');
+            }
+        } catch (error) {
+            console.error('Error checking wishlist status:', error);
+        }
+    });
+}
+
+// Call on page load
+document.addEventListener('DOMContentLoaded', function() {
+    checkWishlistStatus();
 });
 </script>
 
