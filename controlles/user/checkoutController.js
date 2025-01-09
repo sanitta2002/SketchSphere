@@ -3,6 +3,8 @@ const Order = require('../../models/orderSchema');
 const Address = require('../../models/addressSchema');
 const Coupon = require('../../models/couponSchema');
 const CouponUsage = require('../../models/couponUsageSchema');
+const User = require('../../models/userSchema');
+const Product = require('../../models/productSchema');
 const mongoose = require('mongoose');
 
 const checkoutController = {
@@ -12,6 +14,7 @@ const checkoutController = {
                 return res.redirect('/login');
             }
 
+            const user = await User.findById(req.session.user);
             const cart = await Cart.findOne({ userId: req.session.user })
                 .populate('items.productId', 'name product_img Sale_price');
 
@@ -48,7 +51,8 @@ const checkoutController = {
                 addresses,
                 totalPrice,
                 activeCoupons,
-                pageTitle: 'Checkout'
+                pageTitle: 'Checkout',
+                user
             });
         } catch (error) {
             console.error('Error loading checkout:', error);
@@ -147,117 +151,160 @@ const checkoutController = {
 
     placeOrder: async (req, res) => {
         try {
-            if (!req.session.user) {
-                return res.status(401).json({ success: false, message: 'Please login first' });
+            const { 
+                addressId, 
+                paymentMethod, 
+                couponCode, 
+                totalPrice,
+                finalAmount,
+                razorpay_payment_id,
+                razorpay_order_id,
+                razorpay_signature
+            } = req.body;
+
+            // Validate required fields
+            if (!totalPrice || !finalAmount) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Total price and final amount are required'
+                });
             }
 
-            const { addressId, paymentMethod, finalAmount } = req.body;
+            // Validate address
+            const userAddress = await Address.findOne({ 
+                userId: req.session.user,
+                'address._id': addressId 
+            });
 
-            const address = await Address.findOne({ userId: req.session.user });
-            if (!address) {
-                return res.status(400).json({ success: false, message: 'No address found' });
+            if (!userAddress) {
+                return res.status(400).json({ 
+                    success: false, 
+                    message: 'Invalid address selected' 
+                });
             }
 
-            const selectedAddress = address.address.find(addr => addr._id.toString() === addressId);
-            if (!selectedAddress) {
-                return res.status(400).json({ success: false, message: 'Selected address not found' });
-            }
-
+            // Get cart items first
             const cart = await Cart.findOne({ userId: req.session.user })
                 .populate('items.productId');
 
             if (!cart || !cart.items || cart.items.length === 0) {
-                return res.status(400).json({ success: false, message: 'Cart is empty' });
+                return res.status(400).json({
+                    success: false,
+                    message: 'Cart is empty'
+                });
             }
 
-            const orderedItems = cart.items.map(item => ({
-                product: item.productId._id,
-                quantity: item.quantity,
-                price: item.productId.Sale_price
-            }));
-
-            const totalPrice = orderedItems.reduce((total, item) => {
-                return total + (item.quantity * item.price);
-            }, 0);
-
-            let discountAmount = 0;
-            let appliedCoupon = null;
-            if (req.session.appliedCoupon) {
-                const coupon = await Coupon.findById(req.session.appliedCoupon.couponId);
-                if (coupon && totalPrice >= coupon.minimumPrice) {
-                    discountAmount = Math.min(coupon.offerPrice, totalPrice);
-                    appliedCoupon = req.session.appliedCoupon.code;
-
-                    // Record coupon usage
-                    await new CouponUsage({
-                        userId: req.session.user,
-                        couponCode: appliedCoupon
-                    }).save();
-                }
-            }
-
-            const userId = new mongoose.Types.ObjectId(req.session.user);
-
-            // Update product quantities
-            for (const item of cart.items) {
-                const product = item.productId;
-                const newQuantity = product.available_quantity - item.quantity;
-                
-                if (newQuantity < 0) {
+            // Validate product quantities
+            for (const cartItem of cart.items) {
+                const product = await Product.findById(cartItem.productId._id);
+                if (!product) {
                     return res.status(400).json({
                         success: false,
-                        message: `Not enough stock available for ${product.name}`
+                        message: `Product ${cartItem.productId.name} not found`
                     });
                 }
-                
-                await mongoose.model('Product').findByIdAndUpdate(
-                    product._id,
-                    { $set: { available_quantity: newQuantity } }
+                if (product.available_quantity < cartItem.quantity) {
+                    return res.status(400).json({
+                        success: false,
+                        message: `Insufficient stock for ${product.name}. Only ${product.available_quantity} available.`
+                    });
+                }
+            }
+
+            // Prepare order items
+            const orderItems = cart.items.map(item => ({
+                product: item.productId._id,
+                quantity: item.quantity,
+                price: item.productId.Sale_price,
+                status: 'Pending'
+            }));
+
+            // Create order
+            const order = new Order({
+                userId: req.session.user,
+                orderedItems: orderItems,
+                address: userAddress.address.find(addr => addr._id.toString() === addressId),
+                paymentMethod: paymentMethod,
+                totalPrice: totalPrice,
+                finalAmount: finalAmount,
+                paymentStatus: paymentMethod === 'online' ? 'Processing' : 'Pending',
+                status: 'Pending',
+                couponCode: couponCode || null
+            });
+
+            // If online payment, add payment details
+            if (paymentMethod === 'online') {
+                if (!razorpay_payment_id || !razorpay_order_id || !razorpay_signature) {
+                    console.error('Missing payment details:', { razorpay_payment_id, razorpay_order_id, razorpay_signature });
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Payment information missing'
+                    });
+                }
+                order.paymentDetails = {
+                    razorpay_payment_id,
+                    razorpay_order_id,
+                    razorpay_signature
+                };
+            }
+
+            console.log('Saving order with items:', order);
+            await order.save();
+
+            // Update product quantities
+            const updatePromises = cart.items.map(async (item) => {
+                console.log(`Updating quantity for product ${item.productId._id} by -${item.quantity}`);
+                return Product.findByIdAndUpdate(
+                    item.productId._id,
+                    { $inc: { available_quantity: -item.quantity } },
+                    { new: true }
+                );
+            });
+
+            try {
+                const updatedProducts = await Promise.all(updatePromises);
+                console.log('Updated product quantities:', updatedProducts.map(p => ({
+                    id: p._id,
+                    name: p.name,
+                    newQuantity: p.available_quantity
+                })));
+            } catch (error) {
+                console.error('Error updating product quantities:', error);
+                // Don't fail the order if quantity update fails
+                // But log it for investigation
+            }
+
+            // Clear cart only for COD orders (online orders clear cart after payment verification)
+            if (paymentMethod === 'COD') {
+                await Cart.findOneAndUpdate(
+                    { userId: req.session.user },
+                    { $set: { items: [] } }
                 );
             }
 
-            const order = new Order({
-                userId,
-                orderedItems,
-                totalPrice,
-                discountAmount,
-                finalAmount: finalAmount || (totalPrice - discountAmount),
-                couponCode: appliedCoupon,
-                address: {
-                    addressType: selectedAddress.addressType,
-                    name: selectedAddress.name,
-                    city: selectedAddress.city,
-                    landMark: selectedAddress.landMark,
-                    state: selectedAddress.state,
-                    pincode: selectedAddress.pincode,
-                    phone: selectedAddress.phone
-                },
-                status: 'Pending',
-                createdOn: new Date(),
-                paymentMethod,
-                paymentStatus: paymentMethod === 'COD' ? 'Pending' : 'Processing'
-            });
-
-            const savedOrder = await order.save();
-            if (!savedOrder) {
-                throw new Error('Failed to save order');
+            // If there was a coupon used, record it
+            if (couponCode) {
+                await CouponUsage.create({
+                    userId: req.session.user,
+                    couponCode: couponCode.toUpperCase(),
+                    usedAt: new Date()
+                });
+                // Clear the applied coupon from session
+                delete req.session.appliedCoupon;
             }
-
-            cart.items = [];
-            await cart.save();
-
-            // Clear the applied coupon from session
-            delete req.session.appliedCoupon;
 
             res.json({
                 success: true,
-                message: 'Order placed successfully',
-                redirectUrl: '/orders'
+                orderId: order._id,
+                message: 'Order placed successfully'
             });
 
         } catch (error) {
             console.error('Error placing order:', error);
-            res.status(500).json({ success: false, message: 'Failed to place order' });
+            res.status(500).json({
+                success: false,
+                message: error.message || 'Failed to place order'
+            });
         }
     }
 };
