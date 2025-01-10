@@ -277,10 +277,10 @@
         const itemId = urlParams.get('itemId');
 
         // Prepare the request body
-        const body = { status };
-        if (returnReason) {
-            body.returnReason = returnReason;
-        }
+        const body = { 
+            status: status === 'Return' ? 'Delivered' : status,
+            returnReason: returnReason
+        };
 
         // Make the API call
         fetch(`/update-order-item-status/${orderId}/${itemId}`, {
@@ -295,27 +295,22 @@
             if (data.success) {
                 Swal.fire({
                     title: 'Success!',
-                    text: status === 'Cancelled' ? 
-                          'Order has been cancelled successfully.' : 
-                          'Return request has been submitted successfully. We will review your request.',
+                    text: status === 'Return' ? 
+                          'Return request has been submitted successfully. We will review your request.' : 
+                          'Order has been cancelled successfully.',
                     icon: 'success',
                     confirmButtonColor: '#198754'
                 }).then(() => {
                     window.location.reload();
                 });
             } else {
-                Swal.fire({
-                    title: 'Error!',
-                    text: 'Something went wrong. Please try again.',
-                    icon: 'error',
-                    confirmButtonColor: '#dc3545'
-                });
+                throw new Error(data.message || 'Failed to update status');
             }
         })
         .catch(error => {
             Swal.fire({
                 title: 'Error!',
-                text: 'Something went wrong. Please try again.',
+                text: error.message || 'Something went wrong. Please try again.',
                 icon: 'error',
                 confirmButtonColor: '#dc3545'
             });

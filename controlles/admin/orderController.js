@@ -70,11 +70,12 @@ const orderController = {
     },
 
     // Update single item status
-    updateOrderItemStatus: async (req, res) => {
+    updateItemStatus: async (req, res) => {
         try {
             const { orderId, itemId } = req.params;
-            const { status } = req.body;
+            const { status, rejectReason } = req.body;
 
+            // Find the order
             const order = await Order.findById(orderId);
             if (!order) {
                 return res.status(404).json({ success: false, message: 'Order not found' });
@@ -86,54 +87,55 @@ const orderController = {
                 return res.status(404).json({ success: false, message: 'Order item not found' });
             }
 
-            // Handle inventory for cancellations
-            if (status === 'Cancelled' && orderItem.status !== 'Cancelled') {
+            // Handle return approval
+            if (status === 'Returned' && orderItem.status !== 'Returned') {
+                // Find the product
+                const product = await Product.findById(orderItem.product);
+                if (!product) {
+                    return res.status(404).json({ success: false, message: 'Product not found' });
+                }
+
+                // Increase product quantity
                 await Product.findByIdAndUpdate(
                     orderItem.product,
-                    { $inc: { available_quantity: orderItem.quantity } }
+                    { 
+                        $inc: { 
+                            available_quantity: orderItem.quantity 
+                        }
+                    }
                 );
+
+                console.log(`Product ${product.name} quantity increased by ${orderItem.quantity}`);
+            }
+
+            // Handle return rejection
+            if (status === 'Delivered' && rejectReason && orderItem.returnReason) {
+                orderItem.returnRejectedReason = rejectReason;
+                orderItem.returnReason = null; // Clear the return reason since it's rejected
             }
 
             // Update the item status
             orderItem.status = status;
 
-            // Determine the overall order status based on item statuses
-            const statuses = order.orderedItems.map(item => item.status);
-            const uniqueStatuses = [...new Set(statuses)];
-
-            // Set order status based on item statuses
-            if (uniqueStatuses.length === 1) {
-                // If all items have the same status, use that
-                order.status = uniqueStatuses[0];
-            } else {
-                // If items have mixed statuses, use appropriate status
-                if (statuses.every(s => ['Cancelled', 'Returned'].includes(s))) {
-                    order.status = 'Cancelled';
-                } else if (statuses.some(s => s === 'Processing')) {
-                    order.status = 'Processing';
-                } else if (statuses.some(s => s === 'Shipped')) {
-                    order.status = 'Shipped';
-                } else if (statuses.some(s => s === 'Delivered')) {
-                    order.status = 'Delivered';
-                } else {
-                    order.status = 'Pending';
-                }
-            }
-
             await order.save();
 
             res.json({ 
                 success: true, 
-                message: 'Item status updated successfully',
-                orderStatus: order.status,
-                itemStatus: orderItem.status
+                message: status === 'Returned' ? 
+                    'Return has been approved and inventory has been updated' : 
+                    rejectReason ? 
+                        'Return has been rejected' : 
+                        'Status updated successfully'
             });
 
         } catch (error) {
             console.error('Error updating item status:', error);
-            res.status(500).json({ success: false, message: error.message || 'Failed to update status' });
+            res.status(500).json({ 
+                success: false, 
+                message: error.message || 'Failed to update status' 
+            });
         }
-    }
+    },
 };
 
 module.exports = orderController;

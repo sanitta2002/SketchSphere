@@ -48,6 +48,6 @@ router.patch('/coupons/toggle/:id', adminAuth, couponController.toggleCouponStat
 // Order Management Routes
 router.get('/orders', adminAuth, orderController.getAllOrders)
 router.get('/order/:orderId', adminAuth, orderController.getOrderDetails)
-router.post('/order/:orderId/item/:itemId/status', adminAuth, orderController.updateOrderItemStatus)
+router.post('/order/:orderId/item/:itemId/status', adminAuth, orderController.updateItemStatus)
 
 module.exports= router

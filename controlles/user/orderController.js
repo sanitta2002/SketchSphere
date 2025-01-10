@@ -317,56 +317,40 @@ const orderController = {
                 return res.status(404).json({ success: false, message: 'Order item not found' });
             }
 
-            // Handle inventory for cancellations
-            if (status === 'Cancelled' && orderItem.status !== 'Cancelled') {
-                await Product.findByIdAndUpdate(
-                    orderItem.product,
-                    { $inc: { available_quantity: orderItem.quantity } }
-                );
-            }
-
-            // Update the item status
-            orderItem.status = status;
-            
-            // Add return reason if provided
-            if (status === 'Return' && returnReason) {
-                orderItem.returnReason = returnReason;
-            }
-
-            // Check if all items have the same status
-            const allSameStatus = order.orderedItems.every(item => item.status === status);
-            if (allSameStatus) {
-                order.status = status;
-            } else {
-                // If items have different statuses, set a composite status
-                const hasDelivered = order.orderedItems.some(item => item.status === 'Delivered');
-                const hasCancelled = order.orderedItems.some(item => item.status === 'Cancelled');
-                const hasReturned = order.orderedItems.some(item => item.status === 'Returned');
-                const hasShipped = order.orderedItems.some(item => item.status === 'Shipped');
-                const hasProcessing = order.orderedItems.some(item => item.status === 'Processing');
-
-                if (hasDelivered && (hasCancelled || hasReturned)) {
-                    order.status = 'Partially Delivered';
-                } else if (hasShipped) {
-                    order.status = 'Partially Shipped';
-                } else if (hasProcessing) {
-                    order.status = 'Processing';
-                } else {
-                    order.status = 'Pending';
+            // Handle return request
+            if (returnReason) {
+                if (!orderItem.returnReason) {  // Only set if not already set
+                    orderItem.returnReason = returnReason;
+                    orderItem.status = 'Delivered';  // Keep status as Delivered until admin confirms
                 }
+            } else {
+                // Handle other status updates
+                if (status === 'Cancelled' && orderItem.status !== 'Cancelled') {
+                    await Product.findByIdAndUpdate(
+                        orderItem.product,
+                        { $inc: { available_quantity: orderItem.quantity } }
+                    );
+                }
+                orderItem.status = status;
             }
 
             await order.save();
 
             res.json({ 
                 success: true, 
-                message: status === 'Cancelled' ? 'Order has been cancelled successfully' : 'Return request has been submitted successfully',
-                orderStatus: order.status 
+                message: returnReason ? 
+                    'Return request has been submitted successfully' : 
+                    'Status updated successfully',
+                orderStatus: order.status,
+                itemStatus: orderItem.status
             });
 
         } catch (error) {
-            console.error('Error updating order item status:', error);
-            res.status(500).json({ success: false, message: 'Failed to update status' });
+            console.error('Error updating item status:', error);
+            res.status(500).json({ 
+                success: false, 
+                message: error.message || 'Failed to update status' 
+            });
         }
     },
 

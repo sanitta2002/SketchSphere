@@ -64,21 +64,68 @@
                                             item.status === 'Shipped' ? 'bg-info' :
                                             item.status === 'Processing' ? 'bg-primary' :
                                             'bg-secondary' %>">
-                                            <%= item.status || 'Pending' %>
+                                            <%= item.status %>
                                         </span>
                                     </td>
                                     <td>
-                                        <select class="form-select form-select-sm item-status-select" 
-                                                data-order-id="<%= order._id %>" 
-                                                data-item-id="<%= item._id %>"
-                                                <%= ['Cancelled', 'Returned', 'Delivered'].includes(item.status) ? 'disabled' : '' %>>
-                                            <option value="Pending" <%= item.status === 'Pending' ? 'selected' : '' %>>Pending</option>
-                                            <option value="Processing" <%= item.status === 'Processing' ? 'selected' : '' %>>Processing</option>
-                                            <option value="Shipped" <%= item.status === 'Shipped' ? 'selected' : '' %>>Shipped</option>
-                                            <option value="Delivered" <%= item.status === 'Delivered' ? 'selected' : '' %>>Delivered</option>
-                                            <option value="Cancelled" <%= item.status === 'Cancelled' ? 'selected' : '' %>>Cancelled</option>
-                                            <option value="Returned" <%= item.status === 'Returned' ? 'selected' : '' %>>Returned</option>
-                                        </select>
+                                        <% if (item.returnReason || item.returnRejectedReason) { %>
+                                            <div class="return-request-card border rounded p-3 mb-3 bg-light">
+                                                <div class="d-flex justify-content-between align-items-start">
+                                                    <div>
+                                                        <h6 class="mb-2 text-primary">
+                                                            <% if (item.returnRejectedReason) { %>
+                                                                <i class="fas fa-times-circle text-danger"></i> Return Rejected
+                                                            <% } else if (item.status === 'Returned') { %>
+                                                                <i class="fas fa-check-circle text-success"></i> Return Approved
+                                                            <% } else { %>
+                                                                <i class="fas fa-clock text-warning"></i> Return Request
+                                                            <% } %>
+                                                        </h6>
+                                                        <div class="return-reason mb-2">
+                                                            <small class="text-muted">Customer's Reason:</small>
+                                                            <p class="mb-2"><%= item.returnReason || 'Return request rejected' %></p>
+                                                            
+                                                            <% if (item.returnRejectedReason) { %>
+                                                                <small class="text-muted">Rejection Reason:</small>
+                                                                <p class="mb-0 text-danger"><%= item.returnRejectedReason %></p>
+                                                            <% } %>
+                                                        </div>
+                                                    </div>
+                                                    <% if (item.status === 'Delivered' && !item.returnRejectedReason) { %>
+                                                        <div class="btn-group">
+                                                            <button onclick="confirmReturn('<%= order._id %>', '<%= item._id %>')" 
+                                                                    class="btn btn-sm btn-success me-2">
+                                                                <i class="fas fa-check me-1"></i> Approve
+                                                            </button>
+                                                            <button onclick="rejectReturn('<%= order._id %>', '<%= item._id %>')" 
+                                                                    class="btn btn-sm btn-danger">
+                                                                <i class="fas fa-times me-1"></i> Reject
+                                                            </button>
+                                                        </div>
+                                                    <% } else if (item.status === 'Returned') { %>
+                                                        <div class="return-status">
+                                                            <span class="badge bg-success">
+                                                                <i class="fas fa-check me-1"></i> Return Approved
+                                                            </span>
+                                                            <small class="d-block text-muted mt-1">
+                                                                Inventory Updated
+                                                            </small>
+                                                        </div>
+                                                    <% } %>
+                                                </div>
+                                            </div>
+                                        <% } %>
+                                        <% if (!['Cancelled', 'Returned'].includes(item.status)) { %>
+                                            <select class="form-select form-select-sm item-status-select" 
+                                                    data-order-id="<%= order._id %>" 
+                                                    data-item-id="<%= item._id %>">
+                                                <option value="Pending" <%= item.status === 'Pending' ? 'selected' : '' %>>Pending</option>
+                                                <option value="Processing" <%= item.status === 'Processing' ? 'selected' : '' %>>Processing</option>
+                                                <option value="Shipped" <%= item.status === 'Shipped' ? 'selected' : '' %>>Shipped</option>
+                                                <option value="Delivered" <%= item.status === 'Delivered' ? 'selected' : '' %>>Delivered</option>
+                                                <option value="Cancelled" <%= item.status === 'Cancelled' ? 'selected' : '' %>>Cancelled</option>
+                                            </select>
+                                        <% } %>
                                     </td>
                                 </tr>
                             <% }); %>
@@ -195,6 +242,136 @@ document.querySelectorAll('.item-status-select').forEach(select => {
         }
     });
 });
+
+function confirmReturn(orderId, itemId) {
+    Swal.fire({
+        title: 'Approve Return Request?',
+        html: `
+            <div class="text-start">
+                <p class="mb-3">Are you sure you want to approve this return request?</p>
+                <small class="text-muted">
+                    This will:
+                    <ul class="mt-2">
+                        <li>Mark the item as Returned</li>
+                        <li>Update inventory quantity</li>
+                        <li>Close the return request</li>
+                    </ul>
+                </small>
+            </div>
+        `,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#28a745',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: '<i class="fas fa-check me-1"></i> Yes, Approve Return',
+        cancelButtonText: '<i class="fas fa-times me-1"></i> Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            updateOrderStatus(orderId, itemId, 'Returned');
+        }
+    });
+}
+
+function rejectReturn(orderId, itemId) {
+    Swal.fire({
+        title: 'Reject Return Request?',
+        input: 'textarea',
+        inputLabel: 'Rejection Reason (Optional)',
+        inputPlaceholder: 'Enter a reason for rejecting the return...',
+        html: `
+            <div class="text-start">
+                <p class="mb-3">Are you sure you want to reject this return request?</p>
+                <small class="text-muted">The item will remain in Delivered status.</small>
+            </div>
+        `,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: '<i class="fas fa-times me-1"></i> Yes, Reject Return',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            updateOrderStatus(orderId, itemId, 'Delivered', result.value);
+        }
+    });
+}
+
+function updateOrderStatus(orderId, itemId, status, rejectReason = null) {
+    fetch(`/admin/order/${orderId}/item/${itemId}/status`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+            status: status,
+            rejectReason: rejectReason 
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const action = status === 'Returned' ? 'approved' : 'rejected';
+            Swal.fire({
+                title: 'Success!',
+                text: `Return request has been ${action} successfully`,
+                icon: 'success',
+                showConfirmButton: false,
+                timer: 1500
+            }).then(() => {
+                window.location.reload();
+            });
+        } else {
+            throw new Error(data.message || 'Failed to update status');
+        }
+    })
+    .catch(error => {
+        Swal.fire({
+            title: 'Error!',
+            text: error.message || 'Something went wrong',
+            icon: 'error'
+        });
+    });
+}
 </script>
+
+<!-- Add Font Awesome for icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+<style>
+    .return-request-card {
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .return-request-card:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .btn-group .btn {
+        transition: all 0.2s ease;
+    }
+
+    .btn-group .btn:hover {
+        transform: translateY(-1px);
+    }
+
+    .status-badge {
+        font-size: 0.85rem;
+        padding: 0.35rem 0.65rem;
+    }
+
+    .form-select {
+        border-radius: 0.25rem;
+        border: 1px solid #dee2e6;
+        padding: 0.375rem 2.25rem 0.375rem 0.75rem;
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+
+    .form-select:focus {
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+</style>
 
 <%- include('../layouts/admin/footer.ejs') %>

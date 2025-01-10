@@ -34,6 +34,10 @@ const orderSchema = new mongoose.Schema({
         returnReason: {
             type: String,
             default: null
+        },
+        returnRejectedReason: {
+            type: String,
+            default: null
         }
     }],
     totalPrice: {
