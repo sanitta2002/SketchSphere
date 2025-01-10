@@ -99,16 +99,12 @@
                                                     </button>
                                                 <% } %>
                                                 
-                                                <% if (orderItem.status === 'Delivered') { %>
-                                                    <% if (!orderItem.returnRequested && !orderItem.returnReason) { %>
-                                                        <button onclick="confirmReturn()" class="btn btn-sm btn-outline-primary">
-                                                            Return Item
-                                                        </button>
-                                                    <% } else if (orderItem.returnReason) { %>
-                                                        <div class="text-muted">
-                                                            <small>Return Reason: <%= orderItem.returnReason %></small>
-                                                        </div>
-                                                    <% } %>
+                                                <% if (orderItem.status === 'Delivered' && !orderItem.returnRequested && !orderItem.returnReason) { %>
+                                                    <button onclick="confirmReturn()" class="btn btn-sm btn-outline-warning">
+                                                        Return Item
+                                                    </button>
+                                                <% } else if (orderItem.status === 'Delivered' && (orderItem.returnRequested || orderItem.returnReason)) { %>
+                                                    <span class="badge bg-warning">Return Requested</span>
                                                 <% } %>
                                             </div>
 
@@ -227,32 +223,30 @@
             title: 'Return Item',
             html: `
                 <div class="mb-3">
-                    <label class="form-label">Please tell us why you want to return this item:</label>
-                    <select class="form-select mb-3" id="returnReasonSelect">
+                    <label for="returnReasonSelect" class="form-label">Select Return Reason</label>
+                    <select class="form-select" id="returnReasonSelect">
                         <option value="">Select a reason</option>
-                        <option value="Damaged Product">Product is damaged</option>
-                        <option value="Wrong Item">Received wrong item</option>
-                        <option value="Not as Described">Item not as described</option>
-                        <option value="Changed Mind">Changed my mind</option>
-                        <option value="Other">Other reason</option>
+                        <option value="Damaged Product">Damaged Product</option>
+                        <option value="Wrong Item Received">Wrong Item Received</option>
+                        <option value="Not as Described">Not as Described</option>
+                        <option value="Size/Fit Issue">Size/Fit Issue</option>
+                        <option value="Quality Issue">Quality Issue</option>
+                        <option value="Other">Other</option>
                     </select>
-                    <textarea id="returnReasonText" class="form-control" 
-                        placeholder="Please provide additional details..." 
-                        style="display: none;"
-                        rows="3"></textarea>
+                </div>
+                <div class="mb-3" id="returnReasonTextContainer" style="display: none;">
+                    <label for="returnReasonText" class="form-label">Please specify the reason</label>
+                    <textarea class="form-control" id="returnReasonText" rows="3"></textarea>
                 </div>
             `,
             showCancelButton: true,
-            confirmButtonColor: '#0d6efd',
-            cancelButtonColor: '#6c757d',
             confirmButtonText: 'Submit Return Request',
             cancelButtonText: 'Cancel',
             didOpen: () => {
-                // Show textarea when "Other" is selected
                 const select = document.getElementById('returnReasonSelect');
-                const textarea = document.getElementById('returnReasonText');
+                const textContainer = document.getElementById('returnReasonTextContainer');
                 select.addEventListener('change', (e) => {
-                    textarea.style.display = e.target.value === 'Other' ? 'block' : 'none';
+                    textContainer.style.display = e.target.value === 'Other' ? 'block' : 'none';
                 });
             },
             preConfirm: () => {

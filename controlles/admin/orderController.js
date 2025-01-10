@@ -26,7 +26,7 @@ const orderController = {
                 .skip(skip)
                 .limit(limit);
 
-            res.render('orders', {
+            res.render('order', {
                 orders,
                 currentPage: page,
                 totalPages,
