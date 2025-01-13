@@ -9,7 +9,7 @@ const productDetail = async (req, res) => {
         // Fetch the product with populated category
         const product = await Product.findById(productId)
             .populate('category_id')
-            .populate('genre_id');
+            
 
         if (!product) {
             return res.status(404).render('user/404-page');

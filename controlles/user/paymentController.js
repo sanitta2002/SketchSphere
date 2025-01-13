@@ -134,7 +134,7 @@ const paymentController = {
                 })));
             } catch (error) {
                 console.error('Error updating product quantities:', error);
-                // Don't fail the payment if quantity update fails
+                // Dont fail the payment if quantity update fails
                 // But log it for investigation
             }
 
