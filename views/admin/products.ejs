@@ -1,14 +1,32 @@
 <%- include('../../Views/layouts/admin/header.ejs') %>
 <head>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@10/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
 </head>
 
 <section class="content-main">
     <% if (typeof successMessage !== 'undefined' && successMessage) { %>
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <%= successMessage %>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
+        <script>
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: '<%= successMessage %>',
+                timer: 3000,
+                showConfirmButton: false
+            });
+        </script>
+    <% } %>
+
+    <% if (typeof errorMessage !== 'undefined' && errorMessage) { %>
+        <script>
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: '<%= errorMessage %>',
+                timer: 3000,
+                showConfirmButton: false
+            });
+        </script>
     <% } %>
 
     <div class="content-header mb-4">
@@ -49,57 +67,56 @@
                         </tr>
                     </thead>
                     <tbody>
-                
-                        <%for(let i=data.length-1;i>=0;i--){%>
-                        
-                        <tr>
-                            <td class="text-dark">
-                                <span class="fw-bold"><%= data[i].name %></span>
-                            </td>
-                            <td><%= data[i].category_id.name %></td>
-                            <td>₹<%= data[i].Sale_price %></td>
-                            <td>₹<%= data[i].offerPrice || 0 %></td>
-                            <td>
-                                <% if (!data[i].offerPrice) { %>
-                                    <button class="btn btn-sm btn-outline-primary px-3">
-                                        Add Offer
-                                    </button>
-                                <% } else { %>
-                                    <button class="btn btn-sm btn-outline-warning px-3">
-                                        Remove Offer
-                                    </button>
-                                <% } %>
-                            </td>
-                            <td>
-                                <span class="badge bg-light text-dark">
-                                    <%= data[i].available_quantity || 0 %>
-                                </span>
-                            </td>
-                            <td>
-                                <%if(data[i].isBlocked===false){%>
-                                <button class="btn btn-sm btn-outline-danger block-btn" 
-                                        data-id="<%= data[i]._id %>">
-                                    Block
-                                </button>
-                                <%}else{%>
-                                
-                                <button class="btn btn-sm btn-outline-success unblock-btn" 
-                                        data-id="<%= data[i]._id %>">
-                                    Unblock
-                                </button>
-                                <%}%>
-                        
-                            </td>
-                            <td>
-                                <a href="/admin/editProduct?id=<%= data[i]._id %>" 
-                                   class="btn btn-sm btn-outline-dark">
-                                    Edit
-                                </a>
-                            </td>
-                        </tr>
-
-                        <%}%>
-                        
+                        <% data.forEach(function(product) { %>
+                            <tr>
+                                <td class="text-dark">
+                                    <span class="fw-bold"><%= product.name %></span>
+                                </td>
+                                <td><%= product.category_id.name %></td>
+                                <td>₹<%= product.Sale_price %></td>
+                                <td>
+                                    <% if (product.offerPrice > 0 && new Date(product.offerEndDate) > new Date()) { %>
+                                        ₹<%= product.offerPrice %>
+                                    <% } else { %>
+                                        -
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <% if (product.offerPrice > 0 && new Date(product.offerEndDate) > new Date()) { %>
+                                        <%= product.offerPercentage %>% off
+                                        <form action="/admin/products/<%= product._id %>/remove-offer" method="POST" style="display: inline;">
+                                            <input type="hidden" name="_method" value="DELETE">
+                                            <button type="submit" class="btn btn-sm btn-danger">Remove</button>
+                                        </form>
+                                    <% } else { %>
+                                        <a href="/admin/products/<%= product._id %>/add-offer" class="btn btn-sm btn-outline-primary px-3">
+                                            Add Offer
+                                        </a>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark">
+                                        <%= product.available_quantity || 0 %>
+                                    </span>
+                                </td>
+                                <td>
+                                    <% if(product.isBlocked === false) { %>
+                                        <button class="btn btn-sm btn-outline-danger block-btn" data-id="<%= product._id %>">
+                                            Block
+                                        </button>
+                                    <% } else { %>
+                                        <button class="btn btn-sm btn-outline-success unblock-btn" data-id="<%= product._id %>">
+                                            Unblock
+                                        </button>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <a href="/admin/editProduct?id=<%= product._id %>" class="btn btn-sm btn-outline-dark">
+                                        Edit
+                                    </a>
+                                </td>
+                            </tr>
+                        <% }); %>
                     </tbody>
 
                 </table>
@@ -125,7 +142,6 @@
     <% } %>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@10/dist/sweetalert2.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 <script>
     $(document).ready(function() {

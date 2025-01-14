@@ -1,0 +1,79 @@
+<%- include('../../Views/layouts/admin/header.ejs') %>
+<head>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@10/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
+</head>
+
+<section class="content-main">
+    <div class="content-header mb-4">
+        <div>
+            <h2 class="content-title">Add Offer</h2>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form id="offerForm" action="/admin/products/<%= product._id %>/add-offer" method="POST">
+                <div class="mb-4">
+                    <label class="form-label">Product Name</label>
+                    <input type="text" class="form-control" value="<%= product.name %>" readonly>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label">Current Price</label>
+                    <input type="number" class="form-control" value="<%= product.Sale_price %>" readonly>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label">Discount Percentage (%)</label>
+                    <input type="number" name="discountPercentage" class="form-control" required min="1" max="99">
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label">Start Date</label>
+                    <input type="datetime-local" name="startDate" class="form-control" required>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label">End Date</label>
+                    <input type="datetime-local" name="endDate" class="form-control" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Add Offer</button>
+                <a href="/admin/products" class="btn btn-outline-secondary">Cancel</a>
+            </form>
+        </div>
+    </div>
+</section>
+
+<%- include('../../Views/layouts/admin/footer.ejs') %>
+
+<script>
+    // Set minimum date as today for start and end date
+    const today = new Date().toISOString().slice(0, 16);
+    document.querySelector('input[name="startDate"]').min = today;
+    document.querySelector('input[name="endDate"]').min = today;
+
+    // Ensure end date is after start date
+    document.querySelector('input[name="startDate"]').addEventListener('change', function() {
+        document.querySelector('input[name="endDate"]').min = this.value;
+    });
+
+    // Add form submission handler
+    document.getElementById('offerForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        Swal.fire({
+            title: 'Add Offer',
+            text: 'Are you sure you want to add this offer?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, add it!',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                this.submit();
+            }
+        });
+    });
+</script>

@@ -36,9 +36,20 @@ const loadHomepage = async (req, res) => {
             category_id: { $in: activeCategoryIds }
         })
             .populate('category_id')
-            .select('name description product_img quantity Regular_price Sale_price offerPrice')
+            .select('name description product_img quantity Regular_price Sale_price offerPrice offerPercentage offerStartDate offerEndDate')
             .sort({ createdAt: -1 })
             .limit(8);
+
+        // Calculate current prices based on offers
+        const productsWithPrices = products.map(product => {
+            const hasValidOffer = product.offerPrice > 0 && 
+                               new Date(product.offerEndDate) > new Date();
+            return {
+                ...product._doc,
+                currentPrice: hasValidOffer ? product.offerPrice : product.Sale_price,
+                hasValidOffer
+            };
+        });
 
         // Get user data if logged in
         let userData = null;
@@ -49,14 +60,15 @@ const loadHomepage = async (req, res) => {
         }
 
         return res.render('home', {
-            products,
-            categories: activeCategories,
+            products: productsWithPrices,
             user: userData,
-            cart: cartData
+            cart: cartData,
+            categories: activeCategories
         });
+
     } catch (error) {
-        console.log("Error loading home page:", error);
-        res.status(500).send('server error');
+        console.error('Error in loadHomepage:', error);
+        res.status(500).render('error', { error: 'Failed to load homepage' });
     }
 }
 

@@ -185,22 +185,37 @@
     }
 
     .product-name {
-        font-size: 1.1rem;
-        font-weight: 600;
+        font-size: 1.1em;
+        margin-bottom: 8px;
         color: #333;
-        margin-bottom: 10px;
-        height: 2.4em;
-        overflow: hidden;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
+        font-weight: 500;
     }
 
     .product-price {
-        font-size: 1.2rem;
-        font-weight: 700;
-        color: #2c3e50;
-        margin-bottom: 15px;
+        margin: 10px 0;
+    }
+
+    .original-price {
+        color: #999;
+        font-size: 0.9em;
+        text-decoration: line-through;
+    }
+
+    .offer-price {
+        color: #dc3545;
+        font-size: 1.1em;
+        font-weight: bold;
+        margin-left: 8px;
+    }
+
+    .offer-badge {
+        background-color: #28a745;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.8em;
+        display: inline-block;
+        margin-top: 4px;
     }
 
     .product-actions {
@@ -362,7 +377,21 @@
                             </div>
                             <div class="product-details">
                                 <h3 class="product-name"><%= product.name %></h3>
-                                <div class="product-price">₹<%= product.Sale_price %></div>
+                                <div class="product-price">
+                                    <% if (product.hasValidOffer) { %>
+                                        <div class="d-flex flex-column">
+                                            <div class="mb-1">
+                                                <span class="original-price text-decoration-line-through text-muted small">₹<%= product.Sale_price %></span>
+                                                <span class="offer-price text-danger fw-bold ms-2">₹<%= product.offerPrice %></span>
+                                            </div>
+                                            <span class="offer-badge bg-success text-white px-2 py-1 rounded-pill small" style="width: fit-content">
+                                                <%= product.offerPercentage %>% OFF
+                                            </span>
+                                        </div>
+                                    <% } else { %>
+                                        <span class="fw-bold">₹<%= product.Sale_price %></span>
+                                    <% } %>
+                                </div>
                                 <div class="product-actions">
                                     <a href="/productDetails?id=<%= product._id %>" class="btn btn-view">
                                         <i class="bi bi-eye me-1"></i>View

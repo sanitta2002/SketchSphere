@@ -16,14 +16,24 @@ const checkoutController = {
 
             const user = await User.findById(req.session.user);
             const cart = await Cart.findOne({ userId: req.session.user })
-                .populate('items.productId', 'name product_img Sale_price');
+                .populate('items.productId', 'name product_img Sale_price available_quantity offerPrice offerPercentage offerStartDate offerEndDate');
 
             if (!cart || !cart.items || cart.items.length === 0) {
                 return res.redirect('/cart');
             }
 
+            // Calculate prices with offers
+            cart.items = cart.items.map(item => {
+                const hasValidOffer = item.productId.offerPrice > 0 && 
+                                   new Date(item.productId.offerEndDate) > new Date();
+                item.currentPrice = hasValidOffer ? item.productId.offerPrice : item.productId.Sale_price;
+                item.totalPrice = item.currentPrice * item.quantity;
+                return item;
+            });
+
+            // Calculate cart total with offers
             const totalPrice = cart.items.reduce((total, item) => {
-                return total + (item.quantity * item.productId.Sale_price);
+                return total + item.totalPrice;
             }, 0);
 
             const userAddress = await Address.findOne({ userId: req.session.user });
@@ -185,7 +195,7 @@ const checkoutController = {
 
             // Get cart items first
             const cart = await Cart.findOne({ userId: req.session.user })
-                .populate('items.productId');
+                .populate('items.productId', 'name Sale_price available_quantity offerPrice offerPercentage offerStartDate offerEndDate');
 
             if (!cart || !cart.items || cart.items.length === 0) {
                 return res.status(400).json({
@@ -193,6 +203,22 @@ const checkoutController = {
                     message: 'Cart is empty'
                 });
             }
+
+            // Calculate final prices with offers
+            const orderItems = cart.items.map(item => {
+                const hasValidOffer = item.productId.offerPrice > 0 && 
+                                   new Date(item.productId.offerEndDate) > new Date();
+                const price = hasValidOffer ? item.productId.offerPrice : item.productId.Sale_price;
+                return {
+                    product: item.productId._id,
+                    quantity: item.quantity,
+                    price: price,
+                    totalPrice: price * item.quantity
+                };
+            });
+
+            // Calculate order total
+            const orderTotal = orderItems.reduce((total, item) => total + item.totalPrice, 0);
 
             // Validate product quantities
             for (const cartItem of cart.items) {
@@ -210,14 +236,6 @@ const checkoutController = {
                     });
                 }
             }
-
-            // Prepare order items
-            const orderItems = cart.items.map(item => ({
-                product: item.productId._id,
-                quantity: item.quantity,
-                price: item.productId.Sale_price,
-                status: 'Pending'
-            }));
 
             // Create order
             const order = new Order({

@@ -35,7 +35,28 @@
                                         <!-- Product Details -->
                                         <div class="col-lg-4 col-md-4">
                                             <h6 class="product-name mb-2"><%= item.productId.name %></h6>
-                                            <p class="text-muted mb-0">₹<%= item.price %></p>
+                                            <div class="product-price mb-2">
+                                                <% 
+                                                    const hasValidOffer = item.productId.offerPrice > 0 && 
+                                                                        new Date(item.productId.offerEndDate) > new Date();
+                                                    const displayPrice = hasValidOffer ? 
+                                                                        item.productId.offerPrice : 
+                                                                        item.productId.Sale_price;
+                                                %>
+                                                <% if (hasValidOffer) { %>
+                                                    <div class="d-flex flex-column">
+                                                        <div class="mb-1">
+                                                            <span class="original-price text-decoration-line-through text-muted small">₹<%= item.productId.Sale_price %></span>
+                                                            <span class="offer-price text-danger fw-bold ms-2">₹<%= item.productId.offerPrice %></span>
+                                                        </div>
+                                                        <span class="offer-badge bg-success text-white px-2 py-1 rounded-pill small" style="width: fit-content">
+                                                            <%= item.productId.offerPercentage %>% OFF
+                                                        </span>
+                                                    </div>
+                                                <% } else { %>
+                                                    <span class="fw-bold">₹<%= item.productId.Sale_price %></span>
+                                                <% } %>
+                                            </div>
                                             <% if (item.productId.available_quantity === 0) { %>
                                                 <p class="text-danger fw-bold mb-0"><i class="fas fa-exclamation-circle"></i> Out of Stock</p>
                                             <% } else if (item.quantity > item.productId.available_quantity) { %>
@@ -55,7 +76,7 @@
                                                        min="1" 
                                                        max="<%= Math.min(5, item.productId.available_quantity) %>"
                                                        <%= item.productId.available_quantity === 0 ? 'disabled' : '' %>
-                                                       onchange="updateQuantity('<%= item.productId._id %>', 'set', this.value)"
+                                                       onchange="updateItemSubtotal(this)"
                                                        data-product-id="<%= item.productId._id %>">
                                                 <button class="btn btn-sm quantity-btn plus" 
                                                         onclick="updateQuantity('<%= item.productId._id %>', 'increase')"
@@ -66,7 +87,7 @@
                                         </div>
                                         <!-- Total Price -->
                                         <div class="col-lg-2 col-md-1">
-                                            <p class="mb-0 fw-bold">₹<%= item.totalPrice %></p>
+                                            <p class="item-subtotal mb-0 fw-bold">₹<%= item.totalPrice %></p>
                                         </div>
                                         <!-- Remove Button -->
                                         <div class="col-lg-1 col-md-1 text-end">
@@ -98,12 +119,12 @@
                     <% if (cart && cart.items && cart.items.length > 0) { %>
                         <div class="d-flex justify-content-between mb-3">
                             <span>Subtotal</span>
-                            <span>₹<%= cart.total %></span>
+                            <span class="cart-total">₹<%= cart.total %></span>
                         </div>
                         <hr>
                         <div class="d-flex justify-content-between mb-4">
                             <span class="fw-bold">Total</span>
-                            <span class="fw-bold">₹<%= cart.total %></span>
+                            <span class="cart-total fw-bold">₹<%= cart.total %></span>
                         </div>
                         <% if (typeof hasInsufficientStock !== 'undefined' && hasInsufficientStock) { %>
                             <button class="btn btn-dark w-100 rounded-pill" disabled onclick="showStockAlert()">
@@ -266,106 +287,92 @@
 
 <script>
 function updateQuantity(productId, action, value) {
-    let quantity;
-    const input = document.querySelector(`[data-product-id="${productId}"] .quantity-input`);
-    const cartItem = document.querySelector(`[data-product-id="${productId}"]`);
-    const priceElement = cartItem.querySelector('.text-muted');
-    const totalPriceElement = cartItem.querySelector('.fw-bold');
-    const price = parseFloat(priceElement.textContent.replace('₹', ''));
+    let newQuantity;
+    const quantityInput = document.querySelector(`[data-product-id="${productId}"] .quantity-input`);
+    const currentQuantity = parseInt(quantityInput.value);
 
     if (action === 'increase') {
-        quantity = parseInt(input.value) + 1;
+        newQuantity = currentQuantity + 1;
     } else if (action === 'decrease') {
-        quantity = parseInt(input.value) - 1;
-    } else if (action === 'set') {
-        quantity = parseInt(value);
+        newQuantity = currentQuantity - 1;
+    } else {
+        newQuantity = parseInt(value);
     }
 
-    // Update UI immediately for better user experience
-    input.value = quantity;
-    const newTotal = price * quantity;
-    totalPriceElement.textContent = '₹' + newTotal;
-    updateCartTotal();
+    // Validate quantity
+    if (newQuantity < 1) {
+        showAlert('Quantity cannot be less than 1', 'error');
+        return;
+    }
 
-    // Send update to server
+    if (newQuantity > 5) {
+        showAlert('Maximum 5 items allowed per product', 'error');
+        return;
+    }
+
+    // Send AJAX request to update cart
     fetch('/update-cart', {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/json'
         },
         body: JSON.stringify({
             productId: productId,
-            quantity: quantity
+            quantity: newQuantity
         })
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Update cart badge in header
-            const cartBadge = document.querySelector('.cart-badge');
-            if (cartBadge) {
-                cartBadge.textContent = data.cartCount;
-            }
-            
-            // Update cart total
-            updateCartTotal();
-        } else {
-            // Revert changes if server update fails
-            input.value = data.quantity || 1;
-            totalPriceElement.textContent = '₹' + (price * (data.quantity || 1));
-            updateCartTotal();
-            
-            // Show error message
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: data.message || 'Failed to update cart',
-                toast: true,
-                position: 'top-end',
-                showConfirmButton: false,
-                timer: 3000
+            // Update quantity input
+            quantityInput.value = data.quantity;
+
+            // Update item price display
+            const cartItem = quantityInput.closest('.cart-item');
+            const itemTotal = cartItem.querySelector('.item-subtotal');
+            itemTotal.textContent = '₹' + data.itemTotal.toFixed(2);
+
+            // Update cart totals
+            document.querySelectorAll('.cart-total').forEach(el => {
+                el.textContent = '₹' + data.cartTotal.toFixed(2);
             });
+
+            // Update price display
+            const priceDisplay = cartItem.querySelector('.product-price');
+            const hasOffer = data.currentPrice !== data.originalPrice;
+            
+            if (hasOffer) {
+                priceDisplay.innerHTML = `
+                    <div class="d-flex flex-column">
+                        <div class="mb-1">
+                            <span class="original-price text-decoration-line-through text-muted small">₹${data.originalPrice}</span>
+                            <span class="offer-price text-danger fw-bold ms-2">₹${data.currentPrice}</span>
+                        </div>
+                        <span class="offer-badge bg-success text-white px-2 py-1 rounded-pill small" style="width: fit-content">
+                            ${data.offerPercentage}% OFF
+                        </span>
+                    </div>
+                `;
+            } else {
+                priceDisplay.innerHTML = `<span class="fw-bold">₹${data.currentPrice}</span>`;
+            }
+        } else {
+            showAlert(data.error, 'error');
+            if (data.availableQuantity) {
+                quantityInput.value = data.availableQuantity;
+            }
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        // Show error toast
-        Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'Failed to update cart',
-            toast: true,
-            position: 'top-end',
-            showConfirmButton: false,
-            timer: 3000
-        });
+        showAlert('Failed to update cart', 'error');
     });
-}
-
-function updateCartTotal() {
-    const cartItems = document.querySelectorAll('.cart-item');
-    let total = 0;
-    
-    cartItems.forEach(item => {
-        const totalPriceElement = item.querySelector('.fw-bold');
-        const itemTotal = parseFloat(totalPriceElement.textContent.replace('₹', ''));
-        total += itemTotal;
-    });
-
-    // Update subtotal and total in order summary
-    const subtotalElement = document.querySelector('.d-flex.justify-content-between.mb-3 span:last-child');
-    const totalElement = document.querySelector('.d-flex.justify-content-between.mb-4 span:last-child');
-    
-    if (subtotalElement && totalElement) {
-        subtotalElement.textContent = '₹' + total;
-        totalElement.textContent = '₹' + total;
-    }
 }
 
 function removeItem(productId) {
     Swal.fire({
-        title: 'Remove Item',
-        text: 'Are you sure you want to remove this item from your cart?',
+        title: 'Are you sure?',
+        text: "Do you want to remove this item from cart?",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#3085d6',
@@ -376,7 +383,7 @@ function removeItem(productId) {
             fetch('/remove-from-cart', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
                     productId: productId
@@ -386,66 +393,67 @@ function removeItem(productId) {
             .then(data => {
                 if (data.success) {
                     // Remove item from DOM
-                    const cartItem = document.querySelector(`[data-product-id="${productId}"]`);
+                    const cartItem = document.querySelector(`.cart-item[data-product-id="${productId}"]`);
                     cartItem.remove();
-                    
-                    // Update cart badge
-                    const cartBadge = document.querySelector('.cart-badge');
-                    if (cartBadge) {
-                        cartBadge.textContent = data.cartCount;
-                    }
-                    
-                    // Update cart total
-                    updateCartTotal();
-                    
-                    // Check if cart is empty
-                    const cartItems = document.querySelectorAll('.cart-item');
-                    if (cartItems.length === 0) {
-                        location.reload(); // Reload to show empty cart message
+
+                    // Update cart count in header
+                    const cartCount = document.querySelector('.cart-count');
+                    if (cartCount) {
+                        cartCount.textContent = data.cartCount;
                     }
 
-                    // Show success message
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Item Removed',
-                        text: 'Item has been removed from your cart',
-                        toast: true,
-                        position: 'top-end',
-                        showConfirmButton: false,
-                        timer: 3000
+                    // Update cart total
+                    document.querySelectorAll('.cart-total').forEach(el => {
+                        el.textContent = '₹' + data.cartTotal.toFixed(2);
                     });
-                } else {
+
+                    // Show success message with SweetAlert2
                     Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
+                        title: 'Deleted!',
+                        text: 'Your item has been removed from cart.',
+                        icon: 'success',
+                        confirmButtonColor: '#3085d6'
+                    });
+
+                    // If cart is empty, reload page
+                    if (data.cartCount === 0) {
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
+                    }
+                } else {
+                    // Show error message
+                    Swal.fire({
+                        title: 'Error!',
                         text: data.message || 'Failed to remove item',
-                        toast: true,
-                        position: 'top-end',
-                        showConfirmButton: false,
-                        timer: 3000
+                        icon: 'error',
+                        confirmButtonColor: '#3085d6'
                     });
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
                 Swal.fire({
+                    title: 'Error!',
+                    text: 'Failed to remove item from cart',
                     icon: 'error',
-                    title: 'Error',
-                    text: 'Failed to remove item',
-                    toast: true,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 3000
+                    confirmButtonColor: '#3085d6'
                 });
             });
         }
     });
 }
 
-// Initialize total on page load
-document.addEventListener('DOMContentLoaded', function() {
-    updateCartTotal();
-});
+function showAlert(message, type) {
+    Swal.fire({
+        text: message,
+        icon: type,
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000
+    });
+}
 </script>
 
 <%- include('../layouts/user/footer.ejs') %>

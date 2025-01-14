@@ -1,4 +1,4 @@
-const mongoose =require('mongoose')
+const mongoose = require('mongoose')
 
 const productSchema = new mongoose.Schema({
   name: {
@@ -34,7 +34,17 @@ const productSchema = new mongoose.Schema({
   },
   offerPrice: {
     type: Number,
-    default:0
+    default: 0
+  },
+  offerPercentage: {
+    type: Number,
+    default: 0
+  },
+  offerStartDate: {
+    type: Date
+  },
+  offerEndDate: {
+    type: Date
   },
   available_quantity: {
     type: Number,

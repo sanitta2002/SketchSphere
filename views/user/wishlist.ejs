@@ -31,10 +31,19 @@
                             </div>
                             <div class="product-info">
                                 <h3 class="product-title"><%= product.name %></h3>
-                                <div class="price-container">
-                                    <span class="current-price">₹<%= product.Sale_price %></span>
-                                    <% if (product.Regular_price > product.Sale_price) { %>
-                                        <span class="original-price">₹<%= product.Regular_price %></span>
+                                <div class="product-price mb-3">
+                                    <% if (product.offerPrice > 0 && new Date(product.offerEndDate) > new Date()) { %>
+                                        <div class="d-flex flex-column">
+                                            <div class="mb-1">
+                                                <span class="original-price text-decoration-line-through text-muted small">₹<%= product.Sale_price %></span>
+                                                <span class="offer-price text-danger fw-bold ms-2">₹<%= product.offerPrice %></span>
+                                            </div>
+                                            <span class="offer-badge bg-success text-white px-2 py-1 rounded-pill small" style="width: fit-content">
+                                                <%= product.offerPercentage %>% OFF
+                                            </span>
+                                        </div>
+                                    <% } else { %>
+                                        <span class="fw-bold">₹<%= product.Sale_price %></span>
                                     <% } %>
                                 </div>
                                 <button onclick="addToCart('<%= product._id %>', 1)" class="add-to-cart-btn">
@@ -162,23 +171,28 @@
         overflow: hidden;
     }
 
-    .price-container {
+    .product-price {
         display: flex;
         align-items: center;
         gap: 8px;
         margin-bottom: 1rem;
     }
 
-    .current-price {
+    .original-price {
+        font-size: 1rem;
+        color: #95a5a6;
+        text-decoration: line-through;
+    }
+
+    .offer-price {
         font-size: 1.2rem;
         font-weight: 600;
         color: black;
     }
 
-    .original-price {
-        font-size: 1rem;
-        color: #95a5a6;
-        text-decoration: line-through;
+    .offer-badge {
+        font-size: 0.85rem;
+        font-weight: 500;
     }
 
     .add-to-cart-btn {

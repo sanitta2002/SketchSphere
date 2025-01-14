@@ -368,11 +368,22 @@
 
         <!-- Product Info Section -->
         <div class="product-info">
-            <div class="product-header">
-                <h1 class="product-title"><%= product.name %></h1>
-                <button class="wishlist-btn" onclick="toggleWishlist(this, '<%= product._id %>')">
-                    <i class="far fa-heart"></i>
-                </button>
+            <h1 class="product-title mb-3"><%= product.name %></h1>
+            <div class="product-price mb-4">
+                <% if (product.offerPrice > 0 && new Date(product.offerEndDate) > new Date()) { %>
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="original-price text-decoration-line-through text-muted h4 mb-0">₹<%= product.Sale_price %></span>
+                        <span class="offer-price text-danger h2 mb-0">₹<%= product.offerPrice %></span>
+                        <span class="offer-badge bg-success text-white px-3 py-2 rounded-pill">
+                            <%= product.offerPercentage %>% OFF
+                        </span>
+                    </div>
+                    <div class="offer-period text-muted small mt-2">
+                        Offer valid till <%= new Date(product.offerEndDate).toLocaleDateString() %>
+                    </div>
+                <% } else { %>
+                    <span class="h2 mb-0">₹<%= product.Sale_price %></span>
+                <% } %>
             </div>
             
             <div class="product-brand">
@@ -420,18 +431,6 @@
             <div class="product-description">
                 <h3><i class="fas fa-book-open"></i> About this Book</h3>
                 <%= product.description %>
-            </div>
-
-            <div class="price-container">
-                <% if (product.offerPrice && product.offerPrice < product.Sale_price) { %>
-                    <span class="current-price">₹<%= product.offerPrice %></span>
-                    <span class="original-price">₹<%= product.Sale_price %></span>
-                    <span class="discount-badge">
-                        <%= Math.round((product.Sale_price - product.offerPrice) / product.Sale_price * 100) %>% OFF
-                    </span>
-                <% } else { %>
-                    <span class="current-price">₹<%= product.Sale_price %></span>
-                <% } %>
             </div>
 
             <div class="quantity-selector">

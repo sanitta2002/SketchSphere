@@ -59,9 +59,9 @@ router.delete('/delete-address/:index', addressController.deleteAddress);
 
 // Cart routes
 router.get('/cart', userAuth,cartController.loadCart);
-router.post('/add-to-cart', userAuth,cartController.addToCart);
-router.post('/update-cart', userAuth,cartController.updateCart);
-router.post('/remove-from-cart', userAuth,cartController.removeFromCart);
+router.post('/add-to-cart', cartController.addToCart);
+router.post('/update-cart', cartController.updateCart);
+router.post('/remove-from-cart', cartController.removeFromCart);
 
 // Wishlist routes
 router.get('/wishlist', userAuth, wishlistController.loadWishlist);
