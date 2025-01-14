@@ -107,7 +107,7 @@ const paymentController = {
             await order.save();
             console.log('Order updated with payment details:', order._id);
 
-            // Clear user's cart
+            // Clear user cart
             const cartResult = await Cart.findOneAndUpdate(
                 { userId: req.session.user },
                 { $set: { items: [] } },

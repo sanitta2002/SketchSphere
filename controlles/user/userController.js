@@ -619,7 +619,7 @@ const loadShop = async (req, res) => {
         const sortBy = req.query.sortBy || '';
         const searchQuery = req.query.search || '';
         const page = parseInt(req.query.page) || 1;
-        const limit = 15; // Products per page
+        const limit = 10; // Products per page
         const skip = (page - 1) * limit;
 
         // Get active categories first

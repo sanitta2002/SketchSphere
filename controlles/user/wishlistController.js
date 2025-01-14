@@ -36,8 +36,8 @@ const toggleWishlist = async (req, res) => {
         const { productId } = req.body;
         const userId = req.session.user;
 
-        console.log('Toggle Wishlist - Product ID:', productId); // Debug log
-        console.log('Toggle Wishlist - User ID:', userId); // Debug log
+        console.log('Toggle Wishlist Product ID:', productId); 
+        console.log('Toggle Wishlist  User ID:', userId); 
 
         if (!userId) {
             return res.status(401).json({
@@ -56,7 +56,7 @@ const toggleWishlist = async (req, res) => {
         }
 
         const user = await User.findById(userId);
-        console.log('Current Wishlist:', user.wishlist); // Debug log
+        console.log('Current Wishlist:', user.wishlist); 
 
         const productIndex = user.wishlist.indexOf(productId);
 
@@ -64,7 +64,7 @@ const toggleWishlist = async (req, res) => {
             // Add to wishlist
             user.wishlist.push(productId);
             await user.save();
-            console.log('Product added to wishlist'); // Debug log
+            console.log('Product added to wishlist'); 
             res.json({
                 success: true,
                 message: "Product added to wishlist",
@@ -74,7 +74,7 @@ const toggleWishlist = async (req, res) => {
             // Remove from wishlist
             user.wishlist.splice(productIndex, 1);
             await user.save();
-            console.log('Product removed from wishlist'); // Debug log
+            console.log('Product removed from wishlist'); 
             res.json({
                 success: true,
                 message: "Product removed from wishlist",
@@ -107,8 +107,8 @@ const getWishlistStatus = async (req, res) => {
         const user = await User.findById(userId);
         const inWishlist = user.wishlist.includes(productId);
 
-        console.log('Wishlist Status - Product ID:', productId); // Debug log
-        console.log('In Wishlist:', inWishlist); // Debug log
+        console.log('Wishlist Status - Product ID:', productId); 
+        console.log('In Wishlist:', inWishlist); 
 
         res.json({
             success: true,
