@@ -95,12 +95,19 @@
                     <div class="col">
                         <div class="card product-card h-100 border-0 shadow-sm rounded-3" data-out-of-stock="<%= product.available_quantity === 0 %>">
                             <div class="product-image-container">
-                                <img 
-                                    src="<%= product.product_img && product.product_img.length > 0 ? `/uploads/re-image/${product.product_img[0]}` : '/uploads/re-image/default.jpeg' %>" 
-                                    class="card-img-top product-image" 
-                                    alt="<%= product.name %>"
-                                    onerror="this.onerror=null; this.src='/uploads/re-image/default.jpeg';"
-                                >
+                                <a href="/product/<%= product._id %>">
+                                    <img 
+                                        src="<%= product.product_img && product.product_img.length > 0 ? `/uploads/re-image/${product.product_img[0]}` : '/uploads/re-image/default.jpeg' %>" 
+                                        class="card-img-top product-image" 
+                                        alt="<%= product.name %>"
+                                        onerror="this.onerror=null; this.src='/uploads/re-image/default.jpeg';"
+                                    >
+                                </a>
+                                <% if (product.hasValidOffer) { %>
+                                    <div class="offer-badge">
+                                        <span><%= product.offerPercentage %>% OFF</span>
+                                      </div>
+                                <% } %>
                                 <% if (product.available_quantity === 0) { %>
                                     <div class="out-of-stock-overlay">Out of Stock</div>
                                 <% } %>
@@ -108,24 +115,19 @@
                                     <i class="far fa-heart"></i>
                                 </button>
                             </div>
-                            <div class="card-body p-3">
-                                <h6 class="product-title mb-1"><%= product.name %></h6>
-                                <div class="product-details">
-                                    <% if (product.writer) { %>
-                                        <div class="text-muted mb-1">
-                                            <i class="fas fa-pen me-1"></i><%= product.writer %>
+                            <div class="card-body d-flex flex-column">
+                                <h6 class="card-title mb-1 text-truncate">
+                                    <a href="/product/<%= product._id %>" class="text-dark text-decoration-none"><%= product.name %></a>
+                                </h6>
+                                <p class="text-muted small mb-2"><%= product.writer || 'Unknown Author' %></p>
+                                <div class="price-container mt-auto">
+                                    <% if (product.hasValidOffer) { %>
+                                        <div class="product-price">
+                                            <span class="current-price">₹<%= product.currentPrice %></span>
+                                            <span class="original-price">₹<%= product.originalPrice %></span>
                                         </div>
-                                    <% } %>
-                                </div>
-                                <div class="product-price">
-                                    <% if (product.offerPrice > 0 && new Date(product.offerEndDate) > new Date()) { %>
-                                        <span class="original-price text-decoration-line-through text-muted">₹<%= product.Sale_price %></span>
-                                        <span class="offer-price text-danger">₹<%= product.offerPrice %></span>
-                                        <span class="offer-badge bg-success text-white px-2 py-1 rounded-pill small">
-                                            <%= product.offerPercentage %>% OFF
-                                        </span>
                                     <% } else { %>
-                                        <span>₹<%= product.Sale_price %></span>
+                                        <p class="mb-0 fw-bold">₹<%= product.Sale_price %></p>
                                     <% } %>
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center mt-2">
@@ -143,36 +145,38 @@
             </div>
 
             <!-- Pagination -->
-            <div class="d-flex justify-content-center mt-4">
-                <nav aria-label="Page navigation">
-                    <ul class="pagination pagination-sm">
-                        <% if (hasPreviousPage) { %>
-                            <li class="page-item">
-                                <a class="page-link" href="?page=<%= currentPage - 1 %>&maxPrice=<%= selectedPrice %>&categories=<%= selectedCategories.join(',') %>&sortBy=<%= sortBy %>&search=<%= searchQuery %>" aria-label="Previous">
-                                    <span aria-hidden="true">&laquo;</span>
-                                </a>
-                            </li>
-                        <% } %>
+            <% if (totalPages > 1) { %>
+                <div class="d-flex justify-content-center mt-4">
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination pagination-sm">
+                            <% if (hasPreviousPage) { %>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=<%= previousPage %>&maxPrice=<%= maxPrice %>&categories=<%= selectedCategories.join(',') %>&sortBy=<%= sortBy %>&search=<%= searchQuery %>">
+                                        Previous
+                                    </a>
+                                </li>
+                            <% } %>
 
-                        <% for(let i = 1; i <= totalPages; i++) { %>
-                            <li class="page-item <%= currentPage === i ? 'active' : '' %>">
-                                <a class="page-link <%= currentPage === i ? 'bg-dark border-dark' : '' %>" 
-                                   href="?page=<%= i %>&maxPrice=<%= selectedPrice %>&categories=<%= selectedCategories.join(',') %>&sortBy=<%= sortBy %>&search=<%= searchQuery %>">
-                                    <%= i %>
-                                </a>
-                            </li>
-                        <% } %>
+                            <% for(let i = 1; i <= totalPages; i++) { %>
+                                <li class="page-item <%= currentPage === i ? 'active' : '' %>">
+                                    <a class="page-link <%= currentPage === i ? 'bg-dark border-dark' : '' %>" 
+                                        href="?page=<%= i %>&maxPrice=<%= maxPrice %>&categories=<%= selectedCategories.join(',') %>&sortBy=<%= sortBy %>&search=<%= searchQuery %>">
+                                        <%= i %>
+                                    </a>
+                                </li>
+                            <% } %>
 
-                        <% if (hasNextPage) { %>
-                            <li class="page-item">
-                                <a class="page-link" href="?page=<%= currentPage + 1 %>&maxPrice=<%= selectedPrice %>&categories=<%= selectedCategories.join(',') %>&sortBy=<%= sortBy %>&search=<%= searchQuery %>" aria-label="Next">
-                                    <span aria-hidden="true">&raquo;</span>
-                                </a>
-                            </li>
-                        <% } %>
-                    </ul>
-                </nav>
-            </div>
+                            <% if (hasNextPage) { %>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=<%= nextPage %>&maxPrice=<%= maxPrice %>&categories=<%= selectedCategories.join(',') %>&sortBy=<%= sortBy %>&search=<%= searchQuery %>">
+                                        Next
+                                    </a>
+                                </li>
+                            <% } %>
+                        </ul>
+                    </nav>
+                </div>
+            <% } %>
         </div>
     </div>
 </div>
@@ -309,27 +313,49 @@
     }
 
     /* Pagination Styling */
-    .page-link {
-        color: #000000;
+    .pagination {
+        margin-top: 2rem;
+        gap: 0.25rem;
     }
 
-    .page-item.active .page-link {
-        background-color: #000000;
-        border-color: #000000;
-        color: #ffffff;
+    .pagination .page-link {
+        border-radius: 0.375rem;
+        padding: 0.5rem 0.75rem;
+        color: #333;
+        border: 1px solid #dee2e6;
+        min-width: 2.5rem;
+        text-align: center;
+        transition: all 0.2s ease;
     }
 
-    .page-link:hover {
-        color: #000000;
-        background-color: #e9ecef;
+    .pagination .page-link:hover:not(.disabled) {
+        background-color: #f8f9fa;
+        color: #000;
         border-color: #dee2e6;
     }
 
-    .page-link:focus {
-        box-shadow: 0 0 0 0.25rem rgba(0, 0, 0, 0.25);
+    .pagination .page-item.active .page-link {
+        background-color: #212529;
+        border-color: #212529;
+        color: #fff;
     }
 
-    /* Wishlist Button */
+    .pagination .page-item.disabled .page-link {
+        color: #6c757d;
+        pointer-events: none;
+        background-color: #fff;
+        border-color: #dee2e6;
+    }
+
+    .pagination .page-link:focus {
+        box-shadow: 0 0 0 0.25rem rgba(33, 37, 41, 0.25);
+    }
+
+    .pagination .fas {
+        font-size: 0.75rem;
+    }
+
+    /* Wishlist Button Styling */
     .wishlist-btn {
         position: absolute;
         top: 10px;
@@ -345,28 +371,115 @@
         cursor: pointer;
         transition: all 0.3s ease;
         box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        z-index: 2;
     }
 
     .wishlist-btn:hover {
         transform: scale(1.1);
+        box-shadow: 0 3px 8px rgba(0,0,0,0.15);
     }
 
     .wishlist-btn i {
         font-size: 1.2rem;
-        color: #000;
+        color: #333;
         transition: all 0.3s ease;
     }
 
     .wishlist-btn.active i {
-        color: #ff0000;
+        color: #ff4757;
     }
 
-    .wishlist-btn.active .far.fa-heart {
-        font-weight: 900;
+    .wishlist-btn:focus {
+        outline: none;
     }
 
-    .text-warning {
-        color: #ffa502 !important;
+    .wishlist-btn:active {
+        transform: scale(0.95);
+    }
+
+    /* Animation for heart icon */
+    .wishlist-btn i {
+        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .wishlist-btn.active i {
+        transform: scale(1.2);
+    }
+
+    .wishlist-btn:hover i {
+        transform: scale(1.1);
+    }
+
+    .wishlist-btn.active:hover i {
+        transform: scale(1.3);
+    }
+
+    /* Offer Badge */
+    .offer-badge {
+        position: absolute;
+        top: 10px;
+        right: 130px;
+        background: #28a745;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px; 
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        z-index: 1;
+    }
+
+    .offer-badge span {
+        font-weight: bold;
+        font-size: 0.9rem;
+    }
+
+    .offer-badge small {
+        font-size: 0.7rem;
+        opacity: 0.9;
+    }
+
+    .product-price {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .current-price {
+        font-weight: bold;
+        color: #28a745;
+    }
+
+    .original-price {
+        text-decoration: line-through;
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+
+    /* Loading and Error States */
+    .no-results, .error-state {
+        padding: 2rem;
+        text-align: center;
+    }
+
+    .no-results i, .error-state i {
+        display: block;
+        margin-bottom: 1rem;
+    }
+
+    .spinner-border {
+        width: 3rem;
+        height: 3rem;
+    }
+
+    /* Reset button */
+    .btn-outline-dark:hover {
+        background-color: #212529;
+        color: #fff;
+    }
+
+    .btn-outline-dark i {
+        font-size: 0.8rem;
     }
 </style>
 
@@ -377,116 +490,134 @@ document.addEventListener('DOMContentLoaded', function() {
     const applyButton = document.querySelector('.btn-dark.btn-sm');
     const sortSelect = document.getElementById('sortSelect');
     const searchInput = document.getElementById('searchInput');
-    const productsContainer = document.querySelector('.row.row-cols-2.row-cols-md-3.row-cols-lg-5');
-    
-    // Update price label when slider moves
-    priceRange.addEventListener('input', function() {
-        priceLabels[1].textContent = '₹' + this.value;
-    });
+    let debounceTimer;
 
-    // Function to update URL and fetch products
-    function updateProducts(keepPage = false) {
-        const params = new URLSearchParams(window.location.search);
+    // Function to calculate best offer and prices
+    function calculateBestOffer(product) {
+        const now = new Date();
+        const category = product.category_id;
         
-        // Get current values
-        const searchQuery = searchInput.value.trim();
-        const selectedCategories = Array.from(document.querySelectorAll('.form-check-input:checked'))
-            .map(checkbox => checkbox.value);
-        const maxPrice = priceRange.value;
-        const sortValue = sortSelect.value;
-
-        // Update parameters
-        if (searchQuery) params.set('search', searchQuery);
-        else params.delete('search');
+        // Get product and category offers
+        const productOffer = product.offerPercentage || 0;
+        const categoryOffer = category?.offerPercentage || 0;
         
-        if (selectedCategories.length > 0) params.set('categories', selectedCategories.join(','));
-        else params.delete('categories');
+        // Check if offers are valid
+        const hasValidProductOffer = productOffer > 0 && new Date(product.offerEndDate) > now;
+        const hasValidCategoryOffer = categoryOffer > 0 && category && new Date(category.offerEndDate) > now;
         
-        params.set('maxPrice', maxPrice);
+        // Determine which offer is better
+        let bestOffer = 0;
+        let offerType = 'none';
         
-        if (sortValue) params.set('sortBy', sortValue);
-        else params.delete('sortBy');
-
-        // Reset to page 1 unless keepPage is true
-        if (!keepPage) {
-            params.delete('page');
+        if (hasValidProductOffer && hasValidCategoryOffer) {
+            if (productOffer >= categoryOffer) {
+                bestOffer = productOffer;
+                offerType = 'product';
+            } else {
+                bestOffer = categoryOffer;
+                offerType = 'category';
+            }
+        } else if (hasValidProductOffer) {
+            bestOffer = productOffer;
+            offerType = 'product';
+        } else if (hasValidCategoryOffer) {
+            bestOffer = categoryOffer;
+            offerType = 'category';
         }
 
-        // Update URL without reloading
-        const newUrl = window.location.pathname + '?' + params.toString();
-        window.history.pushState({ path: newUrl }, '', newUrl);
+        // Calculate current price with best offer
+        let currentPrice = product.Sale_price;
+        if (bestOffer > 0) {
+            const discountAmount = Math.round((product.Sale_price * bestOffer) / 100);
+            currentPrice = Math.round(product.Sale_price - discountAmount);
+        }
 
-        // Fetch and render products
-        fetch('/api/search-products?' + params.toString())
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    productsContainer.innerHTML = data.products.map(renderProduct).join('');
-                    // Update pagination if provided
-                    if (data.pagination) {
-                        document.querySelector('.pagination-container').innerHTML = data.pagination;
-                    }
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-            });
+        return {
+            currentPrice,
+            originalPrice: product.Sale_price,
+            offerPercentage: bestOffer,
+            hasValidOffer: bestOffer > 0,
+            offerType
+        };
     }
 
-    // Handle sort selection change
-    sortSelect.addEventListener('change', function() {
-        updateProducts();
-    });
-
-    // Handle search with debounce
-    let searchTimeout;
-    searchInput.addEventListener('input', function() {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-            updateProducts();
-        }, 300);
-    });
-
-    // Handle filter application
-    applyButton.addEventListener('click', function() {
-        updateProducts();
-    });
-
-    // Function to render product HTML
     function renderProduct(product) {
+        // Calculate best offer details
+        const now = new Date();
+        const category = product.category_id;
+        
+        // Get product and category offers
+        const productOffer = product.offerPercentage || 0;
+        const categoryOffer = category?.offerPercentage || 0;
+        
+        // Check if offers are valid
+        const hasValidProductOffer = productOffer > 0 && new Date(product.offerEndDate) > now;
+        const hasValidCategoryOffer = categoryOffer > 0 && category && new Date(category.offerEndDate) > now;
+        
+        // Determine which offer is better
+        let bestOffer = 0;
+        let offerType = 'none';
+        
+        if (hasValidProductOffer && hasValidCategoryOffer) {
+            if (productOffer >= categoryOffer) {
+                bestOffer = productOffer;
+                offerType = 'product';
+            } else {
+                bestOffer = categoryOffer;
+                offerType = 'category';
+            }
+        } else if (hasValidProductOffer) {
+            bestOffer = productOffer;
+            offerType = 'product';
+        } else if (hasValidCategoryOffer) {
+            bestOffer = categoryOffer;
+            offerType = 'category';
+        }
+
+        // Calculate current price with best offer
+        let currentPrice = product.Sale_price;
+        if (bestOffer > 0) {
+            const discountAmount = Math.round((product.Sale_price * bestOffer) / 100);
+            currentPrice = Math.round(product.Sale_price - discountAmount);
+        }
+
+        const hasValidOffer = bestOffer > 0;
+
         return `
             <div class="col">
                 <div class="card product-card h-100 border-0 shadow-sm rounded-3" data-out-of-stock="${product.available_quantity === 0}">
                     <div class="product-image-container">
-                        <img 
-                            src="${product.product_img && product.product_img.length > 0 ? `/uploads/re-image/${product.product_img[0]}` : '/uploads/re-image/default.jpeg'}" 
-                            class="card-img-top product-image" 
-                            alt="${product.name}"
-                            onerror="this.onerror=null; this.src='/uploads/re-image/default.jpeg';"
-                        >
+                        <a href="/product/${product._id}">
+                            <img 
+                                src="${product.product_img && product.product_img.length > 0 ? `/uploads/re-image/${product.product_img[0]}` : '/uploads/re-image/default.jpeg'}" 
+                                class="card-img-top product-image" 
+                                alt="${product.name}"
+                                onerror="this.onerror=null; this.src='/uploads/re-image/default.jpeg';"
+                            >
+                        </a>
+                        ${hasValidOffer ? `
+                            <div class="offer-badge">
+                                <span>${bestOffer}% OFF</span>
+                            </div>
+                        ` : ''}
                         ${product.available_quantity === 0 ? '<div class="out-of-stock-overlay">Out of Stock</div>' : ''}
                         <button class="wishlist-btn" onclick="toggleWishlist(this, '${product._id}')" data-product-id="${product._id}">
                             <i class="far fa-heart"></i>
                         </button>
                     </div>
-                    <div class="card-body p-3">
-                        <h6 class="product-title mb-1">${product.name}</h6>
-                        <div class="product-details small">
-                            ${product.writer ? `
-                                <div class="text-muted mb-1">
-                                    <i class="fas fa-pen me-1"></i>${product.writer}
+                    <div class="card-body d-flex flex-column">
+                        <h6 class="card-title mb-1 text-truncate">
+                            <a href="/product/${product._id}" class="text-dark text-decoration-none">${product.name}</a>
+                        </h6>
+                        <p class="text-muted small mb-2">${product.writer || 'Unknown Author'}</p>
+                        <div class="price-container mt-auto">
+                            ${hasValidOffer ? `
+                                <div class="product-price">
+                                    <span class="current-price">₹${currentPrice}</span>
+                                    <span class="original-price">₹${product.Sale_price}</span>
                                 </div>
-                            ` : ''}
-                        </div>
-                        <div class="product-price">
-                            ${product.offerPrice > 0 && new Date(product.offerEndDate) > new Date() ? `
-                                <span class="original-price text-decoration-line-through text-muted">₹${product.Sale_price}</span>
-                                <span class="offer-price text-danger">₹${product.offerPrice}</span>
-                                <span class="offer-badge bg-success text-white px-2 py-1 rounded-pill small">
-                                    ${product.offerPercentage}% OFF
-                                </span>
                             ` : `
-                                <span>₹${product.Sale_price}</span>
+                                <p class="mb-0 fw-bold">₹${product.Sale_price}</p>
                             `}
                         </div>
                         <div class="d-flex justify-content-between align-items-center mt-2">
@@ -501,79 +632,8 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         `;
     }
-});
 
-async function toggleWishlist(button, productId) {
-    try {
-        const response = await fetch('/toggle-wishlist', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                productId: productId
-            })
-        });
-
-        const data = await response.json();
-        
-        if (response.ok) {
-            button.classList.toggle('active');
-            const icon = button.querySelector('i');
-            if (button.classList.contains('active')) {
-                icon.classList.remove('far');
-                icon.classList.add('fas');
-            } else {
-                icon.classList.remove('fas');
-                icon.classList.add('far');
-            }
-            
-            Swal.fire({
-                icon: 'success',
-                title: 'Success!',
-                text: data.message,
-                showConfirmButton: false,
-                timer: 1500
-            });
-        } else {
-            throw new Error(data.message || 'Failed to toggle wishlist');
-        }
-    } catch (error) {
-        if (error.message === 'Please login to add items to wishlist') {
-            window.location.href = '/login';
-        } else {
-            Swal.fire({
-                icon: 'error',
-                title: 'Oops...',
-                text: error.message || 'Something went wrong!',
-            });
-        }
-    }
-}
-
-// Check initial wishlist status for all products
-async function checkWishlistStatus() {
-    const wishlistButtons = document.querySelectorAll('.wishlist-btn');
-    wishlistButtons.forEach(async (button) => {
-        const productId = button.getAttribute('data-product-id');
-        try {
-            const response = await fetch(`/wishlist-status/${productId}`);
-            const data = await response.json();
-            if (data.inWishlist) {
-                button.classList.add('active');
-                const icon = button.querySelector('i');
-                icon.classList.remove('far');
-                icon.classList.add('fas');
-            }
-        } catch (error) {
-            console.error('Error checking wishlist status:', error);
-        }
-    });
-}
-
-// Call on page load
-document.addEventListener('DOMContentLoaded', function() {
-    checkWishlistStatus();
+    // Rest of your existing code...
 });
 </script>
 

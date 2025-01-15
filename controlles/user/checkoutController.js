@@ -16,25 +16,74 @@ const checkoutController = {
 
             const user = await User.findById(req.session.user);
             const cart = await Cart.findOne({ userId: req.session.user })
-                .populate('items.productId', 'name product_img Sale_price available_quantity offerPrice offerPercentage offerStartDate offerEndDate');
+                .populate({
+                    path: 'items.productId',
+                    populate: {
+                        path: 'category_id',
+                        select: 'name offerPercentage offerEndDate'
+                    }
+                });
 
             if (!cart || !cart.items || cart.items.length === 0) {
                 return res.redirect('/cart');
             }
 
-            // Calculate prices with offers
-            cart.items = cart.items.map(item => {
-                const hasValidOffer = item.productId.offerPrice > 0 && 
-                                   new Date(item.productId.offerEndDate) > new Date();
-                item.currentPrice = hasValidOffer ? item.productId.offerPrice : item.productId.Sale_price;
-                item.totalPrice = item.currentPrice * item.quantity;
-                return item;
+            // Calculate prices with best offers (product or category)
+            const cartItems = cart.items.map(item => {
+                const product = item.productId;
+                const now = new Date();
+                const category = product.category_id;
+
+                // Get product and category offers
+                const productOffer = product.offerPercentage || 0;
+                const categoryOffer = category?.offerPercentage || 0;
+                
+                // Check if offers are valid
+                const hasValidProductOffer = productOffer > 0 && new Date(product.offerEndDate) > now;
+                const hasValidCategoryOffer = categoryOffer > 0 && category && new Date(category.offerEndDate) > now;
+                
+                // Determine which offer is better
+                let bestOffer = 0;
+                let offerType = 'none';
+                
+                if (hasValidProductOffer && hasValidCategoryOffer) {
+                    // Both offers are valid, use the higher one
+                    if (productOffer >= categoryOffer) {
+                        bestOffer = productOffer;
+                        offerType = 'product';
+                    } else {
+                        bestOffer = categoryOffer;
+                        offerType = 'category';
+                    }
+                } else if (hasValidProductOffer) {
+                    bestOffer = productOffer;
+                    offerType = 'product';
+                } else if (hasValidCategoryOffer) {
+                    bestOffer = categoryOffer;
+                    offerType = 'category';
+                }
+                
+                // Calculate current price with best offer
+                let currentPrice = product.Sale_price;
+                if (bestOffer > 0) {
+                    const discountAmount = Math.round((product.Sale_price * bestOffer) / 100);
+                    currentPrice = Math.round(product.Sale_price - discountAmount);
+                }
+
+                return {
+                    ...item.toObject(),
+                    currentPrice,
+                    originalPrice: product.Sale_price,
+                    offerPercentage: bestOffer,
+                    offerType,
+                    productOffer: hasValidProductOffer ? productOffer : 0,
+                    categoryOffer: hasValidCategoryOffer ? categoryOffer : 0,
+                    totalPrice: currentPrice * item.quantity
+                };
             });
 
             // Calculate cart total with offers
-            const totalPrice = cart.items.reduce((total, item) => {
-                return total + item.totalPrice;
-            }, 0);
+            const subtotal = cartItems.reduce((total, item) => total + item.totalPrice, 0);
 
             const userAddress = await Address.findOne({ userId: req.session.user });
             const addresses = userAddress ? userAddress.address : [];
@@ -48,7 +97,7 @@ const checkoutController = {
             const allActiveCoupons = await Coupon.find({
                 isList: true,
                 expireOn: { $gt: new Date() },
-                minimumPrice: { $lte: totalPrice }
+                minimumPrice: { $lte: subtotal }
             });
 
             // Filter out used coupons
@@ -57,9 +106,12 @@ const checkoutController = {
             );
 
             res.render('checkout', {
-                cart,
+                cart: {
+                    ...cart.toObject(),
+                    items: cartItems
+                },
                 addresses,
-                totalPrice,
+                subtotal,
                 activeCoupons,
                 pageTitle: 'Checkout',
                 user
@@ -195,7 +247,13 @@ const checkoutController = {
 
             // Get cart items first
             const cart = await Cart.findOne({ userId: req.session.user })
-                .populate('items.productId', 'name Sale_price available_quantity offerPrice offerPercentage offerStartDate offerEndDate');
+                .populate({
+                    path: 'items.productId',
+                    populate: {
+                        path: 'category_id',
+                        select: 'name offerPercentage offerEndDate'
+                    }
+                });
 
             if (!cart || !cart.items || cart.items.length === 0) {
                 return res.status(400).json({
@@ -206,14 +264,51 @@ const checkoutController = {
 
             // Calculate final prices with offers
             const orderItems = cart.items.map(item => {
-                const hasValidOffer = item.productId.offerPrice > 0 && 
-                                   new Date(item.productId.offerEndDate) > new Date();
-                const price = hasValidOffer ? item.productId.offerPrice : item.productId.Sale_price;
+                const product = item.productId;
+                const now = new Date();
+                const category = product.category_id;
+
+                // Get product and category offers
+                const productOffer = product.offerPercentage || 0;
+                const categoryOffer = category?.offerPercentage || 0;
+                
+                // Check if offers are valid
+                const hasValidProductOffer = productOffer > 0 && new Date(product.offerEndDate) > now;
+                const hasValidCategoryOffer = categoryOffer > 0 && category && new Date(category.offerEndDate) > now;
+                
+                // Determine which offer is better
+                let bestOffer = 0;
+                let offerType = 'none';
+                
+                if (hasValidProductOffer && hasValidCategoryOffer) {
+                    // Both offers are valid, use the higher one
+                    if (productOffer >= categoryOffer) {
+                        bestOffer = productOffer;
+                        offerType = 'product';
+                    } else {
+                        bestOffer = categoryOffer;
+                        offerType = 'category';
+                    }
+                } else if (hasValidProductOffer) {
+                    bestOffer = productOffer;
+                    offerType = 'product';
+                } else if (hasValidCategoryOffer) {
+                    bestOffer = categoryOffer;
+                    offerType = 'category';
+                }
+                
+                // Calculate current price with best offer
+                let currentPrice = product.Sale_price;
+                if (bestOffer > 0) {
+                    const discountAmount = Math.round((product.Sale_price * bestOffer) / 100);
+                    currentPrice = Math.round(product.Sale_price - discountAmount);
+                }
+
                 return {
                     product: item.productId._id,
                     quantity: item.quantity,
-                    price: price,
-                    totalPrice: price * item.quantity
+                    price: currentPrice,
+                    totalPrice: currentPrice * item.quantity
                 };
             });
 

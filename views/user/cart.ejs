@@ -36,25 +36,24 @@
                                         <div class="col-lg-4 col-md-4">
                                             <h6 class="product-name mb-2"><%= item.productId.name %></h6>
                                             <div class="product-price mb-2">
-                                                <% 
-                                                    const hasValidOffer = item.productId.offerPrice > 0 && 
-                                                                        new Date(item.productId.offerEndDate) > new Date();
-                                                    const displayPrice = hasValidOffer ? 
-                                                                        item.productId.offerPrice : 
-                                                                        item.productId.Sale_price;
-                                                %>
-                                                <% if (hasValidOffer) { %>
+                                                <% if (item.offerPercentage > 0) { %>
                                                     <div class="d-flex flex-column">
                                                         <div class="mb-1">
-                                                            <span class="original-price text-decoration-line-through text-muted small">₹<%= item.productId.Sale_price %></span>
-                                                            <span class="offer-price text-danger fw-bold ms-2">₹<%= item.productId.offerPrice %></span>
+                                                            <span class="original-price text-decoration-line-through text-muted small">₹<%= item.originalPrice %></span>
+                                                            <span class="offer-price text-danger fw-bold ms-2">₹<%= item.currentPrice %></span>
                                                         </div>
-                                                        <span class="offer-badge bg-success text-white px-2 py-1 rounded-pill small" style="width: fit-content">
-                                                            <%= item.productId.offerPercentage %>% OFF
-                                                        </span>
+                                                        <% if (item.offerType === 'category') { %>
+                                                            <span class="offer-badge bg-success text-white px-2 py-1 rounded-pill small" style="width: fit-content">
+                                                                Category <%= item.offerPercentage %>% OFF
+                                                            </span>
+                                                        <% } else { %>
+                                                            <span class="offer-badge bg-success text-white px-2 py-1 rounded-pill small" style="width: fit-content">
+                                                                Product <%= item.offerPercentage %>% OFF
+                                                            </span>
+                                                        <% } %>
                                                     </div>
                                                 <% } else { %>
-                                                    <span class="fw-bold">₹<%= item.productId.Sale_price %></span>
+                                                    <span class="fw-bold">₹<%= item.originalPrice %></span>
                                                 <% } %>
                                             </div>
                                             <% if (item.productId.available_quantity === 0) { %>
@@ -68,19 +67,13 @@
                                             <div class="quantity-controls d-flex align-items-center <%= item.productId.available_quantity === 0 ? 'opacity-50' : '' %>">
                                                 <button class="btn btn-sm quantity-btn minus" 
                                                         onclick="updateQuantity('<%= item.productId._id %>', 'decrease')"
-                                                        <%= (item.quantity <= 1 || item.productId.available_quantity === 0) ? 'disabled' : '' %>>
+                                                        <%= item.productId.available_quantity === 0 ? 'disabled' : '' %>>
                                                     <i class="fas fa-minus"></i>
                                                 </button>
-                                                <input type="number" class="form-control quantity-input mx-2" 
-                                                       value="<%= item.quantity %>" 
-                                                       min="1" 
-                                                       max="<%= Math.min(5, item.productId.available_quantity) %>"
-                                                       <%= item.productId.available_quantity === 0 ? 'disabled' : '' %>
-                                                       onchange="updateItemSubtotal(this)"
-                                                       data-product-id="<%= item.productId._id %>">
-                                                <button class="btn btn-sm quantity-btn plus" 
+                                                <input type="number" class="quantity-input" value="<%= item.quantity %>" max="<%= item.productId.available_quantity %>" min="1" readonly>
+                                                <button class="btn btn-sm quantity-btn plus"
                                                         onclick="updateQuantity('<%= item.productId._id %>', 'increase')"
-                                                        <%= (item.quantity >= 5 || item.quantity >= item.productId.available_quantity || item.productId.available_quantity === 0) ? 'disabled' : '' %>>
+                                                        <%= item.productId.available_quantity === 0 || item.quantity >= item.productId.available_quantity ? 'disabled' : '' %>>
                                                     <i class="fas fa-plus"></i>
                                                 </button>
                                             </div>
@@ -115,26 +108,30 @@
         <div class="col-lg-4">
             <div class="card border-0 shadow-sm rounded-4">
                 <div class="card-body p-4">
-                    <h5 class="fw-bold mb-4">Order Summary</h5>
-                    <% if (cart && cart.items && cart.items.length > 0) { %>
+                    <h4 class="fw-bold mb-4">Order Summary</h4>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>Subtotal</span>
+                        <span class="cart-subtotal">₹<%= cart.subtotal || 0 %></span>
+                    </div>
+                    <% if (cart.items && cart.items.length > 0) { %>
                         <div class="d-flex justify-content-between mb-3">
-                            <span>Subtotal</span>
-                            <span class="cart-total">₹<%= cart.total %></span>
+                            <span>Items</span>
+                            <span><%= cart.items.length %></span>
                         </div>
-                        <hr>
-                        <div class="d-flex justify-content-between mb-4">
-                            <span class="fw-bold">Total</span>
-                            <span class="cart-total fw-bold">₹<%= cart.total %></span>
-                        </div>
-                        <% if (typeof hasInsufficientStock !== 'undefined' && hasInsufficientStock) { %>
-                            <button class="btn btn-dark w-100 rounded-pill" disabled onclick="showStockAlert()">
-                                Proceed to Checkout
-                            </button>
-                        <% } else { %>
-                            <a href="/checkout" class="btn btn-dark w-100 rounded-pill">
-                                Proceed to Checkout
-                            </a>
-                        <% } %>
+                    <% } %>
+                    <hr>
+                    <div class="d-flex justify-content-between mb-4">
+                        <span class="fw-bold">Total</span>
+                        <span class="cart-total fw-bold">₹<%= cart.total || 0 %></span>
+                    </div>
+                    <% if (cart.items && cart.items.length > 0) { %>
+                        <a href="/checkout" class="btn btn-dark w-100 rounded-pill">
+                            Proceed to Checkout
+                        </a>
+                    <% } else { %>
+                        <button class="btn btn-dark w-100 rounded-pill" disabled>
+                            Cart is Empty
+                        </button>
                     <% } %>
                 </div>
             </div>
@@ -285,41 +282,38 @@
 }
 </style>
 
-<script>
-function updateQuantity(productId, action, value) {
-    let newQuantity;
-    const quantityInput = document.querySelector(`[data-product-id="${productId}"] .quantity-input`);
-    const currentQuantity = parseInt(quantityInput.value);
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+function updateQuantity(productId, action) {
+    const cartItem = document.querySelector(`[data-product-id="${productId}"]`);
+    if (!cartItem) return;
+
+    const quantityInput = cartItem.querySelector('.quantity-input');
+    const currentQuantity = parseInt(quantityInput.value);
+    let newQuantity = currentQuantity;
+    
     if (action === 'increase') {
         newQuantity = currentQuantity + 1;
     } else if (action === 'decrease') {
         newQuantity = currentQuantity - 1;
-    } else {
-        newQuantity = parseInt(value);
     }
 
-    // Validate quantity
-    if (newQuantity < 1) {
-        showAlert('Quantity cannot be less than 1', 'error');
-        return;
-    }
+    // Show loading state
+    const buttons = cartItem.querySelectorAll('.quantity-btn');
+    buttons.forEach(btn => {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    });
+    quantityInput.disabled = true;
 
-    if (newQuantity > 5) {
-        showAlert('Maximum 5 items allowed per product', 'error');
-        return;
-    }
-
-    // Send AJAX request to update cart
+    // Update cart on server
     fetch('/update-cart', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            productId: productId,
-            quantity: newQuantity
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId, quantity: newQuantity })
     })
     .then(response => response.json())
     .then(data => {
@@ -327,47 +321,107 @@ function updateQuantity(productId, action, value) {
             // Update quantity input
             quantityInput.value = data.quantity;
 
-            // Update item price display
-            const cartItem = quantityInput.closest('.cart-item');
+            // Update item total price
             const itemTotal = cartItem.querySelector('.item-subtotal');
-            itemTotal.textContent = '₹' + data.itemTotal.toFixed(2);
+            if (itemTotal) {
+                itemTotal.textContent = `₹${data.total.toFixed(2)}`;
+            }
 
-            // Update cart totals
-            document.querySelectorAll('.cart-total').forEach(el => {
-                el.textContent = '₹' + data.cartTotal.toFixed(2);
-            });
+            // Update all cart totals
+            updateCartTotals();
 
-            // Update price display
-            const priceDisplay = cartItem.querySelector('.product-price');
-            const hasOffer = data.currentPrice !== data.originalPrice;
+            // Update button states
+            const minusBtn = cartItem.querySelector('.quantity-btn.minus');
+            const plusBtn = cartItem.querySelector('.quantity-btn.plus');
             
-            if (hasOffer) {
-                priceDisplay.innerHTML = `
-                    <div class="d-flex flex-column">
-                        <div class="mb-1">
-                            <span class="original-price text-decoration-line-through text-muted small">₹${data.originalPrice}</span>
-                            <span class="offer-price text-danger fw-bold ms-2">₹${data.currentPrice}</span>
-                        </div>
-                        <span class="offer-badge bg-success text-white px-2 py-1 rounded-pill small" style="width: fit-content">
-                            ${data.offerPercentage}% OFF
-                        </span>
-                    </div>
-                `;
-            } else {
-                priceDisplay.innerHTML = `<span class="fw-bold">₹${data.currentPrice}</span>`;
+            if (minusBtn) {
+                minusBtn.disabled = data.quantity <= 1;
+                minusBtn.innerHTML = '<i class="fas fa-minus"></i>';
+            }
+            
+            if (plusBtn) {
+                plusBtn.disabled = data.quantity >= data.maxQuantity;
+                plusBtn.innerHTML = '<i class="fas fa-plus"></i>';
+            }
+
+            // Show success message if needed
+            if (data.message) {
+                showAlert(data.message, 'success');
             }
         } else {
-            showAlert(data.error, 'error');
-            if (data.availableQuantity) {
-                quantityInput.value = data.availableQuantity;
-            }
+            // Revert quantity and show error
+            quantityInput.value = currentQuantity;
+            showAlert(data.message || 'Failed to update cart', 'error');
         }
     })
     .catch(error => {
         console.error('Error:', error);
+        quantityInput.value = currentQuantity;
         showAlert('Failed to update cart', 'error');
+    })
+    .finally(() => {
+        // Reset loading state
+        buttons.forEach(btn => {
+            btn.disabled = false;
+            btn.innerHTML = btn.classList.contains('plus') ? 
+                '<i class="fas fa-plus"></i>' : 
+                '<i class="fas fa-minus"></i>';
+        });
+        quantityInput.disabled = false;
     });
 }
+
+function updateCartTotals() {
+    // Calculate subtotal from all item totals
+    let subtotal = 0;
+    const itemTotals = document.querySelectorAll('.item-subtotal');
+    itemTotals.forEach(itemTotal => {
+        const price = parseFloat(itemTotal.textContent.replace('₹', ''));
+        if (!isNaN(price)) {
+            subtotal += price;
+        }
+    });
+
+    // Update subtotal display
+    const subtotalElements = document.querySelectorAll('.cart-subtotal');
+    subtotalElements.forEach(el => {
+        el.textContent = `₹${subtotal.toFixed(2)}`;
+    });
+
+    // Update total display (add any additional costs here if needed)
+    const totalElements = document.querySelectorAll('.cart-total');
+    totalElements.forEach(el => {
+        el.textContent = `₹${subtotal.toFixed(2)}`;
+    });
+
+    // Update order summary if it exists
+    const orderSubtotal = document.querySelector('.order-subtotal');
+    if (orderSubtotal) {
+        orderSubtotal.textContent = `₹${subtotal.toFixed(2)}`;
+    }
+
+    const orderTotal = document.querySelector('.order-total');
+    if (orderTotal) {
+        orderTotal.textContent = `₹${subtotal.toFixed(2)}`;
+    }
+}
+
+function showAlert(message, type) {
+    Swal.fire({
+        text: message,
+        icon: type,
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true
+    });
+}
+
+// Calculate initial totals when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    updateCartTotals();
+});
 
 function removeItem(productId) {
     Swal.fire({
@@ -443,17 +497,28 @@ function removeItem(productId) {
         }
     });
 }
-
-function showAlert(message, type) {
-    Swal.fire({
-        text: message,
-        icon: type,
-        toast: true,
-        position: 'top-end',
-        showConfirmButton: false,
-        timer: 3000
-    });
-}
 </script>
+
+<style>
+.colored-toast.swal2-icon-warning {
+    background-color: #f8bb86 !important;
+    color: white !important;
+}
+.colored-toast.swal2-icon-error {
+    background-color: #f27474 !important;
+    color: white !important;
+}
+.colored-toast .swal2-title {
+    color: white !important;
+    font-size: 1rem !important;
+}
+.colored-toast .swal2-close {
+    color: white !important;
+}
+.colored-toast .swal2-html-container {
+    color: white !important;
+    font-size: 0.875rem !important;
+}
+</style>
 
 <%- include('../layouts/user/footer.ejs') %>

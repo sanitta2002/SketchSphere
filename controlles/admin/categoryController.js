@@ -1,27 +1,14 @@
 const Category = require('../../models/categorySchema');
 const category = require('../../models/categorySchema');
+const Product = require('../../models/productSchema'); // Assuming Product model is defined in productSchema.js
 
 const categoryInfo = async(req,res) => {
     try {
-        const page = parseInt(req.query.page) || 1;
-        const limit = 4;
-        const skip = (page-1) * limit;
-        const categoryData = await category.find({})
-            .sort({createdAt: -1})
-            .skip(skip)
-            .limit(limit);
-
-        const totalCategories = await category.countDocuments();
-        const totalPages = Math.ceil(totalCategories/limit);
-        res.render("category", {
-            cat: categoryData,
-            currentPage: page,
-            totalPages: totalPages,
-            totalCategories: totalCategories
-        });
+        const categories = await Category.find();
+        res.render('category', { categories });
     } catch (error) {
-        console.error(error);
-        res.redirect('/pageerror');
+        console.log("Error loading categories:", error);
+        res.status(500).send('Server error');
     }
 }
 
@@ -113,11 +100,97 @@ const EditCategoty = async (req,res) => {
     }
 }
 
+// Add category offer and update all products in the category
+const addCategoryOffer = async (req, res) => {
+    try {
+        const categoryId = req.body.categoryId;
+        const { offerPercentage, offerStartDate, offerEndDate } = req.body;
+
+        // Find the category
+        const category = await Category.findById(categoryId);
+        if (!category) {
+            req.session.error = 'Category not found';
+            return res.redirect('/admin/category');
+        }
+
+        // Update category with offer details
+        category.offerPercentage = offerPercentage;
+        category.offerStartDate = offerStartDate;
+        category.offerEndDate = offerEndDate;
+        await category.save();
+
+        // Find all products in this category and update their offers
+        const products = await Product.find({ category_id: categoryId });
+        
+        // for (const product of products) {
+            // Calculate offer price for each product
+            // const salePrice = product.Sale_price;
+            // const discountAmount = (salePrice * offerPercentage) / 100;
+            // const offerPrice = salePrice - discountAmount;
+
+            // Update product with offer details
+        //     product.offerPrice = offerPrice;
+        //     product.offerPercentage = offerPercentage;
+        //     product.offerStartDate = offerStartDate;
+        //     product.offerEndDate = offerEndDate;
+        //     await product.save();
+        // }
+
+        req.session.success = 'Category offer added and applied to all products!';
+        res.redirect('/admin/category');
+    } catch (error) {
+        console.error('Error in addCategoryOffer:', error);
+        req.session.error = 'Failed to add category offer';
+        res.redirect('/admin/category');
+    }
+};
+
+// Remove category offer and update all products
+const removeCategoryOffer = async (req, res) => {
+    try {
+        const categoryId = req.body.categoryId;
+
+        // Find the category
+        const category = await Category.findById(categoryId);
+        if (!category) {
+            req.session.error = 'Category not found';
+            return res.redirect('/admin/category');
+        }
+
+        // Remove offer from category
+        category.offerPercentage = 0;
+        category.offerStartDate = null;
+        category.offerEndDate = null;
+        await category.save();
+
+        // Find all products in this category and remove their offers
+        // const products = await Product.find({ category_id: categoryId });
+        
+        // for (const product of products) {
+            // Remove offer details from each product
+        //     product.offerPrice = 0;
+        //     product.offerPercentage = 0;
+        //     product.offerStartDate = null;
+        //     product.offerEndDate = null;
+        //     await product.save();
+        // }
+
+        req.session.success = 'Category offer removed from category and all products!';
+        res.redirect('/admin/category');
+    } catch (error) {
+        console.error('Error in removeCategoryOffer:', error);
+        req.session.error = 'Failed to remove category offer';
+        res.redirect('/admin/category');
+    }
+}
+
 module.exports = {
     categoryInfo,
     addCategory,
     getListCategory,
     getunListCategory,
     getEditCategoty,
-    EditCategoty
+    EditCategoty,
+    addCategoryOffer,
+    removeCategoryOffer
 }

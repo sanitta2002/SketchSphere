@@ -29,6 +29,10 @@ router.get('/UnlistCategory',adminAuth,categoryController.getunListCategory)
 router.get('/editCategory',adminAuth,categoryController.getEditCategoty)
 router.post('/editCategory/:id',adminAuth,categoryController.EditCategoty)
 
+// Category offer routes
+router.post('/add-category-offer', adminAuth, categoryController.addCategoryOffer);
+router.post('/remove-category-offer', adminAuth, categoryController.removeCategoryOffer);
+
 router.get('/addProducts',productController.getProductAddPage)
 router.post('/addProducts',adminAuth,uploads.array("images",4),productController.addproduct)
 router.get('/products',adminAuth,productController.getAllProducts)
@@ -38,10 +42,10 @@ router.get('/editProduct',adminAuth,productController.getEditProduct)
 router.post('/editProduct/:id',adminAuth,uploads.array('images',4),productController.editProduct)
 router.post('/deleteImage',adminAuth,productController.deleteSingleImage)
 
-// Offer Management Routes
+// Product offer routes
 router.get('/products/:id/add-offer', adminAuth, offerController.getAddOffer);
 router.post('/products/:id/add-offer', adminAuth, offerController.addOffer);
-router.delete('/products/:id/remove-offer', adminAuth, offerController.removeOffer);
+router.get('/products/:id/remove-offer', adminAuth, offerController.removeOffer);
 
 // Coupon Management Routes
 router.get('/coupons', adminAuth, couponController.getAllCoupons);

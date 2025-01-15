@@ -195,27 +195,45 @@
         margin: 10px 0;
     }
 
-    .original-price {
-        color: #999;
-        font-size: 0.9em;
-        text-decoration: line-through;
-    }
-
-    .offer-price {
-        color: #dc3545;
-        font-size: 1.1em;
-        font-weight: bold;
-        margin-left: 8px;
-    }
-
     .offer-badge {
-        background-color: #28a745;
+        position: absolute;
+        top: 10px;
+        right: 209px;
+        background: #28a745;
         color: white;
-        padding: 2px 8px;
-        border-radius: 12px;
-        font-size: 0.8em;
-        display: inline-block;
-        margin-top: 4px;
+        padding: 4px 8px;
+        border-radius: 4px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        z-index: 1;
+    }
+
+    .offer-badge span {
+        font-weight: bold;
+        font-size: 0.9rem;
+    }
+
+    .offer-badge small {
+        font-size: 0.7rem;
+        opacity: 0.9;
+    }
+
+    .product-price {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .current-price {
+        font-weight: bold;
+        color: #28a745;
+    }
+
+    .original-price {
+        text-decoration: line-through;
+        color: #6c757d;
+        font-size: 0.9rem;
     }
 
     .product-actions {
@@ -364,51 +382,59 @@
             <p>Discover our handpicked selection of exceptional artworks</p>
         </div>
         <div class="row">
-            <% if (typeof products !== 'undefined' && products && products.length > 0) { %>
-                <% products.forEach(function(product) { %>
-                    <div class="col-md-6 col-lg-3">
-                        <div class="product-card">
-                            <div class="product-image">
-                                <img src="<%= product.product_img && product.product_img.length > 0 ? `/uploads/re-image/${product.product_img[0]}` : '/uploads/re-image/default.jpeg' %>" 
-                                     alt="<%= product.name %>">
-                                <button class="wishlist-btn" onclick="toggleWishlist(this, '<%= product._id %>')" data-product-id="<%= product._id %>">
-                                    <i class="far fa-heart"></i>
-                                </button>
+            <% products.forEach(product => { %>
+                <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+                    <div class="product-card">
+                        <div class="product-image">
+                            <a href="/product/<%= product._id %>">
+                                <img 
+                                    src="<%= product.product_img && product.product_img.length > 0 ? `/uploads/re-image/${product.product_img[0]}` : '/uploads/re-image/default.jpeg' %>" 
+                                    alt="<%= product.name %>"
+                                    onerror="this.onerror=null; this.src='/uploads/re-image/default.jpeg';"
+                                >
+                            </a>
+                            <% if (product.hasValidOffer) { %>
+                                <div class="offer-badge">
+                                    <span><%= product.offerPercentage %>% OFF</span>
+                                </div>
+                            <% } %>
+                            <% if (product.available_quantity === 0) { %>
+                                <div class="out-of-stock-overlay">Out of Stock</div>
+                            <% } %>
+                            <button class="wishlist-btn" onclick="toggleWishlist(this, '<%= product._id %>')" data-product-id="<%= product._id %>">
+                                <i class="far fa-heart"></i>
+                            </button>
+                        </div>
+                        <div class="product-details">
+                            <h5 class="product-name text-truncate">
+                                <a href="/product/<%= product._id %>" class="text-dark text-decoration-none"><%= product.name %></a>
+                            </h5>
+                            <div class="product-price">
+                                <% if (product.hasValidOffer) { %>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="current-price fw-bold">₹<%= product.currentPrice %></span>
+                                        <span class="original-price text-muted">₹<%= product.originalPrice %></span>
+                                    </div>
+                                <% } else { %>
+                                    <span class="fw-bold">₹<%= product.Sale_price %></span>
+                                <% } %>
                             </div>
-                            <div class="product-details">
-                                <h3 class="product-name"><%= product.name %></h3>
-                                <div class="product-price">
-                                    <% if (product.hasValidOffer) { %>
-                                        <div class="d-flex flex-column">
-                                            <div class="mb-1">
-                                                <span class="original-price text-decoration-line-through text-muted small">₹<%= product.Sale_price %></span>
-                                                <span class="offer-price text-danger fw-bold ms-2">₹<%= product.offerPrice %></span>
-                                            </div>
-                                            <span class="offer-badge bg-success text-white px-2 py-1 rounded-pill small" style="width: fit-content">
-                                                <%= product.offerPercentage %>% OFF
-                                            </span>
-                                        </div>
-                                    <% } else { %>
-                                        <span class="fw-bold">₹<%= product.Sale_price %></span>
-                                    <% } %>
-                                </div>
-                                <div class="product-actions">
-                                    <a href="/productDetails?id=<%= product._id %>" class="btn btn-view">
-                                        <i class="bi bi-eye me-1"></i>View
-                                    </a>
-                                    <button onclick="addToCart('<%= product._id %>', 1)" class="btn btn-cart">
-                                        <i class="bi bi-cart-plus me-1"></i>Add
-                                    </button>
-                                </div>
+                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                <% if (product.available_quantity === 0) { %>
+                                    <span class="badge bg-danger-subtle text-danger">Out of Stock</span>
+                                <% } else { %>
+                                    <span class="badge bg-success-subtle text-success">In Stock</span>
+                                <% } %>
+                                <button onclick="addToCart('<%= product._id %>', 1)" 
+                                        class="btn btn-outline-dark btn-sm"
+                                        <%= product.available_quantity === 0 ? 'disabled' : '' %>>
+                                    Add to Cart
+                                </button>
                             </div>
                         </div>
                     </div>
-                <% }); %>
-            <% } else { %>
-                <div class="col-12 text-center">
-                    <p>No products available at the moment.</p>
                 </div>
-            <% } %>
+            <% }); %>
         </div>
     </div>
 </section>

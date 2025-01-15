@@ -166,30 +166,47 @@
         margin: 20px 0;
     }
 
-    .price-container {
-        margin: 20px 0;
+    .product-price-section {
+        position: relative;
+        margin: 15px 0;
+    }
+
+    .offer-badge {
+        position: absolute;
+        top: -20px;
+        right: 130px;
+        background: #28a745;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        z-index: 1;
+    }
+
+    .offer-badge span {
+        font-weight: bold;
+        font-size: 0.9rem;
+    }
+
+    .product-price {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-top: 10px;
     }
 
     .current-price {
-        font-size: 28px;
         font-weight: bold;
-        color: #010810;
+        color: #28a745;
+        font-size: 1.5rem;
     }
 
     .original-price {
         text-decoration: line-through;
         color: #6c757d;
-        font-size: 18px;
-        margin-left: 10px;
-    }
-
-    .discount-badge {
-        background-color: #dc3545;
-        color: white;
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 14px;
-        margin-left: 10px;
+        font-size: 1.2rem;
     }
 
     .quantity-selector {
@@ -369,20 +386,19 @@
         <!-- Product Info Section -->
         <div class="product-info">
             <h1 class="product-title mb-3"><%= product.name %></h1>
-            <div class="product-price mb-4">
-                <% if (product.offerPrice > 0 && new Date(product.offerEndDate) > new Date()) { %>
-                    <div class="d-flex align-items-center gap-3">
-                        <span class="original-price text-decoration-line-through text-muted h4 mb-0">₹<%= product.Sale_price %></span>
-                        <span class="offer-price text-danger h2 mb-0">₹<%= product.offerPrice %></span>
-                        <span class="offer-badge bg-success text-white px-3 py-2 rounded-pill">
-                            <%= product.offerPercentage %>% OFF
-                        </span>
+            <div class="product-price-section">
+                <% if (product.hasValidOffer) { %>
+                    <div class="offer-badge">
+                        <span><%= product.offerPercentage %>% OFF</span>
                     </div>
-                    <div class="offer-period text-muted small mt-2">
-                        Offer valid till <%= new Date(product.offerEndDate).toLocaleDateString() %>
+                    <div class="product-price">
+                        <span class="current-price">₹<%= product.currentPrice %></span>
+                        <span class="original-price">₹<%= product.originalPrice %></span>
                     </div>
                 <% } else { %>
-                    <span class="h2 mb-0">₹<%= product.Sale_price %></span>
+                    <div class="product-price">
+                        <span class="current-price">₹<%= product.Sale_price %></span>
+                    </div>
                 <% } %>
             </div>
             
@@ -479,10 +495,11 @@
                         <div class="related-product-info">
                             <h3 class="related-product-name"><%= relatedProduct.name %></h3>
                             <div class="related-product-price">
-                                <% if (relatedProduct.offerPrice && relatedProduct.offerPrice < relatedProduct.Sale_price) { %>
-                                    ₹<%= relatedProduct.offerPrice %>
+                                <% if (relatedProduct.hasValidOffer) { %>
+                                    <span class="current-price">₹<%= relatedProduct.currentPrice %></span>
+                                    <span class="original-price">₹<%= relatedProduct.originalPrice %></span>
                                 <% } else { %>
-                                    ₹<%= relatedProduct.Sale_price %>
+                                    <span class="current-price">₹<%= relatedProduct.Sale_price %></span>
                                 <% } %>
                             </div>
                         </div>

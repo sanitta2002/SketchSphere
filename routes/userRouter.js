@@ -36,7 +36,9 @@ router.get("/forgot-password", userController.loadForgotPassword);
 router.post("/forgot-password", userController.forgotPassword);
 router.post("/reset-password", userController.resetPassword);
 
-router.get("/productDetails",productController.productDetail); 
+// Product routes
+router.get('/productDetails', productController.productDetail);
+router.get('/product/:id', productController.productDetail);
 
 router.get('/shop', userController.loadShop);
 
@@ -90,6 +92,6 @@ router.post('/create-razorpay-order', userAuth, paymentController.createOrder);
 router.post('/verify-payment', userAuth, paymentController.verifyPayment);
 
 // Add this line after other routes
-router.get('/api/search-products', userController.searchProducts);
+router.get('/search-products', userController.searchProducts);
 
 module.exports = router

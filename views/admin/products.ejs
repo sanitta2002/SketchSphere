@@ -82,15 +82,18 @@
                                     <% } %>
                                 </td>
                                 <td>
-                                    <% if (product.offerPrice > 0 && new Date(product.offerEndDate) > new Date()) { %>
-                                        <%= product.offerPercentage %>% off
-                                        <form action="/admin/products/<%= product._id %>/remove-offer" method="POST" style="display: inline;">
-                                            <input type="hidden" name="_method" value="DELETE">
-                                            <button type="submit" class="btn btn-sm btn-danger">Remove</button>
-                                        </form>
+                                    <% if(!product.offerPrice) { %>
+                                        <a href="/admin/products/<%= product._id %>/add-offer" class="add-offer-btn">
+                                            <i class="fas fa-plus"></i> Add Offer
+                                        </a>
                                     <% } else { %>
-                                        <a href="/admin/products/<%= product._id %>/add-offer" class="btn btn-sm btn-outline-primary px-3">
-                                            Add Offer
+                                        <div class="offer-container">
+                                            <span class="offer-badge">
+                                                <i class="fas fa-tag"></i> <%= product.offerPercentage %>% OFF
+                                            </span>
+                                        </div>
+                                        <a href="/admin//products/<%= product._id %>/remove-offer" class="remove-offer-btn">
+                                            <i class="fas fa-times"></i> Remove Offer
                                         </a>
                                     <% } %>
                                 </td>
@@ -141,6 +144,64 @@
         </nav>
     <% } %>
 </div>
+
+<style>
+    .offer-badge {
+        background: #28a745;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+    
+    .offer-badge i {
+        font-size: 0.8rem;
+    }
+    
+    .offer-container {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .remove-offer-btn {
+        padding: 4px 8px;
+        border-radius: 4px;
+        background: #dc3545;
+        border: none;
+        color: white;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    
+    .remove-offer-btn:hover {
+        background: #c82333;
+    }
+    
+    .add-offer-btn {
+        padding: 6px 12px;
+        border-radius: 4px;
+        background: #007bff;
+        border: none;
+        color: white;
+        cursor: pointer;
+        transition: background-color 0.2s;
+        font-size: 0.9rem;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+    
+    .add-offer-btn:hover {
+        background: #0056b3;
+        color: white;
+        text-decoration: none;
+    }
+</style>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 <script>
@@ -240,4 +301,30 @@
         });
     });
 </script>
+
+<script>
+function removeOffer(productId) {
+    Swal.fire({
+        title: 'Are you sure?',
+        text: "This will remove the offer from this product",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, remove it!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Create a form dynamically
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/admin/products/${productId}/remove-offer`;
+            
+            // Append form to body and submit
+            document.body.appendChild(form);
+            form.submit();
+        }
+    });
+}
+</script>
+
 <%- include('../../Views/layouts/admin/footer.ejs') %>
