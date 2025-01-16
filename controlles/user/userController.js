@@ -675,22 +675,60 @@ const loadShop = async (req, res) => {
         let selectedCategories = req.query.categories ? req.query.categories.split(',') : [];
         let minPrice = req.query.minPrice || 0;
         let maxPrice = req.query.maxPrice || Number.MAX_SAFE_INTEGER;
-        let sortOption = req.query.sort || 'default';
+        let sortOption = req.query.sortBy || '';
+        let searchQuery = req.query.search || '';
 
-        // Build query
+        // Build base query
         let query = { isBlocked: false };
         
-        // Category filter
+        // Add category filter
         if (selectedCategories.length > 0) {
             query.category_id = { $in: selectedCategories };
+        }
+
+        // Add price filter
+        query.Sale_price = { 
+            $gte: parseInt(minPrice), 
+            $lte: parseInt(maxPrice) 
+        };
+
+        // Add search filter
+        if (searchQuery) {
+            query.$or = [
+                { name: { $regex: searchQuery, $options: 'i' } },
+                { writer: { $regex: searchQuery, $options: 'i' } }
+            ];
         }
 
         // Get active categories
         const categories = await Category.find({ isListed: true });
         
+        // Build sort options
+        let sortOptions = {};
+        switch (sortOption) {
+            case 'newest':
+                sortOptions = { createdAt: -1 };
+                break;
+            case 'az':
+                sortOptions = { name: 1 };
+                break;
+            case 'za':
+                sortOptions = { name: -1 };
+                break;
+            case 'priceHigh':
+                sortOptions = { Sale_price: -1 };
+                break;
+            case 'priceLow':
+                sortOptions = { Sale_price: 1 };
+                break;
+            default:
+                sortOptions = { createdAt: -1 };
+        }
+        
         // Fetch products with category data
         let products = await Product.find(query)
             .populate('category_id')
+            .sort(sortOptions)
             .skip(skip)
             .limit(limit);
 
@@ -712,7 +750,6 @@ const loadShop = async (req, res) => {
             let offerType = 'none';
             
             if (hasValidProductOffer && hasValidCategoryOffer) {
-                // Both offers are valid, use the higher one
                 if (productOffer >= categoryOffer) {
                     bestOffer = productOffer;
                     offerType = 'product';
@@ -747,14 +784,7 @@ const loadShop = async (req, res) => {
             };
         });
 
-        // Sort products
-        if (sortOption === 'price_asc') {
-            processedProducts.sort((a, b) => a.currentPrice - b.currentPrice);
-        } else if (sortOption === 'price_desc') {
-            processedProducts.sort((a, b) => b.currentPrice - a.currentPrice);
-        }
-
-        // Get total count for pagination
+        // Get total count for pagination (using the same query without skip/limit)
         const totalProducts = await Product.countDocuments(query);
         const totalPages = Math.ceil(totalProducts / limit);
 
@@ -774,7 +804,7 @@ const loadShop = async (req, res) => {
             minPrice: minPrice || 0,
             maxPrice: maxPrice || 1000,
             sortBy: sortOption || 'default',
-            searchQuery: req.query.search || ''
+            searchQuery: searchQuery || ''
         });
 
     } catch (error) {
@@ -915,6 +945,97 @@ const searchProducts = async (req, res) => {
     }
 };
 
+// Toggle wishlist
+const toggleWishlist = async (req, res) => {
+    try {
+        // Check if user is logged in
+        if (!req.session.user) {
+            return res.json({
+                success: false,
+                redirect: true,
+                message: 'Please login to add items to wishlist'
+            });
+        }
+
+        const userId = req.session.user;
+        const { productId } = req.body;
+
+        // Find user and check if product exists
+        const [user, product] = await Promise.all([
+            User.findById(userId),
+            Product.findById(productId)
+        ]);
+
+        if (!product) {
+            return res.json({
+                success: false,
+                message: 'Product not found'
+            });
+        }
+
+        // Check if product is already in wishlist
+        const wishlistIndex = user.wishlist.indexOf(productId);
+        let action;
+
+        if (wishlistIndex === -1) {
+            // Add to wishlist
+            user.wishlist.push(productId);
+            action = 'added';
+        } else {
+            // Remove from wishlist
+            user.wishlist.splice(wishlistIndex, 1);
+            action = 'removed';
+        }
+
+        await user.save();
+
+        res.json({
+            success: true,
+            action,
+            message: action === 'added' ? 'Added to wishlist' : 'Removed from wishlist'
+        });
+
+    } catch (error) {
+        console.error('Error in toggleWishlist:', error);
+        res.json({
+            success: false,
+            message: 'Failed to update wishlist'
+        });
+    }
+};
+
+// Get wishlist items
+const getWishlist = async (req, res) => {
+    try {
+        if (!req.session.user) {
+            return res.json({
+                success: false,
+                message: 'User not logged in'
+            });
+        }
+
+        const user = await User.findById(req.session.user);
+        if (!user) {
+            return res.json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            wishlist: user.wishlist
+        });
+
+    } catch (error) {
+        console.error('Error in getWishlist:', error);
+        res.json({
+            success: false,
+            message: 'Failed to get wishlist'
+        });
+    }
+};
+
 module.exports = {
     loadHomepage,
     pageNotFound,
@@ -935,5 +1056,7 @@ module.exports = {
     loadChangePassword,
     changePassword,
     loadShop,
-    searchProducts
+    searchProducts,
+    toggleWishlist,
+    getWishlist
 }

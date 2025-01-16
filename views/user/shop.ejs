@@ -490,150 +490,185 @@ document.addEventListener('DOMContentLoaded', function() {
     const applyButton = document.querySelector('.btn-dark.btn-sm');
     const sortSelect = document.getElementById('sortSelect');
     const searchInput = document.getElementById('searchInput');
+    const categoryCheckboxes = document.querySelectorAll('input[type="checkbox"]');
     let debounceTimer;
 
-    // Function to calculate best offer and prices
-    function calculateBestOffer(product) {
-        const now = new Date();
-        const category = product.category_id;
-        
-        // Get product and category offers
-        const productOffer = product.offerPercentage || 0;
-        const categoryOffer = category?.offerPercentage || 0;
-        
-        // Check if offers are valid
-        const hasValidProductOffer = productOffer > 0 && new Date(product.offerEndDate) > now;
-        const hasValidCategoryOffer = categoryOffer > 0 && category && new Date(category.offerEndDate) > now;
-        
-        // Determine which offer is better
-        let bestOffer = 0;
-        let offerType = 'none';
-        
-        if (hasValidProductOffer && hasValidCategoryOffer) {
-            if (productOffer >= categoryOffer) {
-                bestOffer = productOffer;
-                offerType = 'product';
-            } else {
-                bestOffer = categoryOffer;
-                offerType = 'category';
+    // Update price label when range slider changes
+    priceRange.addEventListener('input', function() {
+        priceLabels[1].textContent = `₹${this.value}`;
+    });
+
+    // Function to get selected categories
+    function getSelectedCategories() {
+        const selectedCategories = [];
+        categoryCheckboxes.forEach(checkbox => {
+            if (checkbox.checked) {
+                selectedCategories.push(checkbox.value);
             }
-        } else if (hasValidProductOffer) {
-            bestOffer = productOffer;
-            offerType = 'product';
-        } else if (hasValidCategoryOffer) {
-            bestOffer = categoryOffer;
-            offerType = 'category';
-        }
-
-        // Calculate current price with best offer
-        let currentPrice = product.Sale_price;
-        if (bestOffer > 0) {
-            const discountAmount = Math.round((product.Sale_price * bestOffer) / 100);
-            currentPrice = Math.round(product.Sale_price - discountAmount);
-        }
-
-        return {
-            currentPrice,
-            originalPrice: product.Sale_price,
-            offerPercentage: bestOffer,
-            hasValidOffer: bestOffer > 0,
-            offerType
-        };
+        });
+        return selectedCategories;
     }
 
-    function renderProduct(product) {
-        // Calculate best offer details
-        const now = new Date();
-        const category = product.category_id;
+    // Function to update URL with current filters
+    function updateURL() {
+        const selectedCategories = getSelectedCategories();
+        const maxPrice = priceRange.value;
+        const sortBy = sortSelect.value;
+        const searchQuery = searchInput.value.trim();
         
-        // Get product and category offers
-        const productOffer = product.offerPercentage || 0;
-        const categoryOffer = category?.offerPercentage || 0;
+        const params = new URLSearchParams(window.location.search);
         
-        // Check if offers are valid
-        const hasValidProductOffer = productOffer > 0 && new Date(product.offerEndDate) > now;
-        const hasValidCategoryOffer = categoryOffer > 0 && category && new Date(category.offerEndDate) > now;
-        
-        // Determine which offer is better
-        let bestOffer = 0;
-        let offerType = 'none';
-        
-        if (hasValidProductOffer && hasValidCategoryOffer) {
-            if (productOffer >= categoryOffer) {
-                bestOffer = productOffer;
-                offerType = 'product';
-            } else {
-                bestOffer = categoryOffer;
-                offerType = 'category';
-            }
-        } else if (hasValidProductOffer) {
-            bestOffer = productOffer;
-            offerType = 'product';
-        } else if (hasValidCategoryOffer) {
-            bestOffer = categoryOffer;
-            offerType = 'category';
+        // Update parameters
+        if (selectedCategories.length > 0) {
+            params.set('categories', selectedCategories.join(','));
+        } else {
+            params.delete('categories');
         }
-
-        // Calculate current price with best offer
-        let currentPrice = product.Sale_price;
-        if (bestOffer > 0) {
-            const discountAmount = Math.round((product.Sale_price * bestOffer) / 100);
-            currentPrice = Math.round(product.Sale_price - discountAmount);
+        
+        params.set('maxPrice', maxPrice);
+        
+        if (sortBy) {
+            params.set('sortBy', sortBy);
+        } else {
+            params.delete('sortBy');
         }
-
-        const hasValidOffer = bestOffer > 0;
-
-        return `
-            <div class="col">
-                <div class="card product-card h-100 border-0 shadow-sm rounded-3" data-out-of-stock="${product.available_quantity === 0}">
-                    <div class="product-image-container">
-                        <a href="/product/${product._id}">
-                            <img 
-                                src="${product.product_img && product.product_img.length > 0 ? `/uploads/re-image/${product.product_img[0]}` : '/uploads/re-image/default.jpeg'}" 
-                                class="card-img-top product-image" 
-                                alt="${product.name}"
-                                onerror="this.onerror=null; this.src='/uploads/re-image/default.jpeg';"
-                            >
-                        </a>
-                        ${hasValidOffer ? `
-                            <div class="offer-badge">
-                                <span>${bestOffer}% OFF</span>
-                            </div>
-                        ` : ''}
-                        ${product.available_quantity === 0 ? '<div class="out-of-stock-overlay">Out of Stock</div>' : ''}
-                        <button class="wishlist-btn" onclick="toggleWishlist(this, '${product._id}')" data-product-id="${product._id}">
-                            <i class="far fa-heart"></i>
-                        </button>
-                    </div>
-                    <div class="card-body d-flex flex-column">
-                        <h6 class="card-title mb-1 text-truncate">
-                            <a href="/product/${product._id}" class="text-dark text-decoration-none">${product.name}</a>
-                        </h6>
-                        <p class="text-muted small mb-2">${product.writer || 'Unknown Author'}</p>
-                        <div class="price-container mt-auto">
-                            ${hasValidOffer ? `
-                                <div class="product-price">
-                                    <span class="current-price">₹${currentPrice}</span>
-                                    <span class="original-price">₹${product.Sale_price}</span>
-                                </div>
-                            ` : `
-                                <p class="mb-0 fw-bold">₹${product.Sale_price}</p>
-                            `}
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center mt-2">
-                            ${product.available_quantity === 0 ? 
-                                '<span class="badge bg-danger-subtle text-danger">Out of Stock</span>' : 
-                                '<span class="badge bg-success-subtle text-success">In Stock</span>'
-                            }
-                        </div>
-                        <a href="/productDetails?id=${product._id}" class="btn btn-outline-dark btn-sm w-100 mt-2">View Details</a>
-                    </div>
-                </div>
-            </div>
-        `;
+        
+        if (searchQuery) {
+            params.set('search', searchQuery);
+        } else {
+            params.delete('search');
+        }
+        
+        // Get current page number
+        const currentPage = params.get('page') || '1';
+        params.set('page', currentPage);
+        
+        // Update URL and reload page
+        window.location.href = `${window.location.pathname}?${params.toString()}`;
     }
 
-    // Rest of your existing code...
+    // Event listener for apply button
+    applyButton.addEventListener('click', updateURL);
+
+    // Event listener for sort select
+    sortSelect.addEventListener('change', updateURL);
+
+    // Event listener for search input with debounce
+    searchInput.addEventListener('input', function() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(updateURL, 500); // Debounce for 500ms
+    });
+
+    // Event listener for Enter key in search input
+    searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            clearTimeout(debounceTimer);
+            updateURL();
+        }
+    });
+
+    // Initialize price label
+    priceLabels[1].textContent = `₹${priceRange.value}`;
+
+    // Initialize wishlist icons
+    async function initializeWishlistIcons() {
+        try {
+            const productButtons = document.querySelectorAll('.wishlist-btn');
+            
+            // Get all product IDs
+            const productIds = Array.from(productButtons).map(button => 
+                button.getAttribute('data-product-id')
+            );
+
+            // Check status for each product
+            for (const productId of productIds) {
+                const response = await fetch(`/wishlist-status/${productId}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const button = document.querySelector(`[data-product-id="${productId}"]`);
+                    const icon = button.querySelector('i');
+                    
+                    if (data.inWishlist) {
+                        icon.classList.remove('far');
+                        icon.classList.add('fas');
+                        icon.style.color = '#dc3545';
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error initializing wishlist icons:', error);
+        }
+    }
+
+    // Make toggleWishlist function globally available
+    window.toggleWishlist = async function(button, productId) {
+        try {
+            const response = await fetch('/toggle-wishlist', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ productId }),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                const icon = button.querySelector('i');
+                if (data.action === 'added') {
+                    icon.classList.remove('far');
+                    icon.classList.add('fas');
+                    icon.style.color = '#dc3545';
+                } else {
+                    icon.classList.remove('fas');
+                    icon.classList.add('far');
+                    icon.style.color = '';
+                }
+
+                // Show success message
+                Swal.fire({
+                    icon: 'success',
+                    title: data.message,
+                    showConfirmButton: false,
+                    timer: 1500
+                });
+            } else {
+                // If user is not logged in
+                if (data.message.includes('login')) {
+                    Swal.fire({
+                        title: 'Please Log In',
+                        text: 'You need to be logged in to add items to your wishlist',
+                        icon: 'info',
+                        showCancelButton: true,
+                        confirmButtonText: 'Login',
+                        cancelButtonText: 'Cancel'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            window.location.href = '/login';
+                        }
+                    });
+                } else {
+                    // Show error message
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Oops...',
+                        text: data.message || 'Something went wrong!'
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Oops...',
+                text: 'Something went wrong!'
+            });
+        }
+    };
+
+    // Initialize wishlist icons when page loads
+    initializeWishlistIcons();
 });
 </script>
 

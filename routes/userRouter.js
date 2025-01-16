@@ -67,7 +67,8 @@ router.post('/remove-from-cart', cartController.removeFromCart);
 
 // Wishlist routes
 router.get('/wishlist', userAuth, wishlistController.loadWishlist);
-router.post('/toggle-wishlist', userAuth, wishlistController.toggleWishlist);
+router.post('/toggle-wishlist', wishlistController.toggleWishlist);
+router.get('/get-wishlist', wishlistController.getWishlistStatus);
 router.get('/wishlist-status/:productId', wishlistController.getWishlistStatus);
 
 // Checkout routes
