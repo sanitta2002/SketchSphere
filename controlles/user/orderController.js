@@ -478,41 +478,43 @@ const orderController = {
                 // Handle other status updates
                 if (status === 'Cancelled' && orderItem.status !== 'Cancelled') {
                     // Calculate refund amount for this item
-                    refundAmount = orderItem.product.Sale_price * orderItem.quantity;
+                    if (order.paymentMethod === 'online') {
+                        refundAmount = orderItem.product.Sale_price * orderItem.quantity;
 
-                    // Handle refund based on payment method
+                        // Handle refund based on payment method
                     if (order.paymentMethod === 'online' && order.paymentStatus === 'Completed') {
-                        // Add refund to wallet
-                        const wallet = await Wallet.findOne({ userId });
-                        if (!wallet) {
-                            const newWallet = new Wallet({
-                                userId,
-                                balance: refundAmount,
-                                transactions: [{
-                                    type: 'credit',
-                                    amount: refundAmount,
-                                    description: `Refund for cancelled item in order #${order._id}`,
-                                    orderId: order._id,
-                                    date: new Date()
-                                }]
-                            });
-                            await newWallet.save();
-                        } else {
-                            await Wallet.findOneAndUpdate(
-                                { userId },
-                                {
-                                    $inc: { balance: refundAmount },
-                                    $push: {
-                                        transactions: {
-                                            type: 'credit',
-                                            amount: refundAmount,
-                                            description: `Refund for cancelled item in order #${order._id}`,
-                                            orderId: order._id,
-                                            date: new Date()
+                            // Add refund to wallet
+                            const wallet = await Wallet.findOne({ userId });
+                            if (!wallet) {
+                                const newWallet = new Wallet({
+                                    userId,
+                                    balance: refundAmount,
+                                    transactions: [{
+                                        type: 'credit',
+                                        amount: refundAmount,
+                                        description: `Refund for cancelled item in order #${order._id}`,
+                                        orderId: order._id,
+                                        date: new Date()
+                                    }]
+                                });
+                                await newWallet.save();
+                            } else {
+                                await Wallet.findOneAndUpdate(
+                                    { userId },
+                                    {
+                                        $inc: { balance: refundAmount },
+                                        $push: {
+                                            transactions: {
+                                                type: 'credit',
+                                                amount: refundAmount,
+                                                description: `Refund for cancelled item in order #${order._id}`,
+                                                orderId: order._id,
+                                                date: new Date()
+                                            }
                                         }
                                     }
-                                }
-                            );
+                                );
+                            }
                         }
                     }
 
@@ -548,15 +550,22 @@ const orderController = {
 
             await order.save();
 
-            res.json({ 
-                success: true, 
+            // Only include refundAmount in response for online payments
+            const response = {
+                success: true,
                 message: returnReason ? 
                     'Return request has been submitted successfully' : 
                     'Status updated successfully',
                 orderStatus: order.status,
-                itemStatus: orderItem.status,
-                refundAmount: refundAmount > 0 ? refundAmount : undefined
-            });
+                itemStatus: orderItem.status
+            };
+
+            // Add refundAmount only for online payments
+            if (order.paymentMethod === 'online' && refundAmount > 0) {
+                response.refundAmount = refundAmount;
+            }
+
+            res.json(response);
 
         } catch (error) {
             console.error('Error updating item status:', error);

@@ -268,8 +268,6 @@
             const urlParams = new URLSearchParams(window.location.search);
             const orderId = urlParams.get('orderId');
             const itemId = urlParams.get('itemId');
-            
-            console.log('Cancelling order item:', orderId, itemId);
 
             const response = await fetch(`/update-order-item-status/${orderId}/${itemId}`, {
                 method: 'POST',
@@ -282,34 +280,19 @@
             });
 
             const data = await response.json();
-            console.log('Cancel order response:', data);
-
             if (data.success) {
-                // Show success message with refund details if applicable
-                if (data.refundAmount) {
-                    Swal.fire({
-                        title: 'Order Cancelled Successfully!',
-                        html: `<div class="text-center">
-                                <p class="mb-3">Your order has been cancelled.</p>
-                                <div class="alert alert-success">
-                                    <strong>Refund Status:</strong><br>
-                                    Amount ₹${data.refundAmount} has been added to your wallet
-                                </div>
-                              </div>`,
-                        icon: 'success',
-                        confirmButtonText: 'OK'
-                    }).then(() => {
-                        window.location.reload();
-                    });
-                } else {
-                    Swal.fire({
-                        title: 'Order Cancelled!',
-                        text: data.message,
-                        icon: 'success'
-                    }).then(() => {
-                        window.location.reload();
-                    });
+                let message = 'Order item cancelled successfully';
+                if (data.refundAmount !== undefined) {
+                    message += `. Refund amount of ₹${data.refundAmount.toFixed(2)} will be credited to your wallet.`;
                 }
+                
+                Swal.fire({
+                    title: 'Success!',
+                    text: message,
+                    icon: 'success'
+                }).then(() => {
+                    window.location.reload();
+                });
             } else {
                 Swal.fire({
                     title: 'Error!',
@@ -318,10 +301,10 @@
                 });
             }
         } catch (error) {
-            console.error('Error cancelling order:', error);
+            console.error('Error:', error);
             Swal.fire({
                 title: 'Error!',
-                text: 'Failed to cancel order. Please try again.',
+                text: 'An error occurred while cancelling the order',
                 icon: 'error'
             });
         }
