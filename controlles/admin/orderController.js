@@ -75,20 +75,34 @@ const orderController = {
             const { orderId, itemId } = req.params;
             const { status, rejectReason } = req.body;
 
+            console.log('Updating order status:', { orderId, itemId, status, rejectReason });
+
             // Find the order
-            const order = await Order.findById(orderId);
+            const order = await Order.findById(orderId).populate('orderedItems.product');
             if (!order) {
                 return res.status(404).json({ success: false, message: 'Order not found' });
             }
 
+            // Update the order's main status
+            order.status = status;
+            
             // Find the specific item
             const orderItem = order.orderedItems.id(itemId);
             if (!orderItem) {
                 return res.status(404).json({ success: false, message: 'Order item not found' });
             }
 
-            // Handle return approval
-            if (status === 'Returned' && orderItem.status !== 'Returned') {
+            const previousStatus = orderItem.status;
+            // Update the item status
+            orderItem.status = status;
+            if (rejectReason) {
+                orderItem.rejectReason = rejectReason;
+            }
+
+            // Handle return approval or cancellation
+            if ((status === 'Returned' && previousStatus !== 'Returned') || 
+                (status === 'Cancelled' && previousStatus !== 'Cancelled')) {
+                
                 // Find the product
                 const product = await Product.findById(orderItem.product);
                 if (!product) {
@@ -96,43 +110,39 @@ const orderController = {
                 }
 
                 // Increase product quantity
-                await Product.findByIdAndUpdate(
+                const updateResult = await Product.findByIdAndUpdate(
                     orderItem.product,
-                    { 
-                        $inc: { 
-                            available_quantity: orderItem.quantity 
-                        }
-                    }
+                    { $inc: { available_quantity: orderItem.quantity } },
+                    { new: true }
                 );
 
-                console.log(`Product ${product.name} quantity increased by ${orderItem.quantity}`);
+                console.log('Product quantity updated:', {
+                    productId: orderItem.product._id,
+                    quantityRestored: orderItem.quantity,
+                    newQuantity: updateResult.available_quantity,
+                    reason: status
+                });
             }
 
-            // Handle return rejection
-            if (status === 'Delivered' && rejectReason && orderItem.returnReason) {
-                orderItem.returnRejectedReason = rejectReason;
-                orderItem.returnReason = null; // Clear the return reason since it's rejected
-            }
-
-            // Update the item status
-            orderItem.status = status;
-
+            // Save the updated order
             await order.save();
 
-            res.json({ 
-                success: true, 
-                message: status === 'Returned' ? 
-                    'Return has been approved and inventory has been updated' : 
-                    rejectReason ? 
-                        'Return has been rejected' : 
-                        'Status updated successfully'
+            console.log('Order status updated successfully:', {
+                orderId: order._id,
+                status: order.status,
+                itemStatus: orderItem.status
             });
 
+            res.json({
+                success: true,
+                message: 'Order status updated successfully',
+                status: status
+            });
         } catch (error) {
-            console.error('Error updating item status:', error);
-            res.status(500).json({ 
-                success: false, 
-                message: error.message || 'Failed to update status' 
+            console.error('Error updating order status:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Failed to update order status'
             });
         }
     },

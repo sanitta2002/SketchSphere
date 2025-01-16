@@ -200,17 +200,45 @@
                     <div class="card-header">
                       <h5 class="mb-0">Wallet</h5>
                     </div>
-                    <div class="card-body contact-from-area">
-                      <div class="row">
-                        <div class="col-lg-8 mx-auto text-center mt-90">
-                          <form>
-                            <div class="form-group">
-                              <label for="walletAmount" class="h4">Amount</label>
-                              <div class="h3"></div>
-                            </div>
-                            <button type="button" class="btn btn-success" onclick="">Add Money</button>
-                          </form>
-                        </div>
+                    <div class="card-body">
+                      <div class="wallet-balance mb-4">
+                        <h3 class="text-center">Current Balance</h3>
+                        <h2 class="text-center text-success">₹<%= wallet?.balance || 0 %></h2>
+                      </div>
+                      <div class="wallet-transactions">
+                        <h5 class="mb-3">Recent Transactions</h5>
+                        <% if (wallet?.transactions && wallet.transactions.length > 0) { %>
+                          <div class="table-responsive">
+                            <table class="table">
+                              <thead>
+                                <tr>
+                                  <th>Date</th>
+                                  <th>Type</th>
+                                  <th>Amount</th>
+                                  <th>Description</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <% wallet.transactions.sort((a, b) => b.date - a.date).slice(0, 5).forEach(transaction => { %>
+                                  <tr>
+                                    <td><%= new Date(transaction.date).toLocaleDateString() %></td>
+                                    <td>
+                                      <span class="badge <%= transaction.type === 'credit' ? 'bg-success' : 'bg-danger' %>">
+                                        <%= transaction.type.toUpperCase() %>
+                                      </span>
+                                    </td>
+                                    <td>₹<%= transaction.amount %></td>
+                                    <td><%= transaction.description %></td>
+                                  </tr>
+                                <% }); %>
+                              </tbody>
+                            </table>
+                          </div>
+                        <% } else { %>
+                          <div class="text-center text-muted">
+                            <p>No transactions found</p>
+                          </div>
+                        <% } %>
                       </div>
                     </div>
                   </div>

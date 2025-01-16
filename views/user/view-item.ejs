@@ -89,18 +89,24 @@
                                                     orderItem.status === 'Returned' ? 'bg-warning' :
                                                     orderItem.status === 'Shipped' ? 'bg-info' :
                                                     orderItem.status === 'Processing' ? 'bg-primary' :
-                                                    'bg-secondary' %>">
+                                                    'bg-secondary' %> status-badge">
                                                     <%= orderItem.status || 'Pending' %>
                                                 </span>
+
+                                                <% if (orderItem.status === 'Cancelled' && order.paymentMethod === 'online') { %>
+                                                    <span class="badge <%= order.paymentStatus === 'Refunded' ? 'bg-success' : 'bg-warning' %>">
+                                                        <%= order.paymentStatus === 'Refunded' ? 'Refunded to Wallet' : 'Refund Processing' %>
+                                                    </span>
+                                                <% } %>
                                                 
                                                 <% if (!['Delivered', 'Cancelled', 'Returned'].includes(orderItem.status)) { %>
-                                                    <button onclick="confirmCancel()" class="btn btn-sm btn-outline-danger">
+                                                    <button onclick="confirmCancel()" class="btn btn-sm btn-outline-danger cancel-button">
                                                         Cancel Order
                                                     </button>
                                                 <% } %>
                                                 
                                                 <% if (orderItem.status === 'Delivered' && !orderItem.returnRequested && !orderItem.returnReason) { %>
-                                                    <button onclick="confirmReturn()" class="btn btn-sm btn-outline-warning">
+                                                    <button onclick="confirmReturn()" class="btn btn-sm btn-outline-warning return-button">
                                                         Return Item
                                                     </button>
                                                 <% } else if (orderItem.status === 'Delivered' && (orderItem.returnRequested || orderItem.returnReason)) { %>
@@ -108,47 +114,49 @@
                                                 <% } %>
                                             </div>
 
-                                            <!-- Status Timeline -->
-                                            <div class="mt-4">
-                                                <div class="order-timeline">
-                                                    <% 
-                                                    const statuses = ['Pending', 'Processing', 'Shipped', 'Delivered'];
-                                                    const currentIndex = statuses.indexOf(orderItem.status);
-                                                    const icons = {
-                                                        'Pending': 'clock',
-                                                        'Processing': 'cog',
-                                                        'Shipped': 'truck',
-                                                        'Delivered': 'check-circle'
-                                                    };
-                                                    %>
-                                                    
-                                                    <div class="timeline-progress">
-                                                        <div class="progress-track"></div>
-                                                        <div class="progress-fill" style="width: <%= (currentIndex / (statuses.length - 1)) * 100 %>%"></div>
-                                                    </div>
-
-                                                    <div class="timeline-points">
-                                                        <% statuses.forEach((status, index) => { %>
-                                                            <div class="timeline-point <%= index <= currentIndex ? 'active' : '' %>">
-                                                                <div class="point-icon">
-                                                                    <i class="fas fa-<%= icons[status] %>"></i>
-                                                                </div>
-                                                                <div class="point-label">
-                                                                    <span class="status"><%= status %></span>
-                                                                    <% if (index <= currentIndex) { %>
-                                                                        <span class="date">
-                                                                            <%= new Date().toLocaleDateString('en-US', {
-                                                                                month: 'short',
-                                                                                day: 'numeric'
-                                                                            }) %>
-                                                                        </span>
-                                                                    <% } %>
-                                                                </div>
+                                            <!-- Payment Details -->
+                                            <% if (order.paymentMethod === 'online') { %>
+                                                <div class="mt-3">
+                                                    <h6 class="mb-2">Payment Information</h6>
+                                                    <div class="d-flex flex-column gap-2">
+                                                        <div>
+                                                            <small class="text-muted">Payment Method:</small>
+                                                            <span class="ms-2">Online Payment (Razorpay)</span>
+                                                        </div>
+                                                        <div>
+                                                            <small class="text-muted">Payment Status:</small>
+                                                            <span class="ms-2 badge <%= 
+                                                                order.paymentStatus === 'Completed' ? 'bg-success' :
+                                                                order.paymentStatus === 'Refunded' ? 'bg-info' :
+                                                                order.paymentStatus === 'Failed' ? 'bg-danger' :
+                                                                'bg-warning' %>">
+                                                                <%= order.paymentStatus %>
+                                                            </span>
+                                                        </div>
+                                                        <% if (order.status === 'Cancelled' && order.refundDetails) { %>
+                                                            <div>
+                                                                <small class="text-muted">Refund Status:</small>
+                                                                <span class="ms-2">
+                                                                    Amount ₹<%= order.refundDetails.amount %> 
+                                                                    <%= order.refundDetails.status === 'Completed' ? 
+                                                                        'has been added to your wallet' : 
+                                                                        'is being processed' %>
+                                                                </span>
                                                             </div>
-                                                        <% }); %>
+                                                            <div>
+                                                                <small class="text-muted">Refund Date:</small>
+                                                                <span class="ms-2">
+                                                                    <%= new Date(order.refundDetails.processedAt).toLocaleDateString('en-US', {
+                                                                        year: 'numeric',
+                                                                        month: 'long',
+                                                                        day: 'numeric'
+                                                                    }) %>
+                                                                </span>
+                                                            </div>
+                                                        <% } %>
                                                     </div>
                                                 </div>
-                                            </div>
+                                            <% } %>
                                         </div>
                                     </div>
                                 </div>
@@ -166,6 +174,78 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
+    // Function to update status display
+    function updateStatusDisplay(status) {
+        const statusBadge = document.querySelector('.status-badge');
+        if (statusBadge) {
+            // Remove all existing color classes
+            statusBadge.classList.remove('bg-success', 'bg-danger', 'bg-warning', 'bg-info', 'bg-primary', 'bg-secondary');
+            
+            // Add appropriate color class based on status
+            switch (status) {
+                case 'Delivered':
+                    statusBadge.classList.add('bg-success');
+                    break;
+                case 'Cancelled':
+                    statusBadge.classList.add('bg-danger');
+                    break;
+                case 'Returned':
+                    statusBadge.classList.add('bg-warning');
+                    break;
+                case 'Shipped':
+                    statusBadge.classList.add('bg-info');
+                    break;
+                case 'Processing':
+                    statusBadge.classList.add('bg-primary');
+                    break;
+                default:
+                    statusBadge.classList.add('bg-secondary');
+            }
+            
+            // Update the status text
+            statusBadge.textContent = status || 'Pending';
+        }
+
+        // Update button visibility
+        const cancelButton = document.querySelector('.cancel-button');
+        const returnButton = document.querySelector('.return-button');
+        
+        if (cancelButton) {
+            cancelButton.style.display = 
+                ['Delivered', 'Cancelled', 'Returned'].includes(status) ? 'none' : 'inline-block';
+        }
+        
+        if (returnButton) {
+            returnButton.style.display = 
+                status === 'Delivered' ? 'inline-block' : 'none';
+        }
+    }
+
+    // Function to refresh order status
+    async function refreshOrderStatus() {
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            const orderId = urlParams.get('orderId');
+            
+            const response = await fetch(`/get-order-status/${orderId}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                updateStatusDisplay(data.status);
+            }
+        } catch (error) {
+            console.error('Error refreshing order status:', error);
+        }
+    }
+
+    // Refresh status every 30 seconds
+    setInterval(refreshOrderStatus, 30000);
+
     function confirmCancel() {
         Swal.fire({
             title: 'Cancel Order',
@@ -178,44 +258,73 @@
             cancelButtonText: 'No, keep it'
         }).then((result) => {
             if (result.isConfirmed) {
-                // Get the current URL parameters
-                const urlParams = new URLSearchParams(window.location.search);
-                const orderId = urlParams.get('orderId');
-                const itemId = urlParams.get('itemId');
-
-                // Make the API call
-                fetch(`/update-order-item-status/${orderId}/${itemId}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ status: 'Cancelled' })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        Swal.fire({
-                            title: 'Cancelled!',
-                            text: 'Your order has been cancelled successfully.',
-                            icon: 'success',
-                            confirmButtonColor: '#28a745'
-                        }).then(() => {
-                            window.location.reload();
-                        });
-                    } else {
-                        throw new Error(data.message || 'Failed to cancel order');
-                    }
-                })
-                .catch(error => {
-                    Swal.fire({
-                        title: 'Error!',
-                        text: error.message || 'Something went wrong. Please try again.',
-                        icon: 'error',
-                        confirmButtonColor: '#dc3545'
-                    });
-                });
+                cancelOrder();
             }
         });
+    }
+
+    async function cancelOrder() {
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            const orderId = urlParams.get('orderId');
+            const itemId = urlParams.get('itemId');
+            
+            console.log('Cancelling order item:', orderId, itemId);
+
+            const response = await fetch(`/update-order-item-status/${orderId}/${itemId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    status: 'Cancelled'
+                })
+            });
+
+            const data = await response.json();
+            console.log('Cancel order response:', data);
+
+            if (data.success) {
+                // Show success message with refund details if applicable
+                if (data.refundAmount) {
+                    Swal.fire({
+                        title: 'Order Cancelled Successfully!',
+                        html: `<div class="text-center">
+                                <p class="mb-3">Your order has been cancelled.</p>
+                                <div class="alert alert-success">
+                                    <strong>Refund Status:</strong><br>
+                                    Amount ₹${data.refundAmount} has been added to your wallet
+                                </div>
+                              </div>`,
+                        icon: 'success',
+                        confirmButtonText: 'OK'
+                    }).then(() => {
+                        window.location.reload();
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Order Cancelled!',
+                        text: data.message,
+                        icon: 'success'
+                    }).then(() => {
+                        window.location.reload();
+                    });
+                }
+            } else {
+                Swal.fire({
+                    title: 'Error!',
+                    text: data.message || 'Failed to cancel order',
+                    icon: 'error'
+                });
+            }
+        } catch (error) {
+            console.error('Error cancelling order:', error);
+            Swal.fire({
+                title: 'Error!',
+                text: 'Failed to cancel order. Please try again.',
+                icon: 'error'
+            });
+        }
     }
 
     function confirmReturn() {

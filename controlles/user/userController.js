@@ -5,6 +5,7 @@ const Category = require('../../models/categorySchema')
 const Product = require('../../models/productSchema')
 const Order = require('../../models/orderSchema')  
 const Cart = require('../../models/cartSchema')
+const Wallet = require('../../models/walletSchema')
 const nodemailer = require('nodemailer')
 const env = require("dotenv").config()
 const bcrypt = require('bcrypt')
@@ -512,6 +513,10 @@ const profile = async (req, res) => {
             })
             .sort({ createdOn: -1 });
 
+        // Fetch user's wallet
+        const wallet = await Wallet.findOne({ userId })
+            .sort({ 'transactions.date': -1 });
+
         console.log('Found orders for profile:', orders.map(o => ({
             id: o._id.toString(),
             orderId: o.orderId,
@@ -523,6 +528,7 @@ const profile = async (req, res) => {
         res.render('profile', {
             user,
             orders,
+            wallet,
             pageTitle: 'My Profile'
         });
     } catch (error) {
