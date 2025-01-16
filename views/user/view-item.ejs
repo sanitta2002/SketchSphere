@@ -105,12 +105,14 @@
                                                     </button>
                                                 <% } %>
                                                 
-                                                <% if (orderItem.status === 'Delivered' && !orderItem.returnRequested && !orderItem.returnReason) { %>
+                                                <% if (orderItem.status === 'Delivered' && !orderItem.returnReason) { %>
                                                     <button onclick="confirmReturn()" class="btn btn-sm btn-outline-warning return-button">
                                                         Return Item
                                                     </button>
-                                                <% } else if (orderItem.status === 'Delivered' && (orderItem.returnRequested || orderItem.returnReason)) { %>
+                                                <% } else if (orderItem.status === 'Delivered' && orderItem.returnReason) { %>
                                                     <span class="badge bg-warning">Return Requested</span>
+                                                <% } else if (orderItem.status === 'Returned') { %>
+                                                    <span class="badge bg-success">Refunded to Wallet</span>
                                                 <% } %>
                                             </div>
 
