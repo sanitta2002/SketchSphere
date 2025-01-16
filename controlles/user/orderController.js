@@ -323,15 +323,25 @@ const orderController = {
             }
 
             // Create order items array
-            const orderedItems = cart.items.map(item => ({
-                product: item.product._id,
-                quantity: item.quantity,
-                price: item.product.Sale_price
-            }));
+            const orderedItems = cart.items.map(item => {
+                // Get the effective price (offer price or regular price)
+                let effectivePrice = item.product.Sale_price;
+                if (item.product.offerPrice > 0 && 
+                    item.product.offerStartDate <= new Date() && 
+                    item.product.offerEndDate >= new Date()) {
+                    effectivePrice = item.product.offerPrice;
+                }
+                
+                return {
+                    product: item.product._id,
+                    quantity: item.quantity,
+                    price: effectivePrice
+                };
+            });
 
-            // Calculate total amount
-            const totalAmount = cart.items.reduce((total, item) => {
-                return total + (item.product.Sale_price * item.quantity);
+            // Calculate total amount using the effective prices
+            const totalAmount = orderedItems.reduce((total, item) => {
+                return total + (item.price * item.quantity);
             }, 0);
 
             // Create new order
