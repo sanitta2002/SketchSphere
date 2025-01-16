@@ -386,7 +386,7 @@
                 <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
                     <div class="product-card">
                         <div class="product-image">
-                            <a href="/product/<%= product._id %>">
+                            <a href="/productDetails?id=<%= product._id %>">
                                 <img 
                                     src="<%= product.product_img && product.product_img.length > 0 ? `/uploads/re-image/${product.product_img[0]}` : '/uploads/re-image/default.jpeg' %>" 
                                     alt="<%= product.name %>"
@@ -407,7 +407,7 @@
                         </div>
                         <div class="product-details">
                             <h5 class="product-name text-truncate">
-                                <a href="/product/<%= product._id %>" class="text-dark text-decoration-none"><%= product.name %></a>
+                                <a href="/productDetails?id=<%= product._id %>" class="text-dark text-decoration-none"><%= product.name %></a>
                             </h5>
                             <div class="product-price">
                                 <% if (product.hasValidOffer) { %>

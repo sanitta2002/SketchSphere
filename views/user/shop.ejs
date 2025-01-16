@@ -95,7 +95,7 @@
                     <div class="col">
                         <div class="card product-card h-100 border-0 shadow-sm rounded-3" data-out-of-stock="<%= product.available_quantity === 0 %>">
                             <div class="product-image-container">
-                                <a href="/product/<%= product._id %>">
+                                <a href="">
                                     <img 
                                         src="<%= product.product_img && product.product_img.length > 0 ? `/uploads/re-image/${product.product_img[0]}` : '/uploads/re-image/default.jpeg' %>" 
                                         class="card-img-top product-image" 
