@@ -16,6 +16,7 @@ router.get('/pageerror',adminController.pageerror)
 router.get('/login',adminController.loadLogin)
 router.post('/login',adminController.login)
 router.get('/',adminAuth,adminController.loadDashboard)
+router.post('/generate-report',adminAuth,adminController.generateReport)
 router.get('/logout',adminController.logout)
 
 router.get('/users',adminAuth,coustomerController.customerInfo)
@@ -59,5 +60,8 @@ router.patch('/coupons/toggle/:id', adminAuth, couponController.toggleCouponStat
 router.get('/orders', adminAuth, orderController.getAllOrders)
 router.get('/order/:orderId', adminAuth, orderController.getOrderDetails)
 router.post('/order/:orderId/item/:itemId/status', adminAuth, orderController.updateItemStatus)
+
+// Sales Report Route
+// router.post('/generate-report', adminAuth, adminController.generateReport);
 
 module.exports= router

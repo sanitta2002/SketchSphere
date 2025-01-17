@@ -169,6 +169,7 @@ const checkoutController = {
             }
 
             const discount = Math.min(coupon.offerPrice, totalAmount);
+            console.log(discount)
 
             // Store the applied coupon in session
             req.session.appliedCoupon = {
@@ -423,3 +424,7 @@ const checkoutController = {
 };
 
 module.exports = checkoutController;
+
+
+
+
