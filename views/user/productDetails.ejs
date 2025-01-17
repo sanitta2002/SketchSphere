@@ -540,7 +540,7 @@
 
     function changeQuantity(change) {
         const newQuantity = currentQuantity + change;
-        if (newQuantity >= 1 && newQuantity <= stockLeft) {
+        if (newQuantity >= 1 && newQuantity <= stockLeft && newQuantity <= 5) {
             currentQuantity = newQuantity;
             document.getElementById('quantity').textContent = currentQuantity;
             document.getElementById('decrease-btn').disabled = currentQuantity <= 1;

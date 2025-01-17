@@ -65,8 +65,9 @@ const checkoutController = {
                 
                 // Calculate current price with best offer
                 let currentPrice = product.Sale_price;
+                let discountAmount = 0;
                 if (bestOffer > 0) {
-                    const discountAmount = Math.round((product.Sale_price * bestOffer) / 100);
+                    discountAmount = Math.round((product.Sale_price * bestOffer) / 100);
                     currentPrice = Math.round(product.Sale_price - discountAmount);
                 }
 
@@ -78,7 +79,8 @@ const checkoutController = {
                     offerType,
                     productOffer: hasValidProductOffer ? productOffer : 0,
                     categoryOffer: hasValidCategoryOffer ? categoryOffer : 0,
-                    totalPrice: currentPrice * item.quantity
+                    totalPrice: currentPrice * item.quantity,
+                    discountAmount: discountAmount
                 };
             });
 
@@ -300,21 +302,28 @@ const checkoutController = {
                 
                 // Calculate current price with best offer
                 let currentPrice = product.Sale_price;
+                let discount = 0;
                 if (bestOffer > 0) {
-                    const discountAmount = Math.round((product.Sale_price * bestOffer) / 100);
-                    currentPrice = Math.round(product.Sale_price - discountAmount);
+                    discount = Math.round((product.Sale_price * bestOffer) / 100);
+                    currentPrice = Math.round(product.Sale_price - discount);
                 }
 
                 return {
                     product: item.productId._id,
                     quantity: item.quantity,
                     price: currentPrice,
-                    totalPrice: currentPrice * item.quantity
+                    totalPrice: currentPrice * item.quantity,
+                    discount: discount
                 };
             });
 
-            // Calculate order total
+            // Calculate order total and total discount
             const orderTotal = orderItems.reduce((total, item) => total + item.totalPrice, 0);
+            const itemsDiscount = orderItems.reduce((total, item) => total + (item.discount * item.quantity), 0);
+            
+            // Add coupon discount if applied
+            const couponDiscount = req.session.appliedCoupon ? req.session.appliedCoupon.discount : 0;
+            const totalDiscount = itemsDiscount + couponDiscount;
 
             // Validate product quantities
             for (const cartItem of cart.items) {
@@ -340,10 +349,12 @@ const checkoutController = {
                 address: userAddress.address.find(addr => addr._id.toString() === addressId),
                 paymentMethod: paymentMethod,
                 totalPrice: totalPrice,
+                discount: totalDiscount,
                 finalAmount: finalAmount,
                 paymentStatus: paymentMethod === 'online' ? 'Processing' : 'Pending',
                 status: 'Pending',
-                couponCode: couponCode || null
+                couponCode: couponCode || null,
+                couponDiscount: couponDiscount
             });
 
             // If online payment, add payment details
@@ -424,7 +435,3 @@ const checkoutController = {
 };
 
 module.exports = checkoutController;
-
-
-
-
