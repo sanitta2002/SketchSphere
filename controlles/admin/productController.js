@@ -31,7 +31,7 @@ const addproduct = async (req, res) => {
 
         // Validate required fields
         if (!products.description || products.description.trim() === '') {
-            console.log("Description is missing");
+            
             return res.status(400).json({ error: "Description is required" });
         }
 
