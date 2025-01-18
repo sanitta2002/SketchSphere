@@ -69,25 +69,37 @@
                     <div class="card-body p-4">
                         <h4 class="mb-4 fw-bold">Payment Method</h4>
                         <div class="payment-methods">
-                            <div class="payment-method mb-3">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" 
-                                           name="paymentMethod" id="cod" 
-                                           value="COD" checked>
-                                    <label class="form-check-label" for="cod">
-                                        Cash on Delivery (COD)
-                                    </label>
-                                </div>
+                            <div class="payment-option mb-3">
+                                <input class="payment-radio" type="radio" 
+                                       name="paymentMethod" id="cod" 
+                                       value="COD" checked>
+                                <label class="payment-label" for="cod">
+                                    <div class="d-flex align-items-center">
+                                        <div class="payment-icon me-3">
+                                            <i class="fas fa-money-bill-wave"></i>
+                                        </div>
+                                        <div>
+                                            <span class="payment-title">Cash on Delivery (COD)</span>
+                                            <p class="payment-description mb-0">Pay when you receive your order</p>
+                                        </div>
+                                    </div>
+                                </label>
                             </div>
-                            <div class="payment-method">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" 
-                                           name="paymentMethod" id="online" 
-                                           value="online">
-                                    <label class="form-check-label" for="online">
-                                        Pay Online (Credit/Debit Card, UPI, Net Banking)
-                                    </label>
-                                </div>
+                            <div class="payment-option">
+                                <input class="payment-radio" type="radio" 
+                                       name="paymentMethod" id="online" 
+                                       value="online">
+                                <label class="payment-label" for="online">
+                                    <div class="d-flex align-items-center">
+                                        <div class="payment-icon me-3">
+                                            <i class="fas fa-credit-card"></i>
+                                        </div>
+                                        <div>
+                                            <span class="payment-title">Pay Online</span>
+                                            <p class="payment-description mb-0">Credit/Debit Card, UPI, Net Banking</p>
+                                        </div>
+                                    </div>
+                                </label>
                             </div>
                         </div>
                     </div>
@@ -122,10 +134,8 @@
                                                     <% } %>
                                                     <br>
                                                     <% if (item.productOffer > 0 && item.categoryOffer > 0) { %>
-                                                        <small class="text-muted">
-                                                            (Best of: Product <%= item.productOffer %>% | Category <%= item.categoryOffer %>%)
-                                                        </small>
-                                                        <br>
+                                                       
+                                                        
                                                     <% } %>
                                                 <% } %>
                                                 <span class="fw-bold">₹<%= item.currentPrice %> × <%= item.quantity %></span>
@@ -162,7 +172,7 @@
                                     <button class="btn btn-outline-dark" type="button" onclick="applyCoupon()" id="applyCouponBtn">Apply</button>
                                     <button class="btn btn-outline-danger d-none" type="button" onclick="removeCoupon()" id="removeCouponBtn">Remove</button>
                                 </div>
-                                <div id="couponMessage" class="small mt-2"></div>
+                                <div id="couponMessage" class="small mt-2"></div> 
                             </div>
 
                             <!-- Coupon Discount -->
@@ -338,48 +348,67 @@
 }
 
 /* Payment Method Styles */
-.payment-method {
-    border: 1px solid #e5e5e5;
+.payment-option {
+    position: relative;
+}
+
+.payment-radio {
+    display: none;
+}
+
+.payment-label {
+    display: block;
+    padding: 1rem;
+    border: 1px solid #dee2e6;
     border-radius: 12px;
-    transition: all 0.3s ease;
-    background: #fff;
-}
-
-.payment-method:hover {
-    border-color: #212529;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    transform: translateY(-1px);
-}
-
-.payment-method .form-check {
-    margin: 0;
-    padding: 0;
-}
-
-.payment-method .form-check-input {
-    position: absolute;
-    margin: 1.25rem;
-}
-
-.payment-method .form-check-label {
     cursor: pointer;
-    margin: 0;
-    padding-left: 2.5rem;
+    transition: all 0.3s ease;
+}
+
+.payment-label:hover {
+    background-color: #f8f9fa;
+    transform: translateY(-2px);
+}
+
+.payment-radio:checked + .payment-label {
+    border-color: #212529;
+    background-color: #f8f9fa;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .payment-icon {
-    width: 44px;
-    height: 44px;
-    background: #f8f9fa;
+    width: 40px;
+    height: 40px;
+    background-color: #e9ecef;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.3s ease;
 }
 
-.payment-method:hover .payment-icon {
-    transform: scale(1.1);
+.payment-icon i {
+    font-size: 1.2rem;
+    color: #212529;
+}
+
+.payment-title {
+    display: block;
+    font-weight: 600;
+    color: #212529;
+    margin-bottom: 0.25rem;
+}
+
+.payment-description {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+.payment-radio:checked + .payment-label .payment-icon {
+    background-color: #212529;
+}
+
+.payment-radio:checked + .payment-label .payment-icon i {
+    color: #ffffff;
 }
 
 /* Order Items */
