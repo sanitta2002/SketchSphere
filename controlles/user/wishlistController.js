@@ -17,6 +17,8 @@ const loadWishlist = async (req, res) => {
 
         console.log('Wishlist Items:', wishlistItems); // Debug log
 
+        
+
         res.render('wishlist', {
             wishlistItems,
             user: req.session.user
