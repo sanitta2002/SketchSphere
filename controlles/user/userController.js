@@ -99,9 +99,9 @@ const loadHomepage = async (req, res) => {
         let cartData = null;
         if (req.session.user) {
             userData = await User.findById(req.session.user);
-            cartData = await Cart.findOne({ user: req.session.user }).populate('items.productId');
+            cartData = await Cart.findOne({ userId: req.session.user }).populate('items.productId');
         }
-
+        
         return res.render('home', {
             products: processedProducts,
             user: userData,
@@ -525,11 +525,19 @@ const profile = async (req, res) => {
             total: o.finalAmount
         })));
 
+        let userData = null;
+        let cartData = null;
+        if (req.session.user) {
+            userData = await User.findById(req.session.user);
+            cartData = await Cart.findOne({ userId: req.session.user }).populate('items.productId');
+        }
+
         res.render('profile', {
             user,
             orders,
             wallet,
-            pageTitle: 'My Profile'
+            pageTitle: 'My Profile',
+            cart: cartData,
         });
     } catch (error) {
         console.error("Profile page error:", error);
@@ -794,6 +802,13 @@ const loadShop = async (req, res) => {
         const totalProducts = await Product.countDocuments(query);
         const totalPages = Math.ceil(totalProducts / limit);
 
+        let userData = null;
+        let cartData = null;
+        if (req.session.user) {
+            userData = await User.findById(req.session.user);
+            cartData = await Cart.findOne({ userId: req.session.user }).populate('items.productId');
+        }
+
         // Render the shop page
         res.render('shop', {
             products: processedProducts,
@@ -810,7 +825,8 @@ const loadShop = async (req, res) => {
             minPrice: minPrice || 0,
             maxPrice: maxPrice || 1000,
             sortBy: sortOption || 'default',
-            searchQuery: searchQuery || ''
+            searchQuery: searchQuery || '',
+            cart:cartData,
         });
 
     } catch (error) {

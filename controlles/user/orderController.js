@@ -180,14 +180,15 @@ const orderController = {
                     console.log('Processing refund for online order:', order._id);
                     
                     // Add refund to wallet first
-                    let wallet = await Wallet.findOne({ userId });
+                    let wallet = await Wallet.findOne({ userId }); 
+                    const refundAmount = order.finalAmount + (order.offerDiscount || 0); // Include offer discount in refund
                     if (!wallet) {
                         wallet = new Wallet({
                             userId,
-                            balance: order.finalAmount,
+                            balance: refundAmount,
                             transactions: [{
                                 type: 'credit',
-                                amount: order.finalAmount,
+                                amount: refundAmount,
                                 description: `Refund for cancelled order #${order._id}`,
                                 orderId: order._id,
                                 date: new Date()
@@ -199,11 +200,11 @@ const orderController = {
                         wallet = await Wallet.findOneAndUpdate(
                             { userId },
                             {
-                                $inc: { balance: order.finalAmount },
+                                $inc: { balance: refundAmount },
                                 $push: {
                                     transactions: {
                                         type: 'credit',
-                                        amount: order.finalAmount,
+                                        amount: refundAmount,
                                         description: `Refund for cancelled order #${order._id}`,
                                         orderId: order._id,
                                         date: new Date()
@@ -472,6 +473,7 @@ const orderController = {
 
             // Find the specific item
             const orderItem = order.orderedItems.id(itemId);
+            console.log(`orderItem:`, orderItem);
             if (!orderItem) {
                 return res.status(404).json({ success: false, message: 'Order item not found' });
             }
@@ -489,7 +491,7 @@ const orderController = {
                 if (status === 'Cancelled' && orderItem.status !== 'Cancelled') {
                     // Calculate refund amount for this item
                     if (order.paymentMethod === 'online') {
-                        refundAmount = orderItem.product.Sale_price * orderItem.quantity;
+                        refundAmount = orderItem.price * orderItem.quantity;
 
                         // Handle refund based on payment method
                     if (order.paymentMethod === 'online' && order.paymentStatus === 'Completed') {

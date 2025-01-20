@@ -129,7 +129,7 @@ const orderController = {
 
                 // Process refund for both online and COD payments when returning
                 if (status === 'Returned') {
-                    const refundAmount = orderItem.product.Sale_price * orderItem.quantity;
+                    const refundAmount = orderItem.price * orderItem.quantity;
 
                     // Add refund to wallet
                     const wallet = await Wallet.findOne({ userId: order.userId });

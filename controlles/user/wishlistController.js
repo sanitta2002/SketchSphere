@@ -107,8 +107,8 @@ const getWishlistStatus = async (req, res) => {
         const user = await User.findById(userId);
         const inWishlist = user.wishlist.includes(productId);
 
-        console.log('Wishlist Status - Product ID:', productId); 
-        console.log('In Wishlist:', inWishlist); 
+        // console.log('Wishlist Status - Product ID:', productId); 
+        // console.log('In Wishlist:', inWishlist); 
 
         res.json({
             success: true,
