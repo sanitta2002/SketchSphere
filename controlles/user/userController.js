@@ -97,16 +97,19 @@ const loadHomepage = async (req, res) => {
         // Get user data if logged in
         let userData = null;
         let cartData = null;
+        let wishlistCount = 0;
         if (req.session.user) {
             userData = await User.findById(req.session.user);
             cartData = await Cart.findOne({ userId: req.session.user }).populate('items.productId');
+            wishlistCount = userData.wishlist ? userData.wishlist.length : 0;
         }
         
         return res.render('home', {
             products: processedProducts,
             user: userData,
             cart: cartData,
-            categories: activeCategories
+            categories: activeCategories,
+            wishlistCount: wishlistCount
         });
 
     } catch (error) {
@@ -527,9 +530,11 @@ const profile = async (req, res) => {
 
         let userData = null;
         let cartData = null;
+        let wishlistCount = 0;
         if (req.session.user) {
             userData = await User.findById(req.session.user);
             cartData = await Cart.findOne({ userId: req.session.user }).populate('items.productId');
+            wishlistCount = userData.wishlist ? userData.wishlist.length : 0;
         }
 
         res.render('profile', {
@@ -538,6 +543,7 @@ const profile = async (req, res) => {
             wallet,
             pageTitle: 'My Profile',
             cart: cartData,
+            wishlistCount: wishlistCount
         });
     } catch (error) {
         console.error("Profile page error:", error);
@@ -804,9 +810,11 @@ const loadShop = async (req, res) => {
 
         let userData = null;
         let cartData = null;
+        let wishlistCount = 0;
         if (req.session.user) {
             userData = await User.findById(req.session.user);
             cartData = await Cart.findOne({ userId: req.session.user }).populate('items.productId');
+            wishlistCount = userData.wishlist ? userData.wishlist.length : 0;
         }
 
         // Render the shop page
@@ -827,6 +835,7 @@ const loadShop = async (req, res) => {
             sortBy: sortOption || 'default',
             searchQuery: searchQuery || '',
             cart:cartData,
+            wishlistCount: wishlistCount
         });
 
     } catch (error) {

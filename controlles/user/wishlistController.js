@@ -1,5 +1,6 @@
 const User = require('../../models/userSchema');
 const Product = require('../../models/productSchema');
+const Cart = require('../../models/cartSchema');
 
 // Load wishlist page
 const loadWishlist = async (req, res) => {
@@ -17,11 +18,14 @@ const loadWishlist = async (req, res) => {
 
         console.log('Wishlist Items:', wishlistItems); // Debug log
 
-        
+        const cartData = await Cart.findOne({ userId: req.session.user }).populate('items.productId');
+        const wishlistCount = user.wishlist ? user.wishlist.length : 0;
 
         res.render('wishlist', {
             wishlistItems,
-            user: req.session.user
+            user: req.session.user,
+            cart: cartData,
+            wishlistCount: wishlistCount
         });
     } catch (error) {
         console.error("Load wishlist error:", error);
