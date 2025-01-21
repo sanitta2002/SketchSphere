@@ -61,7 +61,6 @@ router.get('/orders', adminAuth, orderController.getAllOrders)
 router.get('/order/:orderId', adminAuth, orderController.getOrderDetails)
 router.post('/order/:orderId/item/:itemId/status', adminAuth, orderController.updateItemStatus)
 
-// Sales Report Route
-// router.post('/generate-report', adminAuth, adminController.generateReport);
+
 
 module.exports= router

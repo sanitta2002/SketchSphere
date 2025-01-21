@@ -38,7 +38,7 @@ router.post("/reset-password", userController.resetPassword);
 
 // Product routes
 router.get('/productDetails', productController.productDetail);
-// router.get('/product/:id', productController.productDetail);
+
 
 router.get('/shop', userController.loadShop);
 

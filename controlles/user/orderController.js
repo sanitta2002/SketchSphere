@@ -482,7 +482,7 @@ const orderController = {
 
             // Handle return request
             if (returnReason) {
-                if (!orderItem.returnReason) {  // Only set if not already set
+                if (!orderItem.returnReason) {  
                     orderItem.returnReason = returnReason;
                     orderItem.status = 'Delivered';  // Keep status as Delivered until admin confirms
                 }

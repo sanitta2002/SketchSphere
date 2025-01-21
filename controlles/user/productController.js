@@ -1,6 +1,8 @@
 const Product = require('../../models/productSchema');
 const Category = require('../../models/categorySchema');
 const User = require('../../models/userSchema');
+const Cart = require('../../models/cartSchema');
+
 
 const productDetail = async (req, res) => {
     try {
@@ -81,14 +83,20 @@ const productDetail = async (req, res) => {
 
         // Get user data if logged in
         let userData = null;
+        let cartData = null;
+        let wishlistCount = 0;
         if (req.session.user) {
             userData = await User.findById(req.session.user);
+            cartData = await Cart.findOne({ userId: req.session.user }).populate('items.productId');
+            wishlistCount = userData.wishlist ? userData.wishlist.length : 0;
         }
 
         res.render('productDetails', {
             product: productWithOffer,
             recommendedProducts: recommendedWithOffers,
-            user: userData
+            user: userData,
+            cart: cartData,
+            wishlistCount: wishlistCount
         });
     } catch (error) {
         console.error('Error in productDetail:', error);

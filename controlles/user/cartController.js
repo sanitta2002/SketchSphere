@@ -93,6 +93,7 @@ const cartController = {
                 subtotal,
                 total: totalPrice
             };
+            
 
             res.render('cart', {
                 cart: cartWithOffers,
