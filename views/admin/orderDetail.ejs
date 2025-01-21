@@ -27,6 +27,12 @@
                         <label class="form-label">Status</label>
                         <div class="form-control-plaintext"><%= order.status %></div>
                     </div>
+                    <% if (order.discountAmount && order.discountAmount > 0) { %>
+                    <div class="mb-3">
+                        <label class="form-label">Discount Amount</label>
+                        <div class="form-control-plaintext">₹<%= order.discountAmount.toFixed(2) %></div>
+                    </div>
+                    <% } %>
                     <div class="mb-3">
                         <label class="form-label">Total Amount</label>
                         <div class="form-control-plaintext">₹<%= order.totalPrice.toFixed(2) %></div>

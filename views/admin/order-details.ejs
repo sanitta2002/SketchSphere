@@ -36,7 +36,7 @@
                             <tr>
                                 <th>Product</th>
                                 <th>Image</th>
-                                <th>Price</th>
+                                <th>Actual Price</th>
                                 <th>Quantity</th>
                                 <th>Total</th>
                                 <th>Status</th>
@@ -55,7 +55,7 @@
                                     </td>
                                     <td>₹<%= item.product.Sale_price.toFixed(2) %></td>
                                     <td><%= item.quantity %></td>
-                                    <td>₹<%= (item.product.Sale_price * item.quantity).toFixed(2) %></td>
+                                    <td>₹<%= order.finalAmount.toFixed(2) %></td>
                                     <td>
                                         <span class="status-badge badge <%= 
                                             item.status === 'Delivered' ? 'bg-success' :

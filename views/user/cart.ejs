@@ -125,9 +125,23 @@
                         <span class="cart-total fw-bold">₹<%= cart.total || 0 %></span>
                     </div>
                     <% if (cart.items && cart.items.length > 0) { %>
-                        <a href="/checkout" class="btn btn-dark w-100 rounded-pill">
-                            Proceed to Checkout
-                        </a>
+                        <% 
+                        let hasOutOfStock = false;
+                        cart.items.forEach(item => {
+                            if (item.productId.available_quantity === 0 || item.quantity > item.productId.available_quantity) {
+                                hasOutOfStock = true;
+                            }
+                        });
+                        %>
+                        <% if (hasOutOfStock) { %>
+                            <button class="btn btn-dark w-100 rounded-pill" disabled title="Some items are out of stock">
+                                Cannot Checkout - Items Out of Stock
+                            </button>
+                        <% } else { %>
+                            <a href="/checkout" class="btn btn-dark w-100 rounded-pill">
+                                Proceed to Checkout
+                            </a>
+                        <% } %>
                     <% } else { %>
                         <button class="btn btn-dark w-100 rounded-pill" disabled>
                             Cart is Empty

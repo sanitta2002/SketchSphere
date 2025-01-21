@@ -174,7 +174,7 @@ const orderController = {
                 }
                 // For cancellations, only process refund for online payments
                 else if (status === 'Cancelled' && order.paymentMethod === 'online' && order.paymentStatus === 'Completed') {
-                    const refundAmount = orderItem.product.Sale_price * orderItem.quantity;
+                    const refundAmount = orderItem.price * orderItem.quantity;
 
                     // Add refund to wallet
                     const wallet = await Wallet.findOne({ userId: order.userId });
