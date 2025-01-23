@@ -16,7 +16,7 @@ const loadWishlist = async (req, res) => {
         // Then fetch the products from the wishlist IDs
         const wishlistItems = await Product.find({ _id: { $in: user.wishlist } });
 
-        console.log('Wishlist Items:', wishlistItems); // Debug log
+        console.log('Wishlist Items:', wishlistItems); 
 
         const cartData = await Cart.findOne({ userId: req.session.user }).populate('items.productId');
         const wishlistCount = user.wishlist ? user.wishlist.length : 0;

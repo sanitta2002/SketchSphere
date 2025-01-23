@@ -207,9 +207,38 @@ const editProduct = async (req, res) => {
 
         console.log("Update Fields:", updateFields);
 
-        // Handle image uploads
+        // Get current product to handle image updates
+        const currentProduct = await product.findById(id);
+        if (!currentProduct) {
+            throw new Error('Product not found');
+        }
+
+        // Handle deleted images
+        let remainingImages = [...currentProduct.product_img];
+        if (data.deletedImages) {
+            const deletedImages = JSON.parse(data.deletedImages);
+            console.log("Images to delete:", deletedImages);
+
+            // Remove deleted images from the array
+            remainingImages = currentProduct.product_img.filter(img => !deletedImages.includes(img));
+
+            // Delete the actual files
+            for (const imgName of deletedImages) {
+                const imagePath = path.join('public', 'uploads', 're-image', imgName);
+                try {
+                    if (fs.existsSync(imagePath)) {
+                        fs.unlinkSync(imagePath);
+                        console.log(`Deleted image: ${imgName}`);
+                    }
+                } catch (err) {
+                    console.error(`Error deleting image ${imgName}:`, err);
+                }
+            }
+        }
+
+        // Handle new image uploads
         if (req.files && req.files.length > 0) {
-            const images = [];
+            const newImages = [];
             for (let i = 0; i < req.files.length; i++) {
                 const originalImagePath = path.join(
                     "public",
@@ -228,13 +257,22 @@ const editProduct = async (req, res) => {
                     .resize({ width: 440, height: 440 })
                     .toFile(resizedImagePath);
 
-                images.push(`resized-${req.files[i].filename}`);
+                newImages.push(`resized-${req.files[i].filename}`);
+                
+                // Delete the original unresized image
+                try {
+                    fs.unlinkSync(originalImagePath);
+                } catch (err) {
+                    console.error('Error deleting original image:', err);
+                }
             }
 
-            if (images.length > 0) {
-                updateFields.product_img = images;
-            }
+            // Combine remaining and new images
+            remainingImages = [...remainingImages, ...newImages];
         }
+
+        // Update the product_img field
+        updateFields.product_img = remainingImages;
 
         // Find category ID
         const categoryData = await Category.findOne({ name: data.category });
@@ -242,7 +280,10 @@ const editProduct = async (req, res) => {
             updateFields.category_id = categoryData._id;
         }
 
-        await product.findByIdAndUpdate(id, updateFields, { new: true });
+        const updatedProduct = await product.findByIdAndUpdate(id, updateFields, { new: true });
+        console.log("Updated product:", updatedProduct);
+
+        req.session.successMessage = "Product updated successfully!";
         res.redirect('/admin/products');
     } catch (error) {
         console.error("Error updating product:", error);
