@@ -41,11 +41,8 @@
                                     placeholder="Enter your password" 
                                     required
                                 >
-                                
-                                
-
                                 <button class="btn btn-outline-secondary" type="button" id="togglePassword">
-                                    <i class="bi bi-eye-fill"></i>
+                                    <i class="fas fa-eye"></i>
                                 </button>
                             </div>
                             <div id="passwordError" class="invalid-feedback"></div>
@@ -87,7 +84,7 @@
     document.addEventListener('DOMContentLoaded', function(){
         const emailInput = document.getElementById('email');
         const passwordInput = document.getElementById('password');
-
+        const togglePassword = document.getElementById('togglePassword');
 
         function validateEmail() {
         const email = emailInput.value.trim();
@@ -132,6 +129,7 @@
     emailInput.addEventListener('input', validateEmail);
     passwordInput.addEventListener('input', validatePassword);
 
+    const form = document.getElementById('loginForm');
     form.addEventListener('submit', function(event) {
         event.preventDefault();
 
@@ -144,6 +142,17 @@
         if ( isEmailValid &&  isPasswordValid) {
             form.submit();
         }
+    });
+
+    // Password visibility toggle
+    togglePassword.addEventListener('click', function() {
+        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordInput.setAttribute('type', type);
+        
+        // Toggle eye icon
+        const icon = this.querySelector('i');
+        icon.classList.toggle('fa-eye');
+        icon.classList.toggle('fa-eye-slash');
     });
 
     })
