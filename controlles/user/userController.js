@@ -330,11 +330,11 @@ const resendOtp = async (req, res) => {
 
 const loadLogin = async (req, res) => {
     try {
-        let userData = null;
+        // If user is already logged in, redirect to home
         if (req.session.user) {
-            userData = await User.findById(req.session.user);
+            return res.redirect('/');
         }
-        res.render('login', { user: userData });
+        res.render('login', { user: null });
     } catch (error) {
         console.log(error.message);
         res.render('login', { user: null });
@@ -469,15 +469,21 @@ const login = async (req, res) => {
         if (!passwordMatch) {
             return res.render("login", { message: "Incorrect Password" })
         }
-        req.session.user = findUser._id
-        res.redirect('/')
 
+        // Set session
+        req.session.user = findUser._id;
+        
+        // Set cache control headers
+        res.set({
+            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+        });
 
+        res.redirect('/');
     } catch (error) {
-
         console.error("Login error" + error)
         res.render('login', { message: "login failed. Please try again later" })
-
     }
 }
 
