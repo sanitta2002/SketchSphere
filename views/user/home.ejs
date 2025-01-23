@@ -461,7 +461,10 @@
                     title: 'Success!',
                     text: 'Product added to cart successfully',
                     showConfirmButton: false,
-                    timer: 1500
+                    timer: 1000
+                }).then(() => {
+                    // Refresh the page after the alert closes
+                    window.location.reload();
                 });
             } else {
                 Swal.fire({
@@ -495,22 +498,15 @@
             const data = await response.json();
             
             if (response.ok) {
-                button.classList.toggle('active');
-                const icon = button.querySelector('i');
-                if (button.classList.contains('active')) {
-                    icon.classList.remove('far');
-                    icon.classList.add('fas');
-                } else {
-                    icon.classList.remove('fas');
-                    icon.classList.add('far');
-                }
-                
+                // Show success message and refresh page
                 Swal.fire({
                     icon: 'success',
                     title: 'Success!',
                     text: data.message,
                     showConfirmButton: false,
-                    timer: 1500
+                    timer: 1000
+                }).then(() => {
+                    window.location.reload();
                 });
             } else {
                 throw new Error(data.message || 'Failed to toggle wishlist');
