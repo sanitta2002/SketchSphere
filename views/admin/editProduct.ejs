@@ -99,24 +99,24 @@
             <div class="card mb-4">
                 <div class="card-body">
                     <% if (typeof product !== 'undefined' && product) { %>
-                        <form method="post" action="/admin/editProduct/<%= product._id %>" enctype="multipart/form-data" onsubmit="return validationForm()">
+                        <form method="post" action="/admin/editProduct/<%= product._id %>" enctype="multipart/form-data" onsubmit="return validateForm();">
                             <input type="hidden" name="deletedImages" id="deletedImages" value="">
 
                             <div class="mb-4">
-                                <label for="product_name" class="form-label">Product Name</label>
-                                <input type="text" name="productName" value="<%= product.name || '' %>" class="form-control border" id="product_name">
+                                <label for="productName" class="form-label">Product Name</label>
+                                <input type="text" name="productName" value="<%= product.name || '' %>" class="form-control border" id="productName">
                                 <div id="productName-error" class="error-message"></div>
                             </div>
 
                             <div class="mb-4">
                                 <label class="form-label">Full description</label>
-                                <textarea name="description" class="form-control border" rows="4"><%= product.description || '' %></textarea>
+                                <textarea name="description" class="form-control border" rows="4" id="description"><%= product.description || '' %></textarea>
                                 <div id="description-error" class="error-message"></div>
                             </div>
 
                             <div class="mb-4">
                                 <label class="form-label">Published Date</label>
-                                <input type="date" name="Published_Date" value="<%= product.Published_Date ? product.Published_Date.toISOString().split('T')[0] : '' %>" class="form-control border" id="published_date">
+                                <input type="date" name="published_date" value="<%= product.Published_Date ? product.Published_Date.toISOString().split('T')[0] : '' %>" class="form-control border" id="published_date">
                                 <div id="publishedDate-error" class="error-message"></div>
                             </div>
 
@@ -128,7 +128,7 @@
 
                             <div class="mb-4">
                                 <label class="form-label">Cover Artist</label>
-                                <input type="text" name="cover_Artist" value="<%= product.cover_Artist || '' %>" placeholder="Enter cover artist name" class="form-control border" id="cover_artist">
+                                <input type="text" name="cover_Artist" value="<%= product.cover_Artist || '' %>" placeholder="Enter cover artist name" class="form-control border" id="cover_Artist">
                                 <div id="coverArtist-error" class="error-message"></div>
                             </div>
 
@@ -136,21 +136,21 @@
                                 <div class="col-lg-4">
                                     <div class="mb-4">
                                         <label class="form-label">Regular price</label>
-                                        <input name="regularPrice" type="text" value="<%= product.Regular_price || '' %>" class="form-control border">
+                                        <input name="regularPrice" type="text" value="<%= product.Regular_price || '' %>" class="form-control border" id="regularPrice">
                                         <div id="regularPrice-error" class="error-message"></div>
                                     </div>
                                 </div>
                                 <div class="col-lg-4">
                                     <div class="mb-4">
                                         <label class="form-label">Sale price</label>
-                                        <input name="salePrice" type="text" value="<%= product.Sale_price || '' %>" class="form-control border">
+                                        <input name="salePrice" type="text" value="<%= product.Sale_price || '' %>" class="form-control border" id="salePrice">
                                         <div id="salePrice-error" class="error-message"></div>
                                     </div>
                                 </div>
                                 <div class="col-lg-4">
                                     <div class="mb-4">
                                         <label class="form-label">Quantity</label>
-                                        <input name="quantity" type="text" value="<%= product.available_quantity || '' %>" class="form-control border">
+                                        <input name="quantity" type="text" value="<%= product.available_quantity || '' %>" class="form-control border" id="quantity">
                                         <div id="quantity-error" class="error-message"></div>
                                     </div>
                                 </div>
@@ -161,7 +161,7 @@
                                     <div class="row gx-2">
                                         <div class="col-sm-6 mb-3">
                                             <label class="form-label">Category</label>
-                                            <select class="form-select border" style="width: 150px;" name="category">
+                                            <select class="form-select border" style="width: 150px;" name="category" id="category">
                                                 <% if (typeof cat !== 'undefined' && cat) { %>
                                                     <% for(let i = 0; i < cat.length; i++) { %>
                                                         <option value="<%= cat[i].name %>" <%= (product.category === cat[i].name) ? 'selected' : '' %>>
@@ -174,7 +174,7 @@
                                         </div>
                                         <div class="col-sm-6 mb-3">
                                             <label class="form-label">Language</label>
-                                            <select class="form-select border" style="width: 150px;" name="language">
+                                            <select class="form-select border" style="width: 150px;" name="language" id="language">
                                                 <option value="">Select Language</option>
                                                 <option value="English" <%= product.language === 'English' ? 'selected' : '' %>>English</option>
                                                 <option value="Malayalam" <%= product.language === 'Malayalam' ? 'selected' : '' %>>Malayalam</option>
@@ -216,15 +216,16 @@
                                     <!-- New image upload inputs -->
                                     <div class="mb-4">
                                         <label class="form-label">Add New Images</label>
+                                        <div id="image-error" class="error-message"></div>
                                         <% for(let i = 1; i <= 4; i++) { %>
                                             <div class="mb-3">
-                                                <input class="form-control" type="file" name="images" id="input<%= i %>"
+                                                <input class="form-control product-image" type="file" name="images" id="input<%= i %>"
                                                     accept="image/png, image/jpeg, image/jpg"
                                                     onchange="viewImage(event, <%= i %>)">
                                                 
                                                 <!-- Original Image Preview -->
                                                 <div class="image-preview mt-3">
-                                                    <img src="" alt="" id="imgView<%= i %>" style="display: none;">
+                                                    <img src="" alt="" id="imgView<%= i %>" style="display: none; max-width: 200px;">
                                                 </div>
                                                 
                                                 <!-- Cropper Container -->
@@ -460,12 +461,13 @@
         }
     }
 
-    function validationForm() {
+
+    function validateForm() {
         clearErrorMessages();
         let isValid = true;
 
         // Product Name validation
-        const productName = document.getElementById('product_name').value.trim();
+        const productName = document.getElementById('productName').value.trim();
         if (!productName) {
             displayErrorMessage('productName-error', 'Product name is required');
             isValid = false;
@@ -475,7 +477,7 @@
         }
 
         // Description validation
-        const description = document.getElementsByName('description')[0].value.trim();
+        const description = document.getElementById('description').value.trim();
         if (!description) {
             displayErrorMessage('description-error', 'Description is required');
             isValid = false;
@@ -499,14 +501,14 @@
         }
 
         // Cover Artist validation
-        const coverArtist = document.getElementById('cover_artist').value.trim();
+        const coverArtist = document.getElementById('cover_Artist').value.trim();
         if (!coverArtist) {
             displayErrorMessage('coverArtist-error', 'Cover artist is required');
             isValid = false;
         }
 
         // Regular Price validation
-        const regularPrice = document.getElementsByName('regularPrice')[0].value.trim();
+        const regularPrice = document.getElementById('regularPrice').value.trim();
         if (!regularPrice) {
             displayErrorMessage('regularPrice-error', 'Regular price is required');
             isValid = false;
@@ -519,7 +521,7 @@
         }
 
         // Sale Price validation
-        const salePrice = document.getElementsByName('salePrice')[0].value.trim();
+        const salePrice = document.getElementById('salePrice').value.trim();
         if (salePrice) {
             if (!/^\d+(\.\d{1,2})?$/.test(salePrice)) {
                 displayErrorMessage('salePrice-error', 'Please enter a valid price (e.g., 99.99)');
@@ -534,15 +536,62 @@
         }
 
         // Quantity validation
-        const quantity = document.getElementsByName('quantity')[0].value.trim();
+        const quantity = document.getElementById('quantity').value.trim();
         if (!quantity) {
             displayErrorMessage('quantity-error', 'Quantity is required');
             isValid = false;
         } else if (!/^\d+$/.test(quantity)) {
-            displayErrorMessage('quantity-error', 'Please enter a valid quantity (whole number)');
+            displayErrorMessage('quantity-error', 'Quantity must be a whole number');
             isValid = false;
         } else if (parseInt(quantity) <= 0) {
             displayErrorMessage('quantity-error', 'Quantity must be greater than 0');
+            isValid = false;
+        }
+
+        // Category validation
+        const category = document.getElementById('category').value;
+        if (!category) {
+            displayErrorMessage('category-error', 'Please select a category');
+            isValid = false;
+        }
+
+        // Language validation
+        const language = document.getElementById('language').value;
+        if (!language) {
+            displayErrorMessage('language-error', 'Please select a language');
+            isValid = false;
+        }
+
+        // Image validation
+        const existingImages = document.querySelectorAll('.thumbnail').length;
+        const deletedImages = deletedImagesList.length;
+        const remainingExistingImages = existingImages - deletedImages;
+        
+        const newImageInputs = document.querySelectorAll('.product-image');
+        let newImagesCount = 0;
+        
+        newImageInputs.forEach(input => {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                // Check file type
+                if (!file.type.match('image/jpeg') && !file.type.match('image/png') && !file.type.match('image/jpg')) {
+                    displayErrorMessage('image-error', 'Only JPG, JPEG, and PNG files are allowed');
+                    isValid = false;
+                    return;
+                }
+                // Check file size (max 5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    displayErrorMessage('image-error', 'Image size should not exceed 5MB');
+                    isValid = false;
+                    return;
+                }
+                newImagesCount++;
+            }
+        });
+
+        // Check if there's at least one image (either existing or new)
+        if (remainingExistingImages === 0 && newImagesCount === 0) {
+            displayErrorMessage('image-error', 'At least one product image is required');
             isValid = false;
         }
 

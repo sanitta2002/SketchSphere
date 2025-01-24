@@ -192,6 +192,33 @@ const editProduct = async (req, res) => {
         console.log("Edit Product Data:", data);
         console.log("Language value:", data.language);
 
+
+
+        // Validate required fields
+        if (!data.productName || data.productName.trim() === '') {
+            return res.status(400).json({ error: "Product name is required" });
+        }
+
+        if (!data.description || data.description.trim() === '') {
+            return res.status(400).json({ error: "Description is required" });
+        }
+        
+        if(data.quantity < 0){
+            return res.status(400).json({ error: "Quantity cannot be negative" });
+        }
+
+        if(data.regularPrice < 0){
+            return res.status(400).json({ error: "Regular price cannot be negative" });
+        }
+
+        if(data.salePrice < 0){
+            return res.status(400).json({ error: "Sale price cannot be negative" });
+        }
+
+        if(data.salePrice < data.regularPrice){
+            return res.status(400).json({ error: "Sale price cannot be greater than regular price" });
+        }
+
         // Update fields
         const updateFields = {
             name: data.productName,
