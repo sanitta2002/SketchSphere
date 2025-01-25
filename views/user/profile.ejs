@@ -301,7 +301,12 @@
       </div>
       <div class="modal-body">
         <div class="order-info mb-4">
-          <h6>Order Information</h6>
+          <div class="d-flex justify-content-between align-items-start mb-3">
+            <h6 class="mb-0">Order Information</h6>
+            <button class="btn btn-sm btn-success" onclick="downloadInvoice()" id="downloadInvoiceBtn">
+              <i class="fas fa-file-pdf me-1"></i> Download Invoice
+            </button>
+          </div>
           <div class="row">
             <div class="col-md-6">
               <p><strong>Order ID:</strong> <span id="modalOrderId"></span></p>
@@ -354,6 +359,8 @@
 <!-- Scripts -->
 <script src="https://kit.fontawesome.com/your-font-awesome-kit.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <script>
 function editField(field, currentValue) {
@@ -798,11 +805,14 @@ async function cancelOrder(orderId) {
 
 async function viewOrderDetails(orderId) {
     try {
-        const response = await fetch(`/api/orders/${orderId}`);
+        const response = await fetch(`/get-order-details/${orderId}`);
         const order = await response.json();
         
         if (order) {
-            // Fill in the modal with order details
+            // Store order ID for invoice download
+            document.getElementById('downloadInvoiceBtn').setAttribute('data-order-id', orderId);
+            
+            // Fill modal with order details
             document.getElementById('modalOrderId').textContent = order.orderId;
             document.getElementById('modalOrderDate').textContent = new Date(order.createdOn).toLocaleDateString('en-US', {
                 year: 'numeric',
@@ -866,6 +876,36 @@ async function viewOrderDetails(orderId) {
             icon: 'error',
             title: 'Error',
             text: 'Failed to load order details'
+        });
+    }
+}
+
+async function downloadInvoice() {
+    try {
+        const orderId = document.getElementById('downloadInvoiceBtn').getAttribute('data-order-id');
+        const response = await fetch(`/generate-invoice/${orderId}`);
+        
+        if (!response.ok) {
+            throw new Error('Failed to generate invoice');
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `invoice_${orderId}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+    } catch (error) {
+        console.error('Error downloading invoice:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Download Failed',
+            text: 'Failed to download the invoice. Please try again.',
+            confirmButtonColor: '#198754'
         });
     }
 }

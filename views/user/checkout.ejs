@@ -713,8 +713,36 @@ async function placeOrder() {
                 });
                 
                 const rzp1 = new Razorpay(options);
+
+                rzp1.on('payment.failed', function(response) {
+                    console.error('Razorpay payment failed:', response.error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Payment Failed',
+                        text: 'Your payment was not successful. Please try again.',
+                        confirmButtonColor: '#212529'
+                    });
+                    const orderBtn = document.querySelector('.btn-dark');
+                    orderBtn.disabled = false;
+                    orderBtn.innerHTML = 'Place Order';
+                });
+
+                rzp1.on('modal.closed', function() {
+                    console.log('Razorpay modal closed without payment');
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Payment Cancelled',
+                        text: 'You cancelled the payment. Your order has not been placed.',
+                        confirmButtonColor: '#212529'
+                    });
+                    const orderBtn = document.querySelector('.btn-dark');
+                    orderBtn.disabled = false;
+                    orderBtn.innerHTML = 'Place Order';
+                });
+
+                // Open Razorpay payment form
                 rzp1.open();
-                
+
                 // Reset button state
                 orderBtn.disabled = false;
                 orderBtn.innerHTML = 'Place Order';

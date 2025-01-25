@@ -10,6 +10,7 @@ const wishlistController=require('../controlles/user/wishlistController')
 const {userAuth}=require('../middleware/auth')
 const passport = require('passport')
 const paymentController = require('../controlles/user/paymentController')
+const { generateInvoice } = require('../controlles/user/invoiceController')
 
 
 router.get('/pageNotFound',userController.pageNotFound)
@@ -84,6 +85,8 @@ router.post('/cancel-order/:orderId', userAuth,orderController.cancelOrder);
 router.get('/orderSuccess',userAuth,orderController.orderSuccess);
 router.get('/view-order-item', userAuth, orderController.viewOrderItemDetails);
 router.post('/update-order-item-status/:orderId/:itemId', userAuth, orderController.updateOrderItemStatus);
+router.get('/get-order-details/:orderId', userAuth, orderController.getOrderDetails);
+router.get('/generate-invoice/:orderId', userAuth, generateInvoice);
 
 // Order details API
 router.get('/api/orders/:orderId', orderController.getOrderDetails);
