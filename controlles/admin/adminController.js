@@ -3,6 +3,7 @@ const User = require('../../models/userSchema');
 const Product = require('../../models/productSchema');
 const mongoose = require('mongoose')
 const bcrypt = require('bcrypt')
+const Category = require('../../models/categorySchema'); // Assuming you have a category schema
 
 
 const pageerror = async(req,res)=>{
@@ -52,180 +53,482 @@ const loadDashboard = async (req, res) => {
             return res.redirect("/admin/login");
         }
 
-        // Get total stats (all time)
-        const totalStats = {
-            totalOrders: await Order.countDocuments(),
-            totalUsers: await User.countDocuments({ isAdmin: false }),
-            totalRevenue: (await Order.aggregate([
-                {
-                    $match: { 
-                        status: { 
-                            $nin: ['Cancelled', 'Returned'] 
-                        }
-                    }
-                },
-                {
-                    $group: {
-                        _id: null,
-                        total: { 
-                            $sum: "$totalAmount" 
-                        }
-                    }
-                }
-            ]))[0]?.total || 0
-        };
+        // Get all orders for summary statistics
+        const orders = await Order.find().populate('orderedItems.product');
+        console.log('Total orders found:', orders.length);
 
-        // Get query parameters for filtering
-        const { startDate, endDate, period } = req.query;
-        let query = {};
-        let dateQuery = {};
-
-        // Handle date filtering
-        if (startDate && endDate) {
-            dateQuery = {
-                orderDate: {
-                    $gte: new Date(startDate),
-                    $lte: new Date(endDate)
-                }
-            };
-        } else if (period) {
-            const now = new Date();
-            let periodStartDate;
-
-            switch (period) {
-                case 'day':
-                    periodStartDate = new Date(now.setDate(now.getDate() - 1));
-                    break;
-                case 'week':
-                    periodStartDate = new Date(now.setDate(now.getDate() - 7));
-                    break;
-                case 'month':
-                    periodStartDate = new Date(now.setMonth(now.getMonth() - 1));
-                    break;
-                case 'year':
-                    periodStartDate = new Date(now.setFullYear(now.getFullYear() - 1));
-                    break;
-                default:
-                    periodStartDate = new Date(now.getFullYear(), now.getMonth(), 1);
-            }
-
-            dateQuery = {
-                orderDate: {
-                    $gte: periodStartDate,
-                    $lte: new Date()
-                }
-            };
-        } else {
-            // Default to current month if no filter
-            const now = new Date();
-            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-            dateQuery = {
-                orderDate: {
-                    $gte: startOfMonth,
-                    $lte: now
-                }
-            };
-        }
-
-        query = { ...query, ...dateQuery };
-
-        // Get filtered orders with populated product details
-        const orders = await Order.find(query)
-            .populate({
-                path: 'items.productId',
-                select: 'productName brand regularPrice price',
-                match: { _id: { $ne: null } }
-            })
-            .sort({ orderDate: -1 })
-            .lean();
-
-        // Calculate summary statistics for filtered period
-        let summary = {
-            periodOrders: orders.length,
+        // Calculate summary statistics
+        const summary = {
             totalAmount: 0,
-            totalDiscount: 0,
-            discountBreakdown: {
-                couponDiscount: 0,
-                count: 0
-            },
-            statusBreakdown: {
-                Delivered: 0,
-                Pending: 0,
-                Processing: 0,
-                Shipped: 0,
-                Cancelled: 0,
-                Returned: 0
-            }
+            totalOrders: orders.length,
+            totalProductsSold: 0,
+            totalDiscount: 0
         };
 
-        // Process orders
+        // Process orders for summary data
         orders.forEach(order => {
-            // Calculate regular price for each order
-            let regularPrice = 0;
-            order.items.forEach(item => {
-                if (item.productId) {
-                    regularPrice += (item.productId.regularPrice || item.productId.price || 0) * item.quantity;
+            let orderTotal = 0;
+            let orderDiscount = 0;
+            
+            // Calculate total for non-cancelled and non-returned items
+            order.orderedItems.forEach(item => {
+                if (item.status !== 'Cancelled' && item.status !== 'Returned') {
+                    const itemTotal = (item.price * item.quantity) || 0;
+                    orderTotal += itemTotal;
+                    summary.totalProductsSold += item.quantity || 0;
                 }
             });
-            order.regularPrice = regularPrice;
 
-            // Update status count
-            if (summary.statusBreakdown.hasOwnProperty(order.status)) {
-                summary.statusBreakdown[order.status]++;
-            }
-
-            // Only include non-cancelled orders in financial calculations
-            if (order.status !== 'Cancelled' && order.status !== 'Returned') {
-                summary.totalAmount += order.totalAmount || 0;
-                
-                if (order.coupon && order.coupon.discountedAmount) {
-                    summary.totalDiscount += order.coupon.discountedAmount;
-                    summary.discountBreakdown.couponDiscount += order.coupon.discountedAmount;
-                    summary.discountBreakdown.count++;
-                }
+            // Only add to total if there are valid items
+            if (orderTotal > 0) {
+                summary.totalAmount += orderTotal;
+                summary.totalDiscount += order.discount || 0;
             }
         });
 
-        // Add total stats to summary
-        summary = {
-            ...summary,
-            ...totalStats
-        };
+        console.log('Summary data:', summary);
 
-        // Prepare filters for template
-        const filters = {
-            startDate: startDate || '',
-            endDate: endDate || '',
-            period: period || ''
-        };
+        // Get sales data for the chart (default to monthly view)
+        const salesData = await getSalesData('monthly');
+        console.log('Sales data for chart:', salesData);
 
-        // Get the date range text for display
-        let dateRangeText = '';
-        if (startDate && endDate) {
-            dateRangeText = `${new Date(startDate).toLocaleDateString()} - ${new Date(endDate).toLocaleDateString()}`;
-        } else if (period) {
-            dateRangeText = period === 'day' ? 'Last 24 Hours' :
-                           period === 'week' ? 'Last 7 Days' :
-                           period === 'month' ? 'Last 30 Days' :
-                           period === 'year' ? 'Last 12 Months' : '';
-        } else {
-            dateRangeText = 'This Month';
-        }
+        // Get top products
+        const topProducts = await Order.aggregate([
+            { $unwind: "$orderedItems" },
+            {
+                $match: {
+                    "orderedItems.status": { $nin: ['Cancelled', 'Returned'] }
+                }
+            },
+            {
+                $lookup: {
+                    from: "products",
+                    localField: "orderedItems.product",
+                    foreignField: "_id",
+                    as: "productInfo"
+                }
+            },
+            { $unwind: "$productInfo" },
+            {
+                $group: {
+                    _id: "$orderedItems.product",
+                    name: { $first: "$productInfo.name" },
+                    sales: { $sum: "$orderedItems.quantity" },
+                    revenue: { $sum: { $multiply: ["$orderedItems.price", "$orderedItems.quantity"] } }
+                }
+            },
+            { $sort: { sales: -1 } },
+            { $limit: 10 }
+        ]);
+
+        // Get top categories
+        const topCategories = await Order.aggregate([
+            { $unwind: "$orderedItems" },
+            {
+                $match: {
+                    "orderedItems.status": { $nin: ['Cancelled', 'Returned'] }
+                }
+            },
+            {
+                $lookup: {
+                    from: "products",
+                    localField: "orderedItems.product",
+                    foreignField: "_id",
+                    as: "productInfo"
+                }
+            },
+            { $unwind: "$productInfo" },
+            {
+                $lookup: {
+                    from: "categories",
+                    localField: "productInfo.category_id",
+                    foreignField: "_id",
+                    as: "categoryInfo"
+                }
+            },
+            { $unwind: "$categoryInfo" },
+            {
+                $group: {
+                    _id: "$categoryInfo._id",
+                    name: { $first: "$categoryInfo.name" },
+                    sales: { $sum: "$orderedItems.quantity" },
+                    revenue: { $sum: { $multiply: ["$orderedItems.price", "$orderedItems.quantity"] } }
+                }
+            },
+            { $sort: { sales: -1 } },
+            { $limit: 5 }
+        ]);
+
+        console.log('Top Categories:', topCategories);
+        console.log('Top Products:', topProducts);
 
         res.render('dashboard', {
-            title: 'Dashboard',
-            orders,
             summary,
-            filters,
-            dateRangeText
+            salesData,
+            topProducts,
+            topCategories
         });
 
     } catch (error) {
-        console.error('Error loading dashboard:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error loading dashboard'
+        console.error("Error in loadDashboard:", error);
+        res.redirect('/admin/error');
+    }
+};
+
+// Helper function to get sales data based on period
+const getSalesData = async (period) => {
+    const now = new Date();
+    let startDate;
+    let endDate = new Date(now);
+    let groupByFormat;
+
+    // Determine the start date and grouping format based on period
+    switch(period) {
+        case 'yearly':
+            startDate = new Date(now.getFullYear() - 4, 0, 1); // Start from 5 years ago
+            endDate.setHours(23, 59, 59, 999);
+            groupByFormat = {
+                $dateToString: { 
+                    format: "%Y", 
+                    date: "$createdOn"
+                }
+            };
+            break;
+        case 'monthly':
+            // Calculate exact date 12 months ago
+            startDate = new Date(now);
+            startDate.setMonth(startDate.getMonth() - 11);
+            startDate.setDate(1); // First day of that month
+            startDate.setHours(0, 0, 0, 0);
+
+            // Set end date to end of current month
+            endDate = new Date(now);
+            endDate.setDate(1); // First set to first day of current month
+            endDate.setMonth(endDate.getMonth() + 1); // Move to first day of next month
+            endDate.setDate(0); // Move back to last day of current month
+            endDate.setHours(23, 59, 59, 999);
+
+            console.log('Monthly date range:', {
+                start: startDate.toISOString(),
+                end: endDate.toISOString()
+            });
+
+            groupByFormat = {
+                $dateToString: { 
+                    format: "%Y-%m", 
+                    date: "$createdOn"
+                }
+            };
+            break;
+        case 'weekly':
+            // Calculate start date as 5 weeks ago from the current date
+            startDate = new Date(now);
+            startDate.setDate(startDate.getDate() - (7 * 4)); // Go back 4 weeks (plus current week = 5 weeks)
+            startDate.setHours(0, 0, 0, 0);
+            startDate.setMinutes(0, 0, 0);
+            
+            // Set end date to end of current day
+            endDate = new Date(now);
+            endDate.setHours(23, 59, 59, 999);
+
+            console.log('Weekly date range:', {
+                start: startDate.toISOString(),
+                end: endDate.toISOString()
+            });
+
+            // Use week-based format for grouping
+            groupByFormat = {
+                $dateToString: { 
+                    format: "%Y-W%V", // Year and week number
+                    date: "$createdOn"
+                }
+            };
+            break;
+        case 'daily':
+            // Calculate date range for current month's data
+            startDate = new Date(now.getFullYear(), now.getMonth(), 1); // Start of current month
+            startDate.setHours(0, 0, 0, 0);
+
+            endDate = new Date(now);
+            endDate.setHours(23, 59, 59, 999);
+
+            console.log('Daily date range for current month:', {
+                start: startDate.toISOString(),
+                end: endDate.toISOString()
+            });
+
+            groupByFormat = {
+                $dateToString: { 
+                    format: "%d", // Just the day number
+                    date: "$createdOn"
+                }
+            };
+            break;
+        default:
+            startDate = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+            endDate.setHours(23, 59, 59, 999);
+            groupByFormat = {
+                $dateToString: { 
+                    format: "%Y-%m", 
+                    date: "$createdOn"
+                }
+            };
+    }
+
+    try {
+        console.log('Fetching sales data from:', startDate, 'to:', endDate);
+
+        // First, get the orders with their items
+        const salesData = await Order.aggregate([
+            {
+                $match: {
+                    createdOn: { 
+                        $gte: startDate,
+                        $lte: endDate
+                    }
+                }
+            },
+            // Unwind ordered items to handle them individually
+            {
+                $unwind: "$orderedItems"
+            },
+            // Match only non-cancelled and non-returned items
+            {
+                $match: {
+                    "orderedItems.status": { 
+                        $nin: ['Cancelled', 'Returned']
+                    }
+                }
+            },
+            // Group by date and calculate totals only for valid items
+            {
+                $group: {
+                    _id: {
+                        date: groupByFormat,
+                        orderId: "$_id" // Group by order ID to handle per-order calculations
+                    },
+                    itemTotal: {
+                        $sum: {
+                            $multiply: ["$orderedItems.price", "$orderedItems.quantity"]
+                        }
+                    },
+                    productCount: {
+                        $sum: "$orderedItems.quantity"
+                    }
+                }
+            },
+            // Second group to get final totals per date
+            {
+                $group: {
+                    _id: "$_id.date",
+                    totalAmount: {
+                        $sum: "$itemTotal"
+                    },
+                    productCount: {
+                        $sum: "$productCount"
+                    },
+                    orderCount: { 
+                        $sum: 1 
+                    }
+                }
+            },
+            {
+                $sort: { _id: 1 }
+            }
+        ]);
+
+        console.log('Raw aggregation result:', salesData);
+
+        // Generate date range
+        const dates = [];
+        let currentDate = new Date(startDate);
+        
+        while (currentDate <= endDate) {
+            let dateKey;
+            
+            switch(period) {
+                case 'yearly':
+                    dateKey = currentDate.getFullYear().toString();
+                    currentDate.setFullYear(currentDate.getFullYear() + 1);
+                    break;
+                case 'monthly':
+                    // Format as YYYY-MM and ensure month is padded with zero
+                    const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
+                    dateKey = `${currentDate.getFullYear()}-${month}`;
+                    currentDate.setMonth(currentDate.getMonth() + 1);
+                    break;
+                case 'weekly':
+                    // Get ISO week number
+                    const weekYear = currentDate.getFullYear();
+                    const weekNum = getWeekNumber(currentDate);
+                    dateKey = `${weekYear}-W${weekNum.toString().padStart(2, '0')}`;
+                    // Move to next week
+                    currentDate.setDate(currentDate.getDate() + 7);
+                    break;
+                case 'daily':
+                    // Format as YYYY-MM-DD with padded month and day
+                    const dailyMonth = (currentDate.getMonth() + 1).toString().padStart(2, '0');
+                    const dailyDay = currentDate.getDate().toString().padStart(2, '0');
+                    dateKey = `${currentDate.getFullYear()}-${dailyMonth}-${dailyDay}`;
+                    currentDate.setDate(currentDate.getDate() + 1);
+                    break;
+            }
+            
+            dates.push(dateKey);
+        }
+
+        // Sort dates for daily view to ensure 1-31 order
+        if (period === 'daily') {
+            dates.sort((a, b) => {
+                const dayA = parseInt(a.split('-')[2]);
+                const dayB = parseInt(b.split('-')[2]);
+                return dayA - dayB;
+            });
+        }
+
+        // Helper function to get ISO week number
+        function getWeekNumber(d) {
+            d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+            d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+        }
+
+        // Format labels based on period
+        const formatDate = (dateStr) => {
+            switch(period) {
+                case 'yearly':
+                    return dateStr;
+                case 'monthly':
+                    const [year, month] = dateStr.split('-');
+                    const date = new Date(year, parseInt(month) - 1);
+                    const currentYear = new Date().getFullYear();
+                    return date.getFullYear() === currentYear ? 
+                        date.toLocaleDateString('en-US', { month: 'long' }) :
+                        date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+                case 'weekly':
+                    // Parse the week string (format: YYYY-WNN)
+                    const matches = dateStr.match(/(\d{4})-W(\d{2})/);
+                    if (!matches) return dateStr;
+                    
+                    const [_, weekYear, weekNum] = matches;
+                    const weekIndex = dates.indexOf(dateStr);
+                    
+                    // If it's the most recent week, show the month name
+                    if (weekIndex === dates.length - 1) {
+                        return new Date().toLocaleDateString('en-US', { month: 'long' });
+                    }
+                    // Otherwise show Week 1-4
+                    return `Week ${weekIndex + 1}`;
+                case 'daily':
+                    // Extract and pad the day number
+                    const day = dateStr.split('-')[2];
+                    return parseInt(day).toString(); // Remove leading zeros
+                default:
+                    return dateStr;
+            }
+        };
+
+        const result = {
+            labels: period === 'daily' ? 
+                Array.from({length: now.getDate()}, (_, i) => (i + 1).toString()) : // For daily, just show day numbers
+                dates.map(item => formatDate(item)),
+            values: period === 'daily' ? 
+                Array.from({length: now.getDate()}, (_, i) => {
+                    const matchId = (i + 1).toString().padStart(2, '0'); // Ensure two digits for matching
+                    const dataPoint = salesData.find(item => item._id === matchId) || {
+                        totalAmount: 0,
+                        productCount: 0,
+                        orderCount: 0
+                    };
+                    return dataPoint.totalAmount || 0;
+                }) :
+                dates.map(date => {
+                    const dataPoint = salesData.find(item => item._id === date) || {
+                        totalAmount: 0,
+                        productCount: 0,
+                        orderCount: 0
+                    };
+
+                    return dataPoint.totalAmount || 0;
+                }),
+            productCounts: period === 'daily' ? 
+                Array.from({length: now.getDate()}, (_, i) => {
+                    const matchId = (i + 1).toString().padStart(2, '0'); // Ensure two digits for matching
+                    const dataPoint = salesData.find(item => item._id === matchId) || {
+                        totalAmount: 0,
+                        productCount: 0,
+                        orderCount: 0
+                    };
+                    return dataPoint.productCount || 0;
+                }) :
+                dates.map(date => {
+                    const dataPoint = salesData.find(item => item._id === date) || {
+                        totalAmount: 0,
+                        productCount: 0,
+                        orderCount: 0
+                    };
+
+                    return dataPoint.productCount || 0;
+                })
+        };
+
+        console.log('Processed result:', result);
+        return result;
+
+    } catch (error) {
+        console.error('Error aggregating sales data:', error);
+        return {
+            labels: [],
+            values: [],
+            productCounts: []
+        };
+    }
+};
+
+// Route handler for AJAX chart updates
+const getSalesChartData = async (req, res) => {
+    try {
+        if (!req.session.admin) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        const period = req.query.period || 'monthly';
+        console.log('Fetching sales data for period:', period);
+        
+        const data = await getSalesData(period);
+        console.log('Returning data:', data);
+        
+        res.json(data);
+    } catch (error) {
+        console.error("Error getting sales chart data:", error);
+        res.status(500).json({ error: 'Failed to fetch sales data' });
+    }
+};
+
+const testData = async (req, res) => {
+    try {
+        const orders = await Order.find()
+            .populate('orderedItems.product')
+            .sort({ createdAt: -1 })
+            .limit(10);
+
+        res.json({
+            orderCount: await Order.countDocuments(),
+            recentOrders: orders.map(order => ({
+                id: order._id,
+                createdAt: order.createdAt,
+                totalPrice: order.totalPrice,
+                items: order.orderedItems.map(item => ({
+                    product: item.product ? item.product.name : 'Unknown',
+                    quantity: Number(item.quantity || 1),
+                    price: Number(item.price || item.product?.Sale_price || item.product?.Regular_price || 0)
+                }))
+            }))
         });
+    } catch (error) {
+        console.error("Error in testData:", error);
+        res.status(500).json({ error: error.message });
     }
 };
 
@@ -478,13 +781,69 @@ const logout=async(req,res)=>{
     }
 }
 
+const loadSalesReport=async(req,res)=>{
+    try{
+        res.render('salesReport')
+        
+    }catch(error){
+        console.log("error in loadSalesReport",error)
+        res.redirect('/pageerror')
+    }
+}
 
+// Test function to check orders
+const testOrders = async (req, res) => {
+    try {
+        // Get total order count
+        const totalOrders = await Order.countDocuments();
+        
+        // Get recent orders
+        const recentOrders = await Order.find()
+            .populate('orderedItems.product')
+            .sort({ createdAt: -1 })
+            .limit(5);
+
+        // Get order counts by status
+        const ordersByStatus = await Order.aggregate([
+            { $unwind: "$orderedItems" },
+            {
+                $group: {
+                    _id: "$orderedItems.status",
+                    count: { $sum: 1 }
+                }
+            }
+        ]);
+
+        res.json({
+            totalOrders,
+            ordersByStatus,
+            recentOrders: recentOrders.map(order => ({
+                orderId: order.orderId,
+                createdAt: order.createdAt,
+                totalPrice: order.totalPrice,
+                items: order.orderedItems.map(item => ({
+                    product: item.product ? item.product.name : 'Unknown',
+                    quantity: item.quantity,
+                    price: item.price,
+                    status: item.status
+                }))
+            }))
+        });
+    } catch (error) {
+        console.error("Error in testOrders:", error);
+        res.status(500).json({ error: error.message });
+    }
+};
 
 module.exports={
     loadLogin,
     login,
     loadDashboard,
+    getSalesChartData,
+    generateReport,
     logout,
+    loadSalesReport,
+    testOrders,
     pageerror,
-    generateReport
+    testData
 }
