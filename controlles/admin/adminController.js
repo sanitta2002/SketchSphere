@@ -245,8 +245,8 @@ const getSalesData = async (period) => {
             };
             break;
         case 'daily':
-            // Calculate date range for current month's data
-            startDate = new Date(now.getFullYear(), now.getMonth(), 1); // Start of current month
+            // Calculate date range for current month
+            startDate = new Date(now.getFullYear(), now.getMonth(), 1); // First day of current month
             startDate.setHours(0, 0, 0, 0);
 
             endDate = new Date(now);
@@ -259,7 +259,7 @@ const getSalesData = async (period) => {
 
             groupByFormat = {
                 $dateToString: { 
-                    format: "%d", // Just the day number
+                    format: "%Y-%m-%d", // Full date for accurate grouping
                     date: "$createdOn"
                 }
             };
@@ -352,7 +352,6 @@ const getSalesData = async (period) => {
                     currentDate.setFullYear(currentDate.getFullYear() + 1);
                     break;
                 case 'monthly':
-                    // Format as YYYY-MM and ensure month is padded with zero
                     const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
                     dateKey = `${currentDate.getFullYear()}-${month}`;
                     currentDate.setMonth(currentDate.getMonth() + 1);
@@ -366,24 +365,28 @@ const getSalesData = async (period) => {
                     currentDate.setDate(currentDate.getDate() + 7);
                     break;
                 case 'daily':
-                    // Format as YYYY-MM-DD with padded month and day
-                    const dailyMonth = (currentDate.getMonth() + 1).toString().padStart(2, '0');
-                    const dailyDay = currentDate.getDate().toString().padStart(2, '0');
-                    dateKey = `${currentDate.getFullYear()}-${dailyMonth}-${dailyDay}`;
+                    dateKey = currentDate.toISOString().slice(0, 10); // YYYY-MM-DD
                     currentDate.setDate(currentDate.getDate() + 1);
                     break;
             }
             
-            dates.push(dateKey);
+            if (dateKey) {
+                dates.push(dateKey);
+            }
         }
 
-        // Sort dates for daily view to ensure 1-31 order
+        // For daily view, ensure we have entries for all days 1-31
         if (period === 'daily') {
-            dates.sort((a, b) => {
-                const dayA = parseInt(a.split('-')[2]);
-                const dayB = parseInt(b.split('-')[2]);
-                return dayA - dayB;
-            });
+            const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+            dates.length = daysInMonth; // Truncate or extend to match days in month
+            
+            // Fill any missing dates
+            for (let i = 0; i < daysInMonth; i++) {
+                if (!dates[i]) {
+                    const day = (i + 1).toString().padStart(2, '0');
+                    dates[i] = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${day}`;
+                }
+            }
         }
 
         // Helper function to get ISO week number
@@ -421,56 +424,31 @@ const getSalesData = async (period) => {
                     // Otherwise show Week 1-4
                     return `Week ${weekIndex + 1}`;
                 case 'daily':
-                    // Extract and pad the day number
-                    const day = dateStr.split('-')[2];
-                    return parseInt(day).toString(); // Remove leading zeros
+                    // Show just the day number
+                    return parseInt(dateStr.split('-')[2]).toString();
                 default:
                     return dateStr;
             }
         };
 
         const result = {
-            labels: period === 'daily' ? 
-                Array.from({length: now.getDate()}, (_, i) => (i + 1).toString()) : // For daily, just show day numbers
-                dates.map(item => formatDate(item)),
-            values: period === 'daily' ? 
-                Array.from({length: now.getDate()}, (_, i) => {
-                    const matchId = (i + 1).toString().padStart(2, '0'); // Ensure two digits for matching
-                    const dataPoint = salesData.find(item => item._id === matchId) || {
-                        totalAmount: 0,
-                        productCount: 0,
-                        orderCount: 0
-                    };
-                    return dataPoint.totalAmount || 0;
-                }) :
-                dates.map(date => {
-                    const dataPoint = salesData.find(item => item._id === date) || {
-                        totalAmount: 0,
-                        productCount: 0,
-                        orderCount: 0
-                    };
-
-                    return dataPoint.totalAmount || 0;
-                }),
-            productCounts: period === 'daily' ? 
-                Array.from({length: now.getDate()}, (_, i) => {
-                    const matchId = (i + 1).toString().padStart(2, '0'); // Ensure two digits for matching
-                    const dataPoint = salesData.find(item => item._id === matchId) || {
-                        totalAmount: 0,
-                        productCount: 0,
-                        orderCount: 0
-                    };
-                    return dataPoint.productCount || 0;
-                }) :
-                dates.map(date => {
-                    const dataPoint = salesData.find(item => item._id === date) || {
-                        totalAmount: 0,
-                        productCount: 0,
-                        orderCount: 0
-                    };
-
-                    return dataPoint.productCount || 0;
-                })
+            labels: dates.map(item => formatDate(item)),
+            values: dates.map(date => {
+                const dataPoint = salesData.find(item => item._id === date) || {
+                    totalAmount: 0,
+                    productCount: 0,
+                    orderCount: 0
+                };
+                return dataPoint.totalAmount || 0;
+            }),
+            productCounts: dates.map(date => {
+                const dataPoint = salesData.find(item => item._id === date) || {
+                    totalAmount: 0,
+                    productCount: 0,
+                    orderCount: 0
+                };
+                return dataPoint.productCount || 0;
+            })
         };
 
         console.log('Processed result:', result);

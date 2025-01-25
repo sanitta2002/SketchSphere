@@ -84,6 +84,7 @@
                                         </div>
                                     </div>
                                 </label>
+                                <div class="small text-danger mt-1" id="codWarning">*</div>
                             </div>
                             <div class="payment-option">
                                 <input class="payment-radio" type="radio" 
@@ -551,6 +552,20 @@ async function placeOrder() {
             return;
         }
 
+        // Check if COD is allowed for this order amount
+        if (selectedPaymentInput.value === 'COD' && document.getElementById('finalPrice').textContent > 1000) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Cash on Delivery Not Available',
+                text: 'COD is not available for orders above ₹1,000. Please choose online payment.',
+                confirmButtonColor: '#212529'
+            });
+            const orderBtn = document.querySelector('.btn-dark');
+            orderBtn.disabled = false;
+            orderBtn.innerHTML = 'Place Order';
+            return;
+        }
+
         // Get coupon code and prices
         const couponCode = document.getElementById('couponCode')?.value || '';
         
@@ -963,6 +978,20 @@ document.addEventListener('DOMContentLoaded', function() {
     var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl);
     });
+});
+
+// Add warning text for COD limitation
+document.addEventListener('DOMContentLoaded', function() {
+    const codWarning = document.createElement('div');
+    codWarning.className = 'small text-danger mt-1';
+    codWarning.id = 'codWarning';
+    codWarning.innerHTML = '* COD not available for orders above ₹1,000';
+    
+    // Find the COD payment option and add the warning
+    const codOption = document.querySelector('input[value="COD"]').closest('.payment-option');
+    if (!codOption.querySelector('#codWarning')) {
+        codOption.appendChild(codWarning);
+    }
 });
 </script>
 
