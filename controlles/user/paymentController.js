@@ -24,6 +24,26 @@ const paymentController = {
                 });
             }
 
+            // Get cart items and check stock
+            const cart = await Cart.findOne({ userId: req.session.user }).populate('items.productId');
+            if (!cart || !cart.items.length) {
+                return res.status(400).json({ 
+                    success: false, 
+                    message: 'Cart is empty' 
+                });
+            }
+
+            // Check stock availability for all products
+            for (const item of cart.items) {
+                const availableStock = item.productId.available_quantity || 0;
+                if (availableStock < item.quantity) {
+                    return res.status(400).json({ 
+                        success: false, 
+                        message: `Insufficient stock for product: ${item.productId.name}. Available: ${availableStock}`
+                    });
+                }
+            }
+
             const options = {
                 amount: Math.round(finalAmount * 100), // Convert to paise
                 currency: 'INR',

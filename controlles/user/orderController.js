@@ -323,6 +323,16 @@ const orderController = {
                 return res.status(400).json({ success: false, message: 'Cart is empty' });
             }
 
+            // Check stock availability for all products
+            for (const item of cart.items) {
+                if (!item.product.stock || item.product.stock < item.quantity) {
+                    return res.status(400).json({ 
+                        success: false, 
+                        message: `Insufficient stock for product: ${item.product.name}. Available: ${item.product.stock || 0}`
+                    });
+                }
+            }
+
             // Create order items array
             const orderedItems = cart.items.map(item => {
                 // Get the effective price (offer price or regular price)
@@ -359,6 +369,14 @@ const orderController = {
             });
 
             await newOrder.save();
+
+            // Update product stock quantities
+            for (const item of cart.items) {
+                await Product.findByIdAndUpdate(
+                    item.product._id,
+                    { $inc: { stock: -item.quantity } }
+                );
+            }
 
             // Clear cart after order
             await Cart.findOneAndUpdate(
