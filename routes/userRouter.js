@@ -94,6 +94,7 @@ router.get('/api/orders/:orderId', orderController.getOrderDetails);
 // Payment routes
 router.post('/create-razorpay-order', userAuth, paymentController.createOrder);
 router.post('/verify-payment', userAuth, paymentController.verifyPayment);
+router.post('/handle-payment-failure', userAuth, checkoutController.handlePaymentFailure);
 
 // Add this line after other routes
 router.get('/search-products', userController.searchProducts);

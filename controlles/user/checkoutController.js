@@ -37,15 +37,15 @@ const checkoutController = {
                 // Get product and category offers
                 const productOffer = product.offerPercentage || 0;
                 const categoryOffer = category?.offerPercentage || 0;
-                
+
                 // Check if offers are valid
                 const hasValidProductOffer = productOffer > 0 && new Date(product.offerEndDate) > now;
                 const hasValidCategoryOffer = categoryOffer > 0 && category && new Date(category.offerEndDate) > now;
-                
+
                 // Determine which offer is better
                 let bestOffer = 0;
                 let offerType = 'none';
-                
+
                 if (hasValidProductOffer && hasValidCategoryOffer) {
                     // Both offers are valid, use the higher one
                     if (productOffer >= categoryOffer) {
@@ -62,7 +62,7 @@ const checkoutController = {
                     bestOffer = categoryOffer;
                     offerType = 'category';
                 }
-                
+
                 // Calculate current price with best offer
                 let currentPrice = product.Sale_price;
                 let discountAmount = 0;
@@ -91,8 +91,8 @@ const checkoutController = {
             const addresses = userAddress ? userAddress.address : [];
 
             // Get used coupons from CouponUsage
-            const usedCoupons = await CouponUsage.distinct('couponCode', { 
-                userId: req.session.user 
+            const usedCoupons = await CouponUsage.distinct('couponCode', {
+                userId: req.session.user
             });
 
             // Get all active coupons
@@ -103,7 +103,7 @@ const checkoutController = {
             });
 
             // Filter out used coupons
-            const activeCoupons = allActiveCoupons.filter(coupon => 
+            const activeCoupons = allActiveCoupons.filter(coupon =>
                 !usedCoupons.includes(coupon.name.toUpperCase())
             );
 
@@ -200,7 +200,7 @@ const checkoutController = {
         try {
             // Remove the applied coupon from session
             delete req.session.appliedCoupon;
-            
+
             return res.json({
                 success: true,
                 message: 'Coupon removed successfully'
@@ -216,10 +216,10 @@ const checkoutController = {
 
     placeOrder: async (req, res) => {
         try {
-            const { 
-                addressId, 
-                paymentMethod, 
-                couponCode, 
+            const {
+                addressId,
+                paymentMethod,
+                couponCode,
                 totalPrice,
                 finalAmount,
                 razorpay_payment_id,
@@ -236,15 +236,15 @@ const checkoutController = {
             }
 
             // Validate address
-            const userAddress = await Address.findOne({ 
+            const userAddress = await Address.findOne({
                 userId: req.session.user,
-                'address._id': addressId 
+                'address._id': addressId
             });
 
             if (!userAddress) {
-                return res.status(400).json({ 
-                    success: false, 
-                    message: 'Invalid address selected' 
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid address selected'
                 });
             }
 
@@ -274,15 +274,15 @@ const checkoutController = {
                 // Get product and category offers
                 const productOffer = product.offerPercentage || 0;
                 const categoryOffer = category?.offerPercentage || 0;
-                
+
                 // Check if offers are valid
                 const hasValidProductOffer = productOffer > 0 && new Date(product.offerEndDate) > now;
                 const hasValidCategoryOffer = categoryOffer > 0 && category && new Date(category.offerEndDate) > now;
-                
+
                 // Determine which offer is better
                 let bestOffer = 0;
                 let offerType = 'none';
-                
+
                 if (hasValidProductOffer && hasValidCategoryOffer) {
                     // Both offers are valid, use the higher one
                     if (productOffer >= categoryOffer) {
@@ -299,7 +299,7 @@ const checkoutController = {
                     bestOffer = categoryOffer;
                     offerType = 'category';
                 }
-                
+
                 // Calculate current price with best offer
                 let currentPrice = product.Sale_price;
                 let discount = 0;
@@ -320,7 +320,7 @@ const checkoutController = {
             // Calculate order total and total discount
             const orderTotal = orderItems.reduce((total, item) => total + item.totalPrice, 0);
             const itemsDiscount = orderItems.reduce((total, item) => total + (item.discount * item.quantity), 0);
-            
+
             // Add coupon discount if applied
             const couponDiscount = req.session.appliedCoupon ? req.session.appliedCoupon.discount : 0;
             const totalDiscount = itemsDiscount + couponDiscount;
@@ -377,28 +377,29 @@ const checkoutController = {
             await order.save();
 
             // Update product quantities
-            const updatePromises = cart.items.map(async (item) => {
-                console.log(`Updating quantity for product ${item.productId._id} by -${item.quantity}`);
-                return Product.findByIdAndUpdate(
-                    item.productId._id,
-                    { $inc: { available_quantity: -item.quantity } },
-                    { new: true }
-                );
-            });
+            if (paymentMethod === 'COD') {
+                const updatePromises = cart.items.map(async (item) => {
+                    console.log(`Updating quantity for product ${item.productId._id} by -${item.quantity}`);
+                    return Product.findByIdAndUpdate(
+                        item.productId._id,
+                        { $inc: { available_quantity: -item.quantity } },
+                        { new: true }
+                    );
+                });
 
-            try {
-                const updatedProducts = await Promise.all(updatePromises);
-                console.log('Updated product quantities:', updatedProducts.map(p => ({
-                    id: p._id,
-                    name: p.name,
-                    newQuantity: p.available_quantity
-                })));
-            } catch (error) {
-                console.error('Error updating product quantities:', error);
-                // Don't fail the order if quantity update fails
-                // But log it for investigation
+                try {
+                    const updatedProducts = await Promise.all(updatePromises);
+                    console.log('Updated product quantities:', updatedProducts.map(p => ({
+                        id: p._id,
+                        name: p.name,
+                        newQuantity: p.available_quantity
+                    })));
+                } catch (error) {
+                    console.error('Error updating product quantities:', error);
+                    // Don't fail the order if quantity update fails
+                    // But log it for investigation
+                }
             }
-
             // Clear cart only for COD orders (online orders clear cart after payment verification)
             if (paymentMethod === 'COD') {
                 await Cart.findOneAndUpdate(
@@ -431,7 +432,151 @@ const checkoutController = {
                 message: error.message || 'Failed to place order'
             });
         }
+    },
+
+    handlePaymentFailure: async (req, res) => {
+        try {
+            const {
+                addressId,
+                paymentMethod,
+                couponCode,
+                totalPrice,
+                finalAmount,
+                razorpay_payment_id,
+                razorpay_order_id,
+                error_description
+            } = req.body;
+
+            // Get cart items
+            const cart = await Cart.findOne({ userId: req.session.user })
+                .populate({
+                    path: 'items.productId',
+                    populate: {
+                        path: 'category_id',
+                        select: 'name offerPercentage offerEndDate'
+                    }
+                });
+
+            if (!cart || !cart.items || cart.items.length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Cart is empty'
+                });
+            }
+
+            // Calculate order items same as place order
+            const orderItems = cart.items.map(item => {
+                const product = item.productId;
+                const now = new Date();
+                const category = product.category_id;
+
+                // Get product and category offers
+                const productOffer = product.offerPercentage || 0;
+                const categoryOffer = category?.offerPercentage || 0;
+
+                // Check if offers are valid
+                const hasValidProductOffer = productOffer > 0 && new Date(product.offerEndDate) > now;
+                const hasValidCategoryOffer = categoryOffer > 0 && category && new Date(category.offerEndDate) > now;
+
+                // Determine which offer is better
+                let bestOffer = 0;
+                let offerType = 'none';
+
+                if (hasValidProductOffer && hasValidCategoryOffer) {
+                    if (productOffer >= categoryOffer) {
+                        bestOffer = productOffer;
+                        offerType = 'product';
+                    } else {
+                        bestOffer = categoryOffer;
+                        offerType = 'category';
+                    }
+                } else if (hasValidProductOffer) {
+                    bestOffer = productOffer;
+                    offerType = 'product';
+                } else if (hasValidCategoryOffer) {
+                    bestOffer = categoryOffer;
+                    offerType = 'category';
+                }
+
+                // Calculate current price with best offer
+                let currentPrice = product.Sale_price;
+                let discount = 0;
+                if (bestOffer > 0) {
+                    discount = Math.round((product.Sale_price * bestOffer) / 100);
+                    currentPrice = Math.round(product.Sale_price - discount);
+                }
+
+                return {
+                    product: item.productId._id,
+                    quantity: item.quantity,
+                    price: currentPrice,
+                    totalPrice: currentPrice * item.quantity,
+                    discount: discount
+                };
+            });
+
+            // Get user address
+            const userAddress = await Address.findOne({
+                userId: req.session.user,
+                'address._id': addressId
+            });
+
+            if (!userAddress) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid address selected'
+                });
+            }
+
+            const selectedAddress = userAddress.address.find(addr => addr._id.toString() === addressId);
+
+            // Calculate total discount
+            const itemsDiscount = orderItems.reduce((total, item) => total + (item.discount * item.quantity), 0);
+            const couponDiscount = req.session.appliedCoupon ? req.session.appliedCoupon.discount : 0;
+            const totalDiscount = itemsDiscount + couponDiscount;
+
+            // Create order with failed status
+            const order = new Order({
+                userId: req.session.user,
+                orderedItems: orderItems,
+                address: selectedAddress,
+                paymentMethod: 'online',
+                totalPrice: totalPrice,
+                discount: totalDiscount,
+                finalAmount: finalAmount,
+                paymentStatus: 'Pending',
+                status: 'Pending',
+                couponCode: couponCode || null,
+                couponDiscount: couponDiscount,
+                paymentDetails: {
+                    razorpay_payment_id,
+                    razorpay_order_id,
+                    error_description
+                }
+            });
+
+            console.log('Saving failed order:', order);
+            await order.save();
+
+            // Don't clear cart since payment failed
+            // Don't update product quantities since order failed
+            // Don't record coupon usage since payment failed
+
+            res.json({
+                success: true,
+                orderId: order._id,
+                message: 'Order marked as failed'
+            });
+
+        } catch (error) {
+            console.error('Error handling payment failure:', error);
+            res.status(500).json({
+                success: false,
+                message: error.message || 'Failed to handle payment failure'
+            });
+        }
     }
+
 };
 
 module.exports = checkoutController;

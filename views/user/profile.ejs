@@ -136,11 +136,11 @@
                         <table class="table">
                           <thead>
                             <tr>
-                              <th>Order ID</th>
-                              <th>Date</th>
-                              <th>Status</th>
-                              <th>Total</th>
-                              <th>Actions</th>
+                              <th style="width: 20%">Order ID</th>
+                              <th style="width: 25%">Date</th>
+                              <th style="width: 15%">Status</th>
+                              <th style="width: 15%">Total</th>
+                              <th style="width: 25%">Actions</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -163,14 +163,15 @@
                                   </td>
                                   <td>₹<%= order.finalAmount %></td>
                                   <td>
-                                    <div class="d-inline-flex align-items-center">
-                                      <button class="btn btn-sm btn-dark" onclick="viewOrderDetails('<%= order._id %>')">
-                                        <i class="fas fa-eye me-1"></i>View
-                                      </button>
-                                      <% if (['Pending', 'Processing'].includes(order.status)) { %>
-                                        <!-- <button onclick="cancelOrder('<%= order._id %>')" class="btn btn-sm btn-outline-danger ms-2">
-                                          <i class="fas fa-times me-1"></i>Cancel
-                                        </button> -->
+                                    <div class="d-inline-flex align-items-center" style="min-width: 120px;">
+                                      <% if (order.paymentStatus === 'Pending' && order.paymentMethod === 'online') { %>
+                                        <button onclick="retryPayment('<%= order._id %>', <%= order.finalAmount %>)" class="btn btn-sm btn-success" style="width: 120px;">
+                                          <i class="fas fa-sync-alt me-1"></i>Retry Payment
+                                        </button>
+                                      <% } else { %>
+                                        <button class="btn btn-sm btn-dark" onclick="viewOrderDetails('<%= order._id %>')" style="width: 120px;">
+                                          <i class="fas fa-eye me-1"></i>View
+                                        </button>
                                       <% } %>
                                     </div>
                                   </td>
@@ -357,6 +358,8 @@
 <%- include('../../Views/layouts/user/footer.ejs') %>
 
 <!-- Scripts -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
 <script src="https://kit.fontawesome.com/your-font-awesome-kit.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -788,8 +791,7 @@ async function cancelOrder(orderId) {
             } else {
                 Swal.fire(
                     'Error!',
-                    data.message || 'Failed to cancel order',
-                    'error'
+                    data.message || 'Failed to cancel order'
                 );
             }
         }
@@ -906,6 +908,94 @@ async function downloadInvoice() {
             title: 'Download Failed',
             text: 'Failed to download the invoice. Please try again.',
             confirmButtonColor: '#198754'
+        });
+    }
+}
+
+async function retryPayment(orderId, amount) {
+    try {
+        // Create new Razorpay order
+        const response = await fetch('/create-razorpay-order', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ 
+                finalAmount: amount,
+                orderId: orderId
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to create payment order');
+        }
+
+        const razorpayData = await response.json();
+
+        const options = {
+            key: razorpayData.key_id,
+            amount: razorpayData.order.amount,
+            currency: "INR",
+            name: "SketchSphere",
+            description: "Order Payment Retry",
+            order_id: razorpayData.order.id,
+            handler: async function (response) {
+                try {
+                    // Verify payment
+                    const verifyResponse = await fetch('/verify-payment', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_order_id: response.razorpay_order_id,
+                            razorpay_signature: response.razorpay_signature,
+                            order_id: orderId
+                        })
+                    });
+
+                    if (!verifyResponse.ok) {
+                        throw new Error('Payment verification failed');
+                    }
+
+                    // Payment successful
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Payment Successful',
+                        text: 'Your payment has been processed successfully.',
+                        showConfirmButton: true
+                    }).then(() => {
+                        window.location.reload();
+                    });
+                } catch (error) {
+                    console.error('Payment verification error:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Payment Failed',
+                        text: error.message || 'Failed to verify payment'
+                    });
+                }
+            },
+            modal: {
+                ondismiss: function() {
+                    console.log('Payment modal closed');
+                }
+            },
+            theme: {
+                color: "#3399cc"
+            }
+        };
+
+        const rzp1 = new Razorpay(options);
+        rzp1.open();
+
+    } catch (error) {
+        console.error('Error initiating payment:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: error.message || 'Failed to initiate payment'
         });
     }
 }

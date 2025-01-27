@@ -617,7 +617,8 @@ async function placeOrder() {
                     },
                     body: JSON.stringify({ finalAmount: finalPrice })
                 });
-
+                alert('Creating Razorpay order')
+                console.log('Razorpay order creation response:', razorpayResponse);
                 if (!razorpayResponse.ok) {
                     const errorData = await razorpayResponse.json();
                     throw new Error(errorData.message || 'Failed to create Razorpay order');
@@ -713,31 +714,128 @@ async function placeOrder() {
                 });
                 
                 const rzp1 = new Razorpay(options);
+                
+                // Flag to prevent multiple handler calls
+                let isHandlingPayment = false;
 
+                // Handle payment failure
                 rzp1.on('payment.failed', function(response) {
+                    if (isHandlingPayment) return;
+                    isHandlingPayment = true;
+                    
                     console.error('Razorpay payment failed:', response.error);
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Payment Failed',
-                        text: 'Your payment was not successful. Please try again.',
-                        confirmButtonColor: '#212529'
+                    
+                    // Get the selected address
+                    const addressId = document.querySelector('input[name="selectedAddress"]:checked').value;
+                    
+                    const requestBody = {
+                        addressId: addressId,
+                        paymentMethod: 'online',
+                        totalPrice: razorpayData.order.amount / 100,
+                        finalAmount: razorpayData.order.amount / 100,
+                        razorpay_payment_id: response.error.metadata.payment_id,
+                        razorpay_order_id: razorpayData.order.id,
+                        error_description: response.error.description,
+                        couponCode: document.getElementById('couponCode')?.value || null
+                    };
+                    
+                    // Call the payment failure route with all required details
+                    fetch('/handle-payment-failure', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(requestBody)
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Payment Failed',
+                                text: 'Your payment was not successful. Redirecting to profile...',
+                                confirmButtonColor: '#212529'
+                            }).then(() => {
+                                window.location.href = '/profile';
+                            });
+                        } else {
+                            throw new Error(data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error handling payment failure:', error);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: error.message || 'There was an error processing your payment failure.'
+                        });
+                    })
+                    .finally(() => {
+                        isHandlingPayment = false;
+                        const orderBtn = document.querySelector('.btn-dark');
+                        orderBtn.disabled = false;
+                        orderBtn.innerHTML = 'Place Order';
                     });
-                    const orderBtn = document.querySelector('.btn-dark');
-                    orderBtn.disabled = false;
-                    orderBtn.innerHTML = 'Place Order';
                 });
 
+                // Handle modal close
                 rzp1.on('modal.closed', function() {
+                    if (isHandlingPayment) return;
                     console.log('Razorpay modal closed without payment');
-                    Swal.fire({
-                        icon: 'info',
-                        title: 'Payment Cancelled',
-                        text: 'You cancelled the payment. Your order has not been placed.',
-                        confirmButtonColor: '#212529'
+                    
+                    isHandlingPayment = true;
+                    
+                    // Get the selected address
+                    const addressId = document.querySelector('input[name="selectedAddress"]:checked').value;
+                    
+                    const requestBody = {
+                        addressId: addressId,
+                        paymentMethod: 'online',
+                        totalPrice: razorpayData.order.amount / 100,
+                        finalAmount: razorpayData.order.amount / 100,
+                        razorpay_payment_id: null,
+                        razorpay_order_id: razorpayData.order.id,
+                        error_description: 'Payment modal closed by user',
+                        couponCode: document.getElementById('couponCode')?.value || null
+                    };
+                    
+                    // Call the payment failure route with all required details
+                    fetch('/handle-payment-failure', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(requestBody)
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Payment Failed',
+                                text: 'Your payment was not successful. Redirecting to profile...',
+                                confirmButtonColor: '#212529'
+                            }).then(() => {
+                                window.location.href = '/profile';
+                            });
+                        } else {
+                            throw new Error(data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error handling payment failure:', error);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: error.message || 'There was an error processing your payment cancellation.'
+                        });
+                    })
+                    .finally(() => {
+                        isHandlingPayment = false;
+                        const orderBtn = document.querySelector('.btn-dark');
+                        orderBtn.disabled = false;
+                        orderBtn.innerHTML = 'Place Order';
                     });
-                    const orderBtn = document.querySelector('.btn-dark');
-                    orderBtn.disabled = false;
-                    orderBtn.innerHTML = 'Place Order';
                 });
 
                 // Open Razorpay payment form

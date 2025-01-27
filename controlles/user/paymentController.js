@@ -136,27 +136,27 @@ const paymentController = {
             console.log('Cart cleared for user:', req.session.user, 'Result:', cartResult);
 
             // Update product quantities
-            // const updatePromises = order.orderedItems.map(async (item) => {
-            //     console.log(`Updating quantity for product ${item.product} by +${item.quantity}`);
-            //     return Product.findByIdAndUpdate(
-            //         item.product,
-            //         { $inc: { available_quantity: -item.quantity } },
-            //         { new: true }
-            //     );
-            // });
+            const updatePromises = order.orderedItems.map(async (item) => {
+                console.log(`Updating quantity for product ${item.product} by +${item.quantity}`);
+                return Product.findByIdAndUpdate(
+                    item.product,
+                    { $inc: { available_quantity: -item.quantity } },
+                    { new: true }
+                );
+            });
     console.log('this is order items',order.orderedItems)
-            // try {
-            //     const updatedProducts = await Promise.all(updatePromises);
-            //     console.log('Updated product quantities:', updatedProducts.map(p => ({
-            //         id: p._id,
-            //         name: p.name,
-            //         newQuantity: p.available_quantity
-            //     })));
-            // } catch (error) {
-            //     console.error('Error updating product quantities:', error);
-            //     // Dont fail the payment if quantity update fails
-            //     // But log it for investigation
-            // }
+            try {
+                const updatedProducts = await Promise.all(updatePromises);
+                console.log('Updated product quantities:', updatedProducts.map(p => ({
+                    id: p._id,
+                    name: p.name,
+                    newQuantity: p.available_quantity
+                })));
+            } catch (error) {
+                console.error('Error updating product quantities:', error);
+                // Dont fail the payment if quantity update fails
+                // But log it for investigation
+            }
 
             res.json({
                 success: true,
