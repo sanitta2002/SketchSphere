@@ -56,7 +56,9 @@
                                                     <span class="fw-bold">₹<%= item.originalPrice %></span>
                                                 <% } %>
                                             </div>
-                                            <% if (item.productId.available_quantity === 0) { %>
+                                            <% if (item.isBlocked) { %>
+                                               
+                                            <% } else if (item.productId.available_quantity === 0) { %>
                                                 <p class="text-danger fw-bold mb-0"><i class="fas fa-exclamation-circle"></i> Out of Stock</p>
                                             <% } else if (item.quantity > item.productId.available_quantity) { %>
                                                 <p class="text-warning mb-0"><i class="fas fa-exclamation-triangle"></i> Only <%= item.productId.available_quantity %> items in stock</p>
@@ -64,18 +66,24 @@
                                         </div>
                                         <!-- Quantity Controls -->
                                         <div class="col-lg-3 col-md-3">
-                                            <div class="quantity-controls d-flex align-items-center <%= item.productId.available_quantity === 0 ? 'opacity-50' : '' %>">
-                                                <button class="btn btn-sm quantity-btn minus" 
-                                                        onclick="updateQuantity('<%= item.productId._id %>', 'decrease')"
-                                                        <%= item.productId.available_quantity === 0 ? 'disabled' : '' %>>
-                                                    <i class="fas fa-minus"></i>
-                                                </button>
-                                                <input type="number" class="quantity-input" value="<%= item.quantity %>" max="<%= item.productId.available_quantity %>" min="1" readonly>
-                                                <button class="btn btn-sm quantity-btn plus"
-                                                        onclick="updateQuantity('<%= item.productId._id %>', 'increase')"
-                                                        <%= item.productId.available_quantity === 0 || item.quantity >= item.productId.available_quantity ? 'disabled' : '' %>>
-                                                    <i class="fas fa-plus"></i>
-                                                </button>
+                                            <div class="quantity-controls d-flex align-items-center">
+                                                <% if (!item.isBlocked && item.productId.available_quantity > 0) { %>
+                                                    <button class="btn btn-sm quantity-btn minus" 
+                                                            onclick="updateQuantity('<%= item.productId._id %>', 'decrease')"
+                                                            <%= item.quantity <= 1 ? 'disabled' : '' %>>
+                                                        <i class="fas fa-minus"></i>
+                                                    </button>
+                                                    <input type="number" class="quantity-input" value="<%= item.quantity %>" max="<%= item.productId.available_quantity %>" min="1" readonly>
+                                                    <button class="btn btn-sm quantity-btn plus"
+                                                            onclick="updateQuantity('<%= item.productId._id %>', 'increase')"
+                                                            <%= item.quantity >= item.productId.available_quantity ? 'disabled' : '' %>>
+                                                        <i class="fas fa-plus"></i>
+                                                    </button>
+                                                <% } else { %>
+                                                    <div class="text-danger">
+                                                        <i class="fas fa-ban me-2"></i>Not Available
+                                                    </div>
+                                                <% } %>
                                             </div>
                                         </div>
                                         <!-- Total Price -->
@@ -108,45 +116,96 @@
         <div class="col-lg-4">
             <div class="card border-0 shadow-sm rounded-4">
                 <div class="card-body p-4">
-                    <h4 class="fw-bold mb-4">Order Summary</h4>
+                    <h5 class="fw-bold mb-4">Order Summary</h5>
                     <div class="d-flex justify-content-between mb-3">
                         <span>Subtotal</span>
-                        <span class="cart-subtotal">₹<%= cart.subtotal || 0 %></span>
+                        <span class="fw-bold">₹<%= cart.subtotal %></span>
                     </div>
-                    <% if (cart.items && cart.items.length > 0) { %>
-                        <div class="d-flex justify-content-between mb-3">
-                            <span>Items</span>
-                            <span><%= cart.items.length %></span>
-                        </div>
-                    <% } %>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>Shipping</span>
+                        <span class="text-success">Free</span>
+                    </div>
                     <hr>
                     <div class="d-flex justify-content-between mb-4">
                         <span class="fw-bold">Total</span>
-                        <span class="cart-total fw-bold">₹<%= cart.total || 0 %></span>
+                        <span class="fw-bold">₹<%= cart.total %></span>
                     </div>
-                    <% if (cart.items && cart.items.length > 0) { %>
-                        <% 
-                        let hasOutOfStock = false;
+
+                    <% 
+                    let hasBlockedItems = false;
+                    let blockedItemNames = [];
+                    if (cart && cart.items) {
                         cart.items.forEach(item => {
-                            if (item.productId.available_quantity === 0 || item.quantity > item.productId.available_quantity) {
-                                hasOutOfStock = true;
+                            if (item.isBlocked) {
+                                hasBlockedItems = true;
+                                blockedItemNames.push(item.productId.name);
                             }
                         });
-                        %>
-                        <% if (hasOutOfStock) { %>
-                            <button class="btn btn-dark w-100 rounded-pill" disabled title="Some items are out of stock">
-                                Cannot Checkout - Items Out of Stock
-                            </button>
-                        <% } else { %>
-                            <a href="/checkout" class="btn btn-dark w-100 rounded-pill">
-                                Proceed to Checkout
-                            </a>
-                        <% } %>
-                    <% } else { %>
-                        <button class="btn btn-dark w-100 rounded-pill" disabled>
-                            Cart is Empty
-                        </button>
+                    }
+                    %>
+
+                    <% if (hasBlockedItems) { %>
+                        <div class="alert custom-alert mt-3 mb-0 border-0">
+                            <div class="alert-header d-flex align-items-center mb-2">
+                                <div class="alert-icon me-3">
+                                    <i class="fas fa-ban text-danger"></i>
+                                </div>
+                                <div class="alert-title text-danger fw-bold">
+                                    Blocked Items Detected
+                                </div>
+                            </div>
+                            <div class="alert-body">
+                                <p class="text-muted mb-2">The following items have been blocked by admin:</p>
+                                <div class="blocked-items-list">
+                                    <% blockedItemNames.forEach(name => { %>
+                                        <div class="blocked-item d-flex align-items-center mb-1">
+                                            <i class="fas fa-times-circle text-danger me-2"></i>
+                                            <span class="text-dark"><%= name %></span>
+                                        </div>
+                                    <% }); %>
+                                </div>
+                                <p class="help-text mt-2 mb-0 text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Please remove these items from your cart to proceed with checkout.
+                                </p>
+                            </div>
+                        </div>
+
+                        <style>
+                            .custom-alert {
+                                background-color: #fff3f3;
+                                border-radius: 12px;
+                                padding: 1.25rem;
+                                box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+                            }
+                            .alert-icon {
+                                font-size: 1.5rem;
+                            }
+                            .blocked-items-list {
+                                background-color: white;
+                                border-radius: 8px;
+                                padding: 0.75rem 1rem;
+                                margin: 0.5rem 0;
+                                border: 1px solid rgba(220,53,69,0.1);
+                            }
+                            .blocked-item {
+                                font-size: 0.95rem;
+                            }
+                            .help-text {
+                                font-size: 0.9rem;
+                            }
+                            .alert-title {
+                                font-size: 1.1rem;
+                            }
+                        </style>
                     <% } %>
+
+                    <button onclick="proceedToCheckout()" 
+                            class="btn btn-dark w-100 py-3 rounded-pill" 
+                            <%= hasBlockedItems ? 'disabled' : '' %>
+                            <%= cart && cart.items && cart.items.length === 0 ? 'disabled' : '' %>>
+                        Proceed to Checkout
+                    </button>
                 </div>
             </div>
         </div>

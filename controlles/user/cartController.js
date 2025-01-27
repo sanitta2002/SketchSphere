@@ -34,6 +34,21 @@ const cartController = {
                 const now = new Date();
                 const category = product.category_id;
 
+                // Check if product is blocked
+                if (product.isBlocked) {
+                    return {
+                        ...item.toObject(),
+                        isBlocked: true,
+                        currentPrice: 0,
+                        originalPrice: product.Sale_price,
+                        offerPercentage: 0,
+                        offerType: 'none',
+                        productOffer: 0,
+                        categoryOffer: 0,
+                        totalPrice: 0
+                    };
+                }
+
                 // Get product and category offers
                 const productOffer = product.offerPercentage || 0;
                 const categoryOffer = category?.offerPercentage || 0;
@@ -121,6 +136,11 @@ const cartController = {
             const product = await Product.findById(productId);
             if (!product) {
                 return res.status(404).json({ success: false, message: 'Product not found' });
+            }
+
+            // Check if product is blocked
+            if (product.isBlocked) {
+                return res.status(400)
             }
 
             // Check if product is in stock
