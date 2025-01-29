@@ -8,13 +8,40 @@ const orderController = {
     getAllOrders: async (req, res) => {
         try {
             const page = parseInt(req.query.page) || 1;
-            const limit = 7;
+            const limit = 10; // Items per page
             const skip = (page - 1) * limit;
 
-            const totalOrders = await Order.countDocuments();
+            // Get search and filter parameters
+            const searchQuery = req.query.search || '';
+            const status = req.query.status || '';
+
+            // Build filter query
+            let query = {};
+            
+            if (searchQuery) {
+                query.$or = [
+                    { '_id': { $regex: searchQuery, $options: 'i' } },
+                    { 'userId.name': { $regex: searchQuery, $options: 'i' } },
+                    { 'userId.email': { $regex: searchQuery, $options: 'i' } }
+                ];
+            }
+
+            if (status) {
+                query['orderedItems.status'] = status;
+            }
+
+            // Get total count for pagination
+            const totalOrders = await Order.countDocuments(query);
             const totalPages = Math.ceil(totalOrders / limit);
 
-            const orders = await Order.find()
+            // Calculate pagination values
+            const hasPreviousPage = page > 1;
+            const hasNextPage = page < totalPages;
+            const previousPage = hasPreviousPage ? page - 1 : null;
+            const nextPage = hasNextPage ? page + 1 : null;
+
+            // Fetch orders with pagination and filters
+            const orders = await Order.find(query)
                 .populate({
                     path: 'userId',
                     select: 'name email'
@@ -31,6 +58,12 @@ const orderController = {
                 orders,
                 currentPage: page,
                 totalPages,
+                hasPreviousPage,
+                hasNextPage,
+                previousPage,
+                nextPage,
+                searchQuery,
+                status,
                 pageTitle: 'All Orders',
                 admin: req.session.admin
             });

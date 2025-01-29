@@ -86,23 +86,34 @@
             <!-- Pagination -->
             <% if (totalPages > 1) { %>
                 <div class="d-flex justify-content-center mt-4">
-                    <nav aria-label="Page navigation">
-                        <ul class="pagination">
+                    <nav aria-label="Orders navigation">
+                        <ul class="pagination pagination-sm">
                             <% if (currentPage > 1) { %>
                                 <li class="page-item">
-                                    <a class="page-link" href="?page=<%= currentPage - 1 %>">Previous</a>
+                                    <a class="page-link" href="?page=<%= currentPage - 1 %>&search=<%= searchQuery || '' %>&status=<%= status || '' %>">
+                                        Previous
+                                    </a>
                                 </li>
                             <% } %>
-                            
+
                             <% for(let i = 1; i <= totalPages; i++) { %>
-                                <li class="page-item <%= currentPage === i ? 'active' : '' %>">
-                                    <a class="page-link" href="?page=<%= i %>"><%= i %></a>
-                                </li>
+                                <% if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) { %>
+                                    <li class="page-item <%= currentPage === i ? 'active' : '' %>">
+                                        <a class="page-link <%= currentPage === i ? 'bg-dark border-dark' : '' %>" 
+                                            href="?page=<%= i %>&search=<%= searchQuery || '' %>&status=<%= status || '' %>">
+                                            <%= i %>
+                                        </a>
+                                    </li>
+                                <% } else if (i === currentPage - 3 || i === currentPage + 3) { %>
+                                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                                <% } %>
                             <% } %>
-                            
+
                             <% if (currentPage < totalPages) { %>
                                 <li class="page-item">
-                                    <a class="page-link" href="?page=<%= currentPage + 1 %>">Next</a>
+                                    <a class="page-link" href="?page=<%= currentPage + 1 %>&search=<%= searchQuery || '' %>&status=<%= status || '' %>">
+                                        Next
+                                    </a>
                                 </li>
                             <% } %>
                         </ul>

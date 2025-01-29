@@ -384,7 +384,7 @@ const getSalesData = async (period) => {
             for (let i = 0; i < daysInMonth; i++) {
                 if (!dates[i]) {
                     const day = (i + 1).toString().padStart(2, '0');
-                    dates[i] = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${day}`;
+                    dates[i] = `${now.getFullYear()}-${(now.getMonth()).toString().padStart(2, '0')}-${day}`;
                 }
             }
         }
@@ -425,7 +425,9 @@ const getSalesData = async (period) => {
                     return `Week ${weekIndex + 1}`;
                 case 'daily':
                     // Show just the day number
-                    return parseInt(dateStr.split('-')[2]).toString();
+                    // return parseInt(dateStr.split('-')[2]).toString();
+                    const dayIndex = dates.indexOf(dateStr);
+            return dayIndex !== -1 ? (dayIndex + 1).toString() : dateStr;
                 default:
                     return dateStr;
             }
@@ -813,6 +815,60 @@ const testOrders = async (req, res) => {
     }
 };
 
+const getUsers = async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = 10; // Items per page
+        const skip = (page - 1) * limit;
+
+        // Get search parameter
+        const searchQuery = req.query.search || '';
+
+        // Build filter query
+        let query = { isAdmin: false }; // Exclude admin users
+        
+        if (searchQuery) {
+            query.$or = [
+                { name: { $regex: searchQuery, $options: 'i' } },
+                { email: { $regex: searchQuery, $options: 'i' } },
+                { phone: { $regex: searchQuery, $options: 'i' } }
+            ];
+        }
+
+        // Get total count for pagination
+        const totalUsers = await User.countDocuments(query);
+        const totalPages = Math.ceil(totalUsers / limit);
+
+        // Calculate pagination values
+        const hasPreviousPage = page > 1;
+        const hasNextPage = page < totalPages;
+        const previousPage = hasPreviousPage ? page - 1 : null;
+        const nextPage = hasNextPage ? page + 1 : null;
+
+        // Fetch users with pagination
+        const users = await User.find(query)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
+
+        res.render('customers', {
+            data: users,
+            currentPage: page,
+            totalPages,
+            hasPreviousPage,
+            hasNextPage,
+            previousPage,
+            nextPage,
+            searchQuery,
+            admin: req.session.admin
+        });
+
+    } catch (error) {
+        console.error('Error fetching users:', error);
+        res.status(500).render('error', { message: 'Failed to fetch users' });
+    }
+};
+
 module.exports={
     loadLogin,
     login,
@@ -823,5 +879,6 @@ module.exports={
     loadSalesReport,
     testOrders,
     pageerror,
-    testData
+    testData,
+    getUsers
 }

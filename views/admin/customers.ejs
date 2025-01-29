@@ -84,19 +84,41 @@
             </div>
 
             <!-- Pagination -->
-            <% if (totalpages > 1) { %>
-                <nav class="mt-4">
-                    <ul class="pagination justify-content-center">
-                        <% for(let i=1; i<=totalpages; i++) { %>
-                            <li class="page-item <%= (i===currentPage) ? 'active' : '' %>">
-                                <a class="page-link rounded-circle mx-1 <%= (i===currentPage) ? 'bg-dark border-dark' : '' %>" 
-                                   href="?page=<%= i %>">
-                                    <%= i %>
-                                </a>
-                            </li>
-                        <% } %>
-                    </ul>
-                </nav>
+            <% if (totalPages > 1) { %>
+                <div class="d-flex justify-content-center mt-4">
+                    <nav aria-label="Customers navigation">
+                        <ul class="pagination pagination-sm">
+                            <% if (currentPage > 1) { %>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=<%= currentPage - 1 %>&search=<%= searchQuery || '' %>">
+                                        Previous
+                                    </a>
+                                </li>
+                            <% } %>
+
+                            <% for(let i = 1; i <= totalPages; i++) { %>
+                                <% if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) { %>
+                                    <li class="page-item <%= currentPage === i ? 'active' : '' %>">
+                                        <a class="page-link <%= currentPage === i ? 'bg-dark border-dark' : '' %>" 
+                                            href="?page=<%= i %>&search=<%= searchQuery || '' %>">
+                                            <%= i %>
+                                        </a>
+                                    </li>
+                                <% } else if (i === currentPage - 3 || i === currentPage + 3) { %>
+                                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                                <% } %>
+                            <% } %>
+
+                            <% if (currentPage < totalPages) { %>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=<%= currentPage + 1 %>&search=<%= searchQuery || '' %>">
+                                        Next
+                                    </a>
+                                </li>
+                            <% } %>
+                        </ul>
+                    </nav>
+                </div>
             <% } %>
         </div>
     </div>
