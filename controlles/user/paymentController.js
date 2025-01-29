@@ -2,6 +2,8 @@ const Razorpay = require('razorpay');
 const Order = require('../../models/orderSchema');
 const Cart = require('../../models/cartSchema');
 const Product = require('../../models/productSchema');
+const Wallet = require('../../models/walletSchema');
+const User = require('../../models/userSchema');
 const crypto = require('crypto');
 const dotenv = require('dotenv');
 dotenv.config();
@@ -64,6 +66,80 @@ const paymentController = {
             res.status(500).json({
                 success: false,
                 message: error.message || 'Failed to create order'
+            });
+        }
+    },
+
+    processWalletPayment: async (req, res) => {
+        try {
+            const userId = req.session.user;
+            const { finalAmount, orderId } = req.body;
+
+            // Find user's wallet
+            const wallet = await Wallet.findOne({ userId });
+            if (!wallet) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Wallet not found'
+                });
+            }
+
+            // Check if wallet has sufficient balance
+            if (wallet.balance < finalAmount) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Insufficient wallet balance'
+                });
+            }
+
+            // Find the order
+            const order = await Order.findById(orderId);
+            if (!order) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Order not found'
+                });
+            }
+
+            // Deduct amount from wallet
+            wallet.balance -= finalAmount;
+            wallet.transactions.push({
+                type: 'debit',
+                amount: finalAmount,
+                description: `Payment for order #${order._id}`,
+                orderId: order._id
+            });
+            await wallet.save();
+
+            // Update order status
+            order.paymentStatus = 'Completed';
+            order.status = 'Processing';
+            await order.save();
+
+            // Clear user's cart
+            await Cart.findOneAndUpdate(
+                { userId },
+                { $set: { items: [] } }
+            );
+
+            // Update product quantities
+            for (const item of order.orderedItems) {
+                await Product.findByIdAndUpdate(
+                    item.product,
+                    { $inc: { available_quantity: -item.quantity } }
+                );
+            }
+
+            res.json({
+                success: true,
+                message: 'Payment processed successfully',
+                orderId: order._id
+            });
+        } catch (error) {
+            console.error('Error processing wallet payment:', error);
+            res.status(500).json({
+                success: false,
+                message: error.message || 'Failed to process wallet payment'
             });
         }
     },

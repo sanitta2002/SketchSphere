@@ -5,6 +5,7 @@ const Coupon = require('../../models/couponSchema');
 const CouponUsage = require('../../models/couponUsageSchema');
 const User = require('../../models/userSchema');
 const Product = require('../../models/productSchema');
+const Wallet = require('../../models/walletSchema'); // Added Wallet model
 const mongoose = require('mongoose');
 
 const checkoutController = {
@@ -27,6 +28,11 @@ const checkoutController = {
             if (!cart || !cart.items || cart.items.length === 0) {
                 return res.redirect('/cart');
             }
+
+            // Get wallet balance
+            const wallet = await Wallet.findOne({ userId: req.session.user });
+            const walletBalance = wallet ? wallet.balance : 0;
+            user.walletBalance = walletBalance;
 
             // Calculate prices with best offers (product or category)
             const cartItems = cart.items.map(item => {

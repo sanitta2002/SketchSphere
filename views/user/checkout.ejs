@@ -71,6 +71,26 @@
                         <div class="payment-methods">
                             <div class="payment-option mb-3">
                                 <input class="payment-radio" type="radio" 
+                                       name="paymentMethod" id="wallet" 
+                                       value="wallet" 
+                                       <%= user.walletBalance === 0 ? 'disabled' : '' %>>
+                                <label class="payment-label" for="wallet">
+                                    <div class="d-flex align-items-center">
+                                        <div class="payment-icon me-3">
+                                            <i class="fas fa-wallet"></i>
+                                        </div>
+                                        <div>
+                                            <span class="payment-title">Wallet</span>
+                                            <p class="payment-description mb-0">Pay using your wallet balance (₹<%= user.walletBalance || 0 %>)</p>
+                                            <% if (user.walletBalance === 0) { %>
+                                                <small class="text-danger">(Insufficient balance)</small>
+                                            <% } %>
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+                            <div class="payment-option mb-3">
+                                <input class="payment-radio" type="radio" 
                                        name="paymentMethod" id="cod" 
                                        value="COD" checked>
                                 <label class="payment-label" for="cod">
@@ -109,7 +129,7 @@
 
             <!-- Right Column - Order Summary -->
             <div class="col-lg-4">
-                <div class="card border-0 shadow-sm rounded-4 sticky-top" style="top: 2rem;">
+                <div class="card border-0 shadow-sm rounded-4 mb-4" style="top: 2rem;">
                     <div class="card-body p-4">
                         <h4 class="fw-bold mb-4">Order Summary</h4>
                         
@@ -195,7 +215,7 @@
                             </div>
 
                             <!-- Place Order Button -->
-                            <button onclick="placeOrder()" 
+                            <button onclick="placeOrder('COD')" 
                                     class="btn btn-dark w-100 btn-lg rounded-pill"
                                     <%= (!addresses || addresses.length === 0) ? 'disabled' : '' %>>
                                 Place Order
@@ -528,337 +548,426 @@
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
 <script>
-async function placeOrder() {
+async function placeOrder(paymentMethod) {
     try {
-        // Get selected address
-        const selectedAddressInput = document.querySelector('input[name="selectedAddress"]:checked');
-        if (!selectedAddressInput) {
+        const addressId = document.querySelector('input[name="selectedAddress"]:checked')?.value;
+        if (!addressId) {
             Swal.fire({
-                icon: 'warning',
-                title: 'Select Address',
+                icon: 'error',
+                title: 'Error',
                 text: 'Please select a delivery address'
             });
             return;
         }
 
-        // Get selected payment method
-        const selectedPaymentInput = document.querySelector('input[name="paymentMethod"]:checked');
-        if (!selectedPaymentInput) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Select Payment Method',
-                text: 'Please select a payment method'
-            });
-            return;
-        }
-
-        // Check if COD is allowed for this order amount
-        if (selectedPaymentInput.value === 'COD' && document.getElementById('finalPrice').textContent > 1000) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Cash on Delivery Not Available',
-                text: 'COD is not available for orders above ₹1,000. Please choose online payment.',
-                confirmButtonColor: '#212529'
-            });
-            const orderBtn = document.querySelector('.btn-dark');
-            orderBtn.disabled = false;
-            orderBtn.innerHTML = 'Place Order';
-            return;
-        }
-
-        // Get coupon code and prices
+        // Get coupon code
         const couponCode = document.getElementById('couponCode')?.value || '';
         
-        // Get total price from the subtotal element
-        const subtotalElement = document.querySelector('.price-details .d-flex:first-child .fw-bold');
-        const totalPrice = subtotalElement ? parseFloat(subtotalElement.textContent.replace('₹', '')) : 0;
+        // Get total price from the subtotal span
+        const subtotalSpan = document.querySelector('.price-details .d-flex:first-child .fw-bold');
+        const totalPrice = subtotalSpan ? parseFloat(subtotalSpan.textContent.replace('₹', '').trim()) : 0;
         
-        // Get final price from the total element
-        const finalPriceElement = document.getElementById('finalPrice');
-        const finalPrice = finalPriceElement ? parseFloat(finalPriceElement.textContent) : totalPrice;
+        // Get final amount from the total amount span
+        const totalAmountSpan = document.querySelector('.price-details .d-flex:last-child .fw-bold');
+        const finalAmount = totalAmountSpan ? parseFloat(totalAmountSpan.textContent.replace('₹', '').trim()) : totalPrice;
 
-        if (!totalPrice || !finalPrice) {
-            console.error('Price elements not found:', { totalPrice, finalPrice });
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'Could not determine order amount. Please try again.'
-            });
-            return;
-        }
+        console.log('Order details:', {
+            addressId,
+            paymentMethod,
+            totalPrice,
+            finalAmount,
+            couponCode
+        });
 
-        // Show loading state
-        const orderBtn = document.querySelector('.btn-dark');
-        orderBtn.disabled = true;
-        orderBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
-
-        const paymentMethod = selectedPaymentInput.value; // This will be either 'COD' or 'online'
-        console.log('Payment method selected:', paymentMethod);
-
-        // Create order data
-        const orderData = {
-            addressId: selectedAddressInput.value,
-            paymentMethod: paymentMethod,
-            couponCode: couponCode,
-            totalPrice: totalPrice,
-            finalAmount: finalPrice
-        };
-
-        console.log('Starting order placement with data:', orderData);
-
-        if (paymentMethod === 'online') {
+        if (paymentMethod === 'COD') {
+            // For COD orders
             try {
-                console.log('Creating Razorpay order for amount:', finalPrice);
-                // Create Razorpay order first
-                const razorpayResponse = await fetch('/create-razorpay-order', {
+                console.log('Placing COD order');
+                const response = await fetch('/place-order', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ finalAmount: finalPrice })
+                    body: JSON.stringify({
+                        addressId: addressId,
+                        paymentMethod: paymentMethod,
+                        totalPrice: totalPrice,
+                        finalAmount: finalAmount,
+                        couponCode: couponCode
+                    })
                 });
-                alert('Creating Razorpay order')
-                console.log('Razorpay order creation response:', razorpayResponse);
-                if (!razorpayResponse.ok) {
-                    const errorData = await razorpayResponse.json();
-                    throw new Error(errorData.message || 'Failed to create Razorpay order');
+
+                const result = await response.json();
+
+                if (result.success) {
+                    window.location.href = `/orderSuccess?orderId=${result.orderId}`;
+                } else {
+                    throw new Error(result.message || 'Order placement failed');
                 }
-
-                const razorpayData = await razorpayResponse.json();
-                console.log('Razorpay order created:', razorpayData);
-
-                const options = {
-                    key: razorpayData.key_id,
-                    amount: razorpayData.order.amount,
-                    currency: "INR",
-                    name: "SketchSphere",
-                    description: "SketchSphere Order Payment",
-                    order_id: razorpayData.order.id,
-                    handler: async function (response) {
-                        console.log('Payment successful:', response);
-                        
-                        // Add payment details to order data
-                        orderData.razorpay_payment_id = response.razorpay_payment_id;
-                        orderData.razorpay_order_id = response.razorpay_order_id;
-                        orderData.razorpay_signature = response.razorpay_signature;
-
-                        try {
-                            // Place the order with payment details
-                            const orderResponse = await fetch('/place-order', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify(orderData)
-                            });
-
-                            if (!orderResponse.ok) {
-                                throw new Error('Failed to place order');
-                            }
-
-                            const orderResult = await orderResponse.json();
-
-                            // Verify payment with backend
-                            const verifyResponse = await fetch('/verify-payment', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify({
-                                    razorpay_payment_id: response.razorpay_payment_id,
-                                    razorpay_order_id: response.razorpay_order_id,
-                                    razorpay_signature: response.razorpay_signature,
-                                    order_id: orderResult.orderId
-                                })
-                            });
-
-                            if (!verifyResponse.ok) {
-                                const errorData = await verifyResponse.json();
-                                throw new Error(errorData.message || 'Payment verification failed');
-                            }
-
-                            // Payment verified successfully
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Order Placed Successfully!',
-                                text: 'Your payment has been verified.',
-                                showConfirmButton: true
-                            }).then(() => {
-                                window.location.href = `/orderSuccess?orderId=${orderResult.orderId}`;
-                            });
-
-                        } catch (error) {
-                            console.error('Error in payment process:', error);
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Payment Failed',
-                                text: error.message || 'Failed to process payment'
-                            });
-                            // Reset button state
-                            orderBtn.disabled = false;
-                            orderBtn.innerHTML = 'Place Order';
-                        }
-                    },
-                    prefill: {
-                        name: document.querySelector('input[name="selectedAddress"]:checked + label .fw-bold').textContent,
-                        contact: document.querySelector('input[name="selectedAddress"]:checked + label .fa-phone-alt').nextSibling.textContent.trim()
-                    },
-                    theme: {
-                        color: "#3399cc"
-                    }
-                };
-
-                console.log('Initializing Razorpay with options:', {
-                    ...options,
-                    key: '***' // Hide key in logs
-                });
-                
-                const rzp1 = new Razorpay(options);
-                
-                // Flag to prevent multiple handler calls
-                let isHandlingPayment = false;
-
-                // Handle payment failure
-                rzp1.on('payment.failed', function(response) {
-                    if (isHandlingPayment) return;
-                    isHandlingPayment = true;
-                    
-                    console.error('Razorpay payment failed:', response.error);
-                    
-                    // Get the selected address
-                    const addressId = document.querySelector('input[name="selectedAddress"]:checked').value;
-                    
-                    const requestBody = {
-                        addressId: addressId,
-                        paymentMethod: 'online',
-                        totalPrice: razorpayData.order.amount / 100,
-                        finalAmount: razorpayData.order.amount / 100,
-                        razorpay_payment_id: response.error.metadata.payment_id,
-                        razorpay_order_id: razorpayData.order.id,
-                        error_description: response.error.description,
-                        couponCode: document.getElementById('couponCode')?.value || null
-                    };
-                    
-                    // Call the payment failure route with all required details
-                    fetch('/handle-payment-failure', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(requestBody)
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Payment Failed',
-                                text: 'Your payment was not successful. Redirecting to profile...',
-                                confirmButtonColor: '#212529'
-                            }).then(() => {
-                                window.location.href = '/profile';
-                            });
-                        } else {
-                            throw new Error(data.message);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error handling payment failure:', error);
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: error.message || 'There was an error processing your payment failure.'
-                        });
-                    })
-                    .finally(() => {
-                        isHandlingPayment = false;
-                        const orderBtn = document.querySelector('.btn-dark');
-                        orderBtn.disabled = false;
-                        orderBtn.innerHTML = 'Place Order';
-                    });
-                });
-
-                // Handle modal close
-                rzp1.on('modal.closed', function() {
-                    if (isHandlingPayment) return;
-                    console.log('Razorpay modal closed without payment');
-                    
-                    isHandlingPayment = true;
-                    
-                    // Get the selected address
-                    const addressId = document.querySelector('input[name="selectedAddress"]:checked').value;
-                    
-                    const requestBody = {
-                        addressId: addressId,
-                        paymentMethod: 'online',
-                        totalPrice: razorpayData.order.amount / 100,
-                        finalAmount: razorpayData.order.amount / 100,
-                        razorpay_payment_id: null,
-                        razorpay_order_id: razorpayData.order.id,
-                        error_description: 'Payment modal closed by user',
-                        couponCode: document.getElementById('couponCode')?.value || null
-                    };
-                    
-                    // Call the payment failure route with all required details
-                    fetch('/handle-payment-failure', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(requestBody)
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Payment Failed',
-                                text: 'Your payment was not successful. Redirecting to profile...',
-                                confirmButtonColor: '#212529'
-                            }).then(() => {
-                                window.location.href = '/profile';
-                            });
-                        } else {
-                            throw new Error(data.message);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error handling payment failure:', error);
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: error.message || 'There was an error processing your payment cancellation.'
-                        });
-                    })
-                    .finally(() => {
-                        isHandlingPayment = false;
-                        const orderBtn = document.querySelector('.btn-dark');
-                        orderBtn.disabled = false;
-                        orderBtn.innerHTML = 'Place Order';
-                    });
-                });
-
-                // Open Razorpay payment form
-                rzp1.open();
-
-                // Reset button state
-                orderBtn.disabled = false;
-                orderBtn.innerHTML = 'Place Order';
-
             } catch (error) {
-                console.error('Razorpay error:', error);
+                console.error('Error placing COD order:', error);
                 Swal.fire({
                     icon: 'error',
-                    title: 'Payment Failed',
-                    text: error.message || 'Failed to initialize payment'
+                    title: 'Order Failed',
+                    text: error.message || 'Failed to place order. Please try again.'
                 });
+            }
+        } else if (paymentMethod === 'online') {
+            try {
+                // Get coupon code and prices
+                const couponCode = document.getElementById('couponCode')?.value || '';
+                
+                // Get total price from the subtotal element
+                const subtotalElement = document.querySelector('.price-details .d-flex:first-child .fw-bold');
+                const totalPrice = subtotalElement ? parseFloat(subtotalElement.textContent.replace('₹', '')) : 0;
+                
+                // Get final price from the total element
+                const finalPriceElement = document.getElementById('finalPrice');
+                const finalPrice = finalPriceElement ? parseFloat(finalPriceElement.textContent) : totalPrice;
+
+                if (!totalPrice || !finalPrice) {
+                    console.error('Price elements not found:', { totalPrice, finalPrice });
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Could not determine order amount. Please try again.'
+                    });
+                    return;
+                }
+
+                // Show loading state
+                const orderBtn = document.querySelector('.btn-dark');
+                orderBtn.disabled = true;
+                orderBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+
+                // Create order data
+                const orderData = {
+                    addressId: addressId,
+                    paymentMethod: paymentMethod,
+                    totalPrice: totalPrice,
+                    finalAmount: finalPrice,
+                    couponCode: couponCode
+                };
+
+                console.log('Starting order placement with data:', orderData);
+
+                if (paymentMethod === 'online') {
+                    try {
+                        console.log('Creating Razorpay order for amount:', finalPrice);
+                        // Create Razorpay order first
+                        const razorpayResponse = await fetch('/create-razorpay-order', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ finalAmount: finalPrice })
+                        });
+                        
+                        console.log('Razorpay order creation response:', razorpayResponse);
+                        if (!razorpayResponse.ok) {
+                            const errorData = await razorpayResponse.json();
+                            throw new Error(errorData.message || 'Failed to create Razorpay order');
+                        }
+
+                        const razorpayData = await razorpayResponse.json();
+                        console.log('Razorpay order created:', razorpayData);
+
+                        const options = {
+                            key: razorpayData.key_id,
+                            amount: razorpayData.order.amount,
+                            currency: "INR",
+                            name: "SketchSphere",
+                            description: "SketchSphere Order Payment",
+                            order_id: razorpayData.order.id,
+                            handler: async function (response) {
+                                console.log('Payment successful:', response);
+                                
+                                // Add payment details to order data
+                                orderData.razorpay_payment_id = response.razorpay_payment_id;
+                                orderData.razorpay_order_id = response.razorpay_order_id;
+                                orderData.razorpay_signature = response.razorpay_signature;
+
+                                try {
+                                    // Place the order with payment details
+                                    const orderResponse = await fetch('/place-order', {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json'
+                                        },
+                                        body: JSON.stringify(orderData)
+                                    });
+
+                                    const orderResult = await orderResponse.json();
+
+                                    // Verify payment with backend
+                                    const verifyResponse = await fetch('/verify-payment', {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json'
+                                        },
+                                        body: JSON.stringify({
+                                            razorpay_payment_id: response.razorpay_payment_id,
+                                            razorpay_order_id: response.razorpay_order_id,
+                                            razorpay_signature: response.razorpay_signature,
+                                            order_id: orderResult.orderId
+                                        })
+                                    });
+
+                                    if (!verifyResponse.ok) {
+                                        const errorData = await verifyResponse.json();
+                                        throw new Error(errorData.message || 'Payment verification failed');
+                                    }
+
+                                    // Payment verified successfully
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Order Placed Successfully!',
+                                        text: 'Your payment has been verified.',
+                                        showConfirmButton: true
+                                    }).then(() => {
+                                        window.location.href = `/orderSuccess?orderId=${orderResult.orderId}`;
+                                    });
+
+                                } catch (error) {
+                                    console.error('Error in payment process:', error);
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Payment Failed',
+                                        text: error.message || 'Failed to process payment'
+                                    });
+                                    // Reset button state
+                                    orderBtn.disabled = false;
+                                    orderBtn.innerHTML = 'Place Order';
+                                }
+                            },
+                            prefill: {
+                                name: document.querySelector('input[name="selectedAddress"]:checked + label .fw-bold').textContent,
+                                contact: document.querySelector('input[name="selectedAddress"]:checked + label .fa-phone-alt').nextSibling.textContent.trim()
+                            },
+                            theme: {
+                                color: "#3399cc"
+                            }
+                        };
+
+                        console.log('Initializing Razorpay with options:', {
+                            ...options,
+                            key: '***' // Hide key in logs
+                        });
+                        
+                        const rzp1 = new Razorpay(options);
+                        
+                        // Flag to prevent multiple handler calls
+                        let isHandlingPayment = false;
+
+                        // Handle payment failure
+                        rzp1.on('payment.failed', function(response) {
+                            if (isHandlingPayment) return;
+                            isHandlingPayment = true;
+                            
+                            console.error('Razorpay payment failed:', response.error);
+                            
+                            // Get the selected address
+                            const addressId = document.querySelector('input[name="selectedAddress"]:checked').value;
+                            
+                            const requestBody = {
+                                addressId: addressId,
+                                paymentMethod: 'online',
+                                totalPrice: razorpayData.order.amount / 100,
+                                finalAmount: razorpayData.order.amount / 100,
+                                razorpay_payment_id: response.error.metadata.payment_id,
+                                razorpay_order_id: razorpayData.order.id,
+                                error_description: response.error.description,
+                                couponCode: document.getElementById('couponCode')?.value || null
+                            };
+                            
+                            // Call the payment failure route with all required details
+                            fetch('/handle-payment-failure', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify(requestBody)
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Payment Failed',
+                                        text: 'Your payment was not successful. Redirecting to profile...',
+                                        confirmButtonColor: '#212529'
+                                    }).then(() => {
+                                        window.location.href = '/profile';
+                                    });
+                                } else {
+                                    throw new Error(data.message);
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error handling payment failure:', error);
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: error.message || 'There was an error processing your payment failure.'
+                                });
+                            })
+                            .finally(() => {
+                                isHandlingPayment = false;
+                                const orderBtn = document.querySelector('.btn-dark');
+                                orderBtn.disabled = false;
+                                orderBtn.innerHTML = 'Place Order';
+                            });
+                        });
+
+                        // Handle modal close
+                        rzp1.on('modal.closed', function() {
+                            if (isHandlingPayment) return;
+                            console.log('Razorpay modal closed without payment');
+                            
+                            isHandlingPayment = true;
+                            
+                            // Get the selected address
+                            const addressId = document.querySelector('input[name="selectedAddress"]:checked').value;
+                            
+                            const requestBody = {
+                                addressId: addressId,
+                                paymentMethod: 'online',
+                                totalPrice: razorpayData.order.amount / 100,
+                                finalAmount: razorpayData.order.amount / 100,
+                                razorpay_payment_id: null,
+                                razorpay_order_id: razorpayData.order.id,
+                                error_description: 'Payment modal closed by user',
+                                couponCode: document.getElementById('couponCode')?.value || null
+                            };
+                            
+                            // Call the payment failure route with all required details
+                            fetch('/handle-payment-failure', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify(requestBody)
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Payment Failed',
+                                        text: 'Your payment was not successful. Redirecting to profile...',
+                                        confirmButtonColor: '#212529'
+                                    }).then(() => {
+                                        window.location.href = '/profile';
+                                    });
+                                } else {
+                                    throw new Error(data.message);
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error handling payment failure:', error);
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: error.message || 'There was an error processing your payment cancellation.'
+                                });
+                            })
+                            .finally(() => {
+                                isHandlingPayment = false;
+                                const orderBtn = document.querySelector('.btn-dark');
+                                orderBtn.disabled = false;
+                                orderBtn.innerHTML = 'Place Order';
+                            });
+                        });
+
+                        // Open Razorpay payment form
+                        rzp1.open();
+
+                        // Reset button state
+                        orderBtn.disabled = false;
+                        orderBtn.innerHTML = 'Place Order';
+
+                    } catch (error) {
+                        console.error('Razorpay error:', error);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Payment Failed',
+                            text: error.message || 'Failed to initialize payment'
+                        });
+                        orderBtn.disabled = false;
+                        orderBtn.innerHTML = 'Place Order';
+                    }
+                } else {
+                    // For COD orders
+                    try {
+                        // Get coupon code and prices
+                        const couponCode = document.getElementById('couponCode')?.value || '';
+                        
+                        // Get total price from the subtotal element
+                        const subtotalElement = document.querySelector('.price-details .d-flex:first-child .fw-bold');
+                        const totalPrice = subtotalElement ? parseFloat(subtotalElement.textContent.replace('₹', '')) : 0;
+                        
+                        // Get final price from the total element
+                        const finalPriceElement = document.getElementById('finalPrice');
+                        const finalPrice = finalPriceElement ? parseFloat(finalPriceElement.textContent) : totalPrice;
+
+                        if (!totalPrice || !finalPrice) {
+                            console.error('Price elements not found:', { totalPrice, finalPrice });
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: 'Could not determine order amount. Please try again.'
+                            });
+                            return;
+                        }
+
+                        console.log('Placing COD order');
+                        const response = await fetch('/place-order', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                addressId: addressId,
+                                paymentMethod: paymentMethod,
+                                totalPrice: totalPrice,
+                                finalAmount: finalPrice,
+                                couponCode: couponCode
+                            })
+                        });
+
+                        const result = await response.json();
+
+                        if (result.success) {
+                            window.location.href = `/orderSuccess?orderId=${result.orderId}`;
+                        } else {
+                            throw new Error(result.message);
+                        }
+                    } catch (error) {
+                        console.error('Error placing COD order:', error);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Order Failed',
+                            text: error.message || 'Failed to place order'
+                        });
+                        orderBtn.disabled = false;
+                        orderBtn.innerHTML = 'Place Order';
+                    }
+                }
+            } catch (error) {
+                console.error('Order placement error:', error);
+                const orderBtn = document.querySelector('.btn-dark');
                 orderBtn.disabled = false;
                 orderBtn.innerHTML = 'Place Order';
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: error.message || 'Failed to place order'
+                });
             }
         } else {
-            // For COD orders
+            // For wallet orders
             try {
-                console.log('Placing COD order');
+                console.log('Placing wallet order');
                 const response = await fetch('/place-order', {
                     method: 'POST',
                     headers: {
@@ -875,7 +984,7 @@ async function placeOrder() {
                     throw new Error(result.message);
                 }
             } catch (error) {
-                console.error('Error placing COD order:', error);
+                console.error('Error placing wallet order:', error);
                 Swal.fire({
                     icon: 'error',
                     title: 'Order Failed',

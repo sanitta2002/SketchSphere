@@ -88,7 +88,7 @@ const loadDashboard = async (req, res) => {
 
         console.log('Summary data:', summary);
 
-        // Get sales data for the chart (default to monthly view)
+        // Get sales data for the chart
         const salesData = await getSalesData('monthly');
         console.log('Sales data for chart:', salesData);
 

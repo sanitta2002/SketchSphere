@@ -119,7 +119,7 @@
                     <h5 class="fw-bold mb-4">Order Summary</h5>
                     <div class="d-flex justify-content-between mb-3">
                         <span>Subtotal</span>
-                        <span class="fw-bold">₹<%= cart.subtotal %></span>
+                        <span class="fw-bold order-subtotal">₹<%= cart.subtotal %></span>
                     </div>
                     <div class="d-flex justify-content-between mb-3">
                         <span>Shipping</span>
@@ -128,7 +128,7 @@
                     <hr>
                     <div class="d-flex justify-content-between mb-4">
                         <span class="fw-bold">Total</span>
-                        <span class="fw-bold">₹<%= cart.total %></span>
+                        <span class="fw-bold order-total">₹<%= cart.total %></span>
                     </div>
 
                     <% 
@@ -489,6 +489,32 @@ function showAlert(message, type) {
         timer: 3000,
         timerProgressBar: true
     });
+}
+
+function proceedToCheckout() {
+    // Check if cart is empty
+    const cartItems = document.querySelectorAll('.cart-item');
+    if (!cartItems || cartItems.length === 0) {
+        showAlert('Your cart is empty', 'error');
+        return;
+    }
+
+    // Check for out of stock items
+    const outOfStockItems = document.querySelectorAll('[data-out-of-stock="true"]');
+    if (outOfStockItems && outOfStockItems.length > 0) {
+        showAlert('Please remove out of stock items from your cart', 'error');
+        return;
+    }
+
+    // Check for blocked items
+    const hasBlockedItems = document.querySelector('.blocked-items-list');
+    if (hasBlockedItems) {
+        showAlert('Please remove blocked items from your cart', 'error');
+        return;
+    }
+
+    // Proceed to checkout page
+    window.location.href = '/checkout';
 }
 
 // Calculate initial totals when page loads
