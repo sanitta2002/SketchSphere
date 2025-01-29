@@ -550,6 +550,15 @@
 <script>
 async function placeOrder(paymentMethod) {
     try {
+        const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked')?.value;
+        if (!paymentMethod) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Please select a payment method'
+            });
+            return;
+        }
         const addressId = document.querySelector('input[name="selectedAddress"]:checked')?.value;
         if (!addressId) {
             Swal.fire({
@@ -965,8 +974,18 @@ async function placeOrder(paymentMethod) {
                 });
             }
         } else {
+
             // For wallet orders
             try {
+                                // Create order data
+                    const orderData = {
+                    addressId: addressId,
+                    paymentMethod: paymentMethod,
+                    totalPrice: totalPrice,
+                    finalAmount: finalPrice.innerHTML,
+                    couponCode: couponCode
+                };
+                console.log(orderData)
                 console.log('Placing wallet order');
                 const response = await fetch('/place-order', {
                     method: 'POST',
@@ -977,12 +996,34 @@ async function placeOrder(paymentMethod) {
                 });
 
                 const result = await response.json();
-                
-                if (result.success) {
-                    window.location.href = `/orderSuccess?orderId=${result.orderId}`;
-                } else {
+                console.log(result)
+                if(result.success){
+                    const res = await fetch('/process-wallet-payment', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            finalAmount: finalPrice.innerHTML,
+                            orderId: result.orderId
+                        })
+                    })
+                    const result2 = await res.json();
+                    console.log(result2)
+                    if(result2.success){
+                        window.location.href = `/orderSuccess?orderId=${result.orderId}`;
+                    }else{
+                        throw new Error(result2.message);
+                    }
+                }else{
                     throw new Error(result.message);
                 }
+                
+                // if (result.success) {
+                //     window.location.href = `/orderSuccess?orderId=${result.orderId}`;
+                // } else {
+                //     throw new Error(result.message);
+                // }
             } catch (error) {
                 console.error('Error placing wallet order:', error);
                 Swal.fire({
@@ -990,6 +1031,7 @@ async function placeOrder(paymentMethod) {
                     title: 'Order Failed',
                     text: error.message || 'Failed to place order'
                 });
+                const orderBtn = document.querySelector('.btn-dark');
                 orderBtn.disabled = false;
                 orderBtn.innerHTML = 'Place Order';
             }
