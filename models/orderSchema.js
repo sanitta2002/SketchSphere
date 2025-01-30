@@ -52,6 +52,10 @@ const orderSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
+    couponAmount: {
+        type: Number,
+        default: 0
+    },
     address: {
         addressType: {
             type: String,
@@ -106,6 +110,7 @@ const orderSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     }
+
 });
 
 const Order = mongoose.model('Order', orderSchema);

@@ -526,13 +526,13 @@ const profile = async (req, res) => {
         const wallet = await Wallet.findOne({ userId })
             .sort({ 'transactions.date': -1 });
 
-        console.log('Found orders for profile:', orders.map(o => ({
-            id: o._id.toString(),
-            orderId: o.orderId,
-            status: o.status,
-            items: o.orderedItems.length,
-            total: o.finalAmount
-        })));
+        // console.log('Found orders for profile:', orders.map(o => ({
+        //     id: o._id.toString(),
+        //     orderId: o.orderId,
+        //     status: o.status,
+        //     items: o.orderedItems.length,
+        //     total: o.finalAmount
+        // })));
 
         let userData = null;
         let cartData = null;

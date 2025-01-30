@@ -360,7 +360,7 @@ const checkoutController = {
                 paymentStatus: paymentMethod === 'online' ? 'Processing' : 'Pending',
                 status: 'Pending',
                 couponCode: couponCode || null,
-                couponDiscount: couponDiscount
+                couponAmount: couponDiscount
             });
 
             // If online payment, add payment details

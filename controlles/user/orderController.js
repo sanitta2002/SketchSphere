@@ -181,7 +181,11 @@ const orderController = {
                     
                     // Add refund to wallet
                     let wallet = await Wallet.findOne({ userId }); 
-                    const refundAmount = order.finalAmount;
+                    const numberOfItems = order.orderedItems.length;
+                    const couponAmount = order.couponAmount;
+                    const couponDiscount = couponAmount/numberOfItems
+                    console.log("couponDiscount",couponDiscount)
+                    const refundAmount = order.finalAmount - couponDiscount;
 
                     if (!wallet) {
                         wallet = new Wallet({
@@ -240,7 +244,12 @@ const orderController = {
                     
                     // Add refund to wallet first
                     let wallet = await Wallet.findOne({ userId }); 
-                    const refundAmount = order.finalAmount + (order.offerDiscount || 0); // Include offer discount in refund
+                    const numberOfItems = order.orderedItems.length;
+                    const couponAmount = order.couponAmount;
+                    const couponDiscount = couponAmount/numberOfItems
+                    const refundAmount = order.finalAmount - couponDiscount; // Include offer discount in refund
+                    console.log(
+                         refundAmount);
                     if (!wallet) {
                         wallet = new Wallet({
                             userId,
@@ -367,7 +376,7 @@ const orderController = {
     placeOrder: async (req, res) => {
         try {
             const userId = req.session.user;
-            const { addressId, paymentMethod } = req.body;
+            const { addressId, paymentMethod, couponCode } = req.body;
             console.log('this is payment method',paymentMethod)
 
             // Validate address
@@ -567,7 +576,10 @@ const orderController = {
                 // Handle other status updates
                 if (status === 'Cancelled' && orderItem.status !== 'Cancelled') {
                     // Calculate refund amount for this item
-                    refundAmount = orderItem.price * orderItem.quantity;
+                    const numberOfItems = order.orderedItems.length;
+                    const couponAmount = order.couponAmount;
+                    const couponDiscount = couponAmount/numberOfItems
+                    refundAmount = orderItem.price * orderItem.quantity - couponDiscount;
 
                     // Handle refund based on payment method
                     if ((order.paymentMethod === 'online' || order.paymentMethod === 'wallet') && order.paymentStatus === 'Completed') {
