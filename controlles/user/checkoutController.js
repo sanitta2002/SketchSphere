@@ -177,7 +177,7 @@ const checkoutController = {
             }
 
             const discount = Math.min(coupon.offerPrice, totalAmount);
-            console.log(discount)
+            
 
             // Store the applied coupon in session
             req.session.appliedCoupon = {
@@ -379,7 +379,7 @@ const checkoutController = {
                 };
             }
 
-            console.log('Saving order with items:', order);
+            
             await order.save();
 
             // Update product quantities
@@ -561,7 +561,7 @@ const checkoutController = {
                 }
             });
 
-            console.log('Saving failed order:', order);
+            
             await order.save();
 
             // Don't clear cart since payment failed

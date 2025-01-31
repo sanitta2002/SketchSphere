@@ -20,9 +20,9 @@ const orderController = {
                 return res.redirect('/login');
             }
 
-            console.log('Loading orders for user:', req.session.user);
+            
             const userId = new mongoose.Types.ObjectId(req.session.user);
-            console.log('Converted user ID to ObjectId:', userId.toString());
+            
 
             const orders = await Order.find({ userId: userId })
                 .populate({
@@ -55,7 +55,7 @@ const orderController = {
     viewOrder: async (req, res) => {
         try {
             const orderId = req.params.orderId;
-            console.log('Loading order details for:', orderId);
+            
 
             const order = await Order.findById(orderId)
                 .populate({
@@ -71,11 +71,11 @@ const orderController = {
                 });
             }
 
-            console.log('Found order:', {
-                id: order._id,
-                items: order.orderedItems.length,
-                total: order.finalAmount
-            });
+            // console.log('Found order:', {
+            //     id: order._id,
+            //     items: order.orderedItems.length,
+            //     total: order.finalAmount
+            // });
 
             res.render('orderDetails', {
                 order,
@@ -94,7 +94,7 @@ const orderController = {
     orderSuccess: async (req, res) => {
         try {
             const orderId = req.query.orderId;
-            console.log('Loading order success page for:', orderId);
+            // console.log('Loading order success page for:', orderId);
 
             const order = await Order.findById(orderId)
                 .populate({
@@ -104,17 +104,17 @@ const orderController = {
                 });
 
             if (!order) {
-                console.log('Order not found:', orderId);
+                // console.log('Order not found:', orderId);
                 return res.status(404).render('error', {
                     error: 'Order not found'
                 });
             }
 
-            console.log('Found order for success page:', {
-                id: order._id,
-                items: order.orderedItems.length,
-                total: order.finalAmount
-            });
+            // console.log('Found order for success page:', {
+            //     id: order._id,
+            //     items: order.orderedItems.length,
+            //     total: order.finalAmount
+            // });
 
             res.render('orderSuccess', {
                 order,
@@ -134,7 +134,7 @@ const orderController = {
             const orderId = req.params.orderId;
             const userId = req.session.user;
 
-            console.log('Attempting to cancel order:', orderId, 'for user:', userId);
+          
 
             // Find the order to cancel
             const order = await Order.findOne({
@@ -143,7 +143,7 @@ const orderController = {
                 status: { $nin: ['Cancelled', 'Delivered', 'Returned'] }
             }).populate('orderedItems.product');
 
-            console.log('Found order:', order);
+            
 
             if (!order) {
                 console.log('Order not found or not cancellable. Query params:', {

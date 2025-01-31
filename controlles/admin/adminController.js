@@ -86,7 +86,7 @@ const loadDashboard = async (req, res) => {
             }
         });
 
-        console.log('Summary data:', summary);
+        
 
         // Get sales data for the chart
         const salesData = await getSalesData('monthly');
@@ -159,8 +159,7 @@ const loadDashboard = async (req, res) => {
             { $limit: 5 }
         ]);
 
-        console.log('Top Categories:', topCategories);
-        console.log('Top Products:', topProducts);
+       
 
         res.render('dashboard', {
             summary,
@@ -231,10 +230,7 @@ const getSalesData = async (period) => {
             endDate = new Date(now);
             endDate.setHours(23, 59, 59, 999);
 
-            console.log('Weekly date range:', {
-                start: startDate.toISOString(),
-                end: endDate.toISOString()
-            });
+            
 
             // Use week-based format for grouping
             groupByFormat = {
@@ -252,10 +248,7 @@ const getSalesData = async (period) => {
             endDate = new Date(now);
             endDate.setHours(23, 59, 59, 999);
 
-            console.log('Daily date range for current month:', {
-                start: startDate.toISOString(),
-                end: endDate.toISOString()
-            });
+            
 
             groupByFormat = {
                 $dateToString: { 
@@ -337,7 +330,7 @@ const getSalesData = async (period) => {
             }
         ]);
 
-        console.log('Raw aggregation result:', salesData);
+        
 
         // Generate date range
         const dates = [];
@@ -528,7 +521,7 @@ const generateReport = async (req, res) => {
         let dateQuery = {};
 
         const now = new Date();
-        console.log('Current time:', now);
+       
 
         if (reportType && reportType !== 'all') {
             switch (reportType) {
@@ -614,16 +607,15 @@ const generateReport = async (req, res) => {
             }
         }
 
-        console.log('Using date query:', JSON.stringify(dateQuery, null, 2));
+        
 
         // Get a sample order to check its structure
         const sampleOrder = await Order.findOne().lean();
-        console.log('Sample order structure:', JSON.stringify(sampleOrder, null, 2));
+        
 
         // Count orders matching the query
         const totalOrders = await Order.countDocuments(dateQuery);
-        console.log('Orders matching query:', totalOrders);
-
+        
         if (totalOrders === 0) {
             return res.json({
                 success: true,
@@ -715,7 +707,7 @@ const generateReport = async (req, res) => {
             status: order.status || 'Pending'
         }));
 
-        console.log('Sending response with details length:', details.length);
+       
 
         res.json({
             success: true,

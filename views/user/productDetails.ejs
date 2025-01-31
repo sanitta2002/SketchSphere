@@ -343,6 +343,29 @@
         color: #0056b3;
     }
 
+    .related-product-link {
+        text-decoration: none;
+        color: inherit;
+        display: block;
+        transition: transform 0.2s ease-in-out;
+    }
+
+    .related-product-link:hover {
+        transform: translateY(-5px);
+    }
+
+    .related-product-card {
+        background: #fff;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+    }
+
+    .related-product-card:hover {
+        box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+    }
+
     @media (max-width: 768px) {
         .product-detail {
             flex-direction: column;
@@ -488,21 +511,23 @@
             <div class="related-products-grid">
                 <% recommendedProducts.forEach(function(relatedProduct) { %>
                     <div class="related-product-card">
-                        <img src="<%= relatedProduct.product_img && relatedProduct.product_img.length > 0 ? `/uploads/re-image/${relatedProduct.product_img[0]}` : '/uploads/re-image/default.jpeg' %>" 
-                             alt="<%= relatedProduct.name %>" 
-                             class="related-product-image"
-                             onerror="this.onerror=null; this.src='/uploads/re-image/default.jpeg';">
-                        <div class="related-product-info">
-                            <h3 class="related-product-name"><%= relatedProduct.name %></h3>
-                            <div class="related-product-price">
-                                <% if (relatedProduct.hasValidOffer) { %>
-                                    <span class="current-price">₹<%= relatedProduct.currentPrice %></span>
-                                    <span class="original-price">₹<%= relatedProduct.originalPrice %></span>
-                                <% } else { %>
-                                    <span class="current-price">₹<%= relatedProduct.Sale_price %></span>
-                                <% } %>
+                        <a href="/productDetails?id=<%= relatedProduct._id %>" class="related-product-link">
+                            <img src="<%= relatedProduct.product_img && relatedProduct.product_img.length > 0 ? `/uploads/re-image/${relatedProduct.product_img[0]}` : '/uploads/re-image/default.jpeg' %>" 
+                                alt="<%= relatedProduct.name %>" 
+                                class="related-product-image"
+                                onerror="this.onerror=null; this.src='/uploads/re-image/default.jpeg';">
+                            <div class="related-product-info">
+                                <h3 class="related-product-name"><%= relatedProduct.name %></h3>
+                                <div class="related-product-price">
+                                    <% if (relatedProduct.hasValidOffer) { %>
+                                        <span class="current-price">₹<%= relatedProduct.currentPrice %></span>
+                                        <span class="original-price">₹<%= relatedProduct.originalPrice %></span>
+                                    <% } else { %>
+                                        <span class="current-price">₹<%= relatedProduct.Sale_price %></span>
+                                    <% } %>
+                                </div>
                             </div>
-                        </div>
+                        </a>
                     </div>
                 <% }); %>
             </div>

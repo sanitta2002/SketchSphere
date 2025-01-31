@@ -27,7 +27,7 @@ const getProductAddPage = async (req, res) => {
 const addproduct = async (req, res) => {
     try {
         const products = req.body;
-        console.log("Received product data:", products);
+       
 
         // Validate required fields
         if (!products.description || products.description.trim() === '') {
@@ -36,7 +36,7 @@ const addproduct = async (req, res) => {
         }
 
         if (!products.category) {
-            console.log("Category is missing");
+            
             return res.status(400).json({ error: "Category is required" });
         }
 
@@ -94,7 +94,7 @@ const addproduct = async (req, res) => {
         });
 
         await newProduct.save();
-        console.log("Product saved successfully");
+        
         req.session.successMessage = "Product added successfully!";
         return res.redirect("/admin/products");
 
@@ -171,8 +171,7 @@ const getEditProduct = async (req, res) => {
         const productData = await product.findOne({ _id: id });
         const categories = await Category.find({});
         
-        console.log("Product Data for Edit:", productData);
-        console.log("Product Language:", productData.language);
+       
         
         res.render("editProduct", {
             product: productData,
@@ -189,8 +188,7 @@ const editProduct = async (req, res) => {
         const id = req.params.id;
         const data = req.body;
         
-        console.log("Edit Product Data:", data);
-        console.log("Language value:", data.language);
+       
 
 
 
@@ -232,7 +230,7 @@ const editProduct = async (req, res) => {
             language: data.language || null
         };
 
-        console.log("Update Fields:", updateFields);
+       
 
         // Get current product to handle image updates
         const currentProduct = await product.findById(id);
@@ -244,7 +242,7 @@ const editProduct = async (req, res) => {
         let remainingImages = [...currentProduct.product_img];
         if (data.deletedImages) {
             const deletedImages = JSON.parse(data.deletedImages);
-            console.log("Images to delete:", deletedImages);
+           
 
             // Remove deleted images from the array
             remainingImages = currentProduct.product_img.filter(img => !deletedImages.includes(img));
@@ -308,7 +306,7 @@ const editProduct = async (req, res) => {
         }
 
         const updatedProduct = await product.findByIdAndUpdate(id, updateFields, { new: true });
-        console.log("Updated product:", updatedProduct);
+        
 
         req.session.successMessage = "Product updated successfully!";
         res.redirect('/admin/products');
@@ -321,7 +319,7 @@ const editProduct = async (req, res) => {
 const deleteSingleImage = async (req, res) => {
     try {
         const { imageNameTOServer, productIdToServer } = req.body;
-        console.log("Deleting image:", imageNameTOServer, "from product:", productIdToServer);
+        
 
         // Find the product and remove the image from the array
         const productData = await product.findById(productIdToServer);

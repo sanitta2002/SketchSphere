@@ -42,8 +42,7 @@ const toggleWishlist = async (req, res) => {
         const { productId } = req.body;
         const userId = req.session.user;
 
-        console.log('Toggle Wishlist Product ID:', productId); 
-        console.log('Toggle Wishlist  User ID:', userId); 
+       
 
         if (!userId) {
             return res.status(401).json({
@@ -62,7 +61,7 @@ const toggleWishlist = async (req, res) => {
         }
 
         const user = await User.findById(userId);
-        console.log('Current Wishlist:', user.wishlist); 
+         
 
         const productIndex = user.wishlist.indexOf(productId);
 
@@ -113,8 +112,7 @@ const getWishlistStatus = async (req, res) => {
         const user = await User.findById(userId);
         const inWishlist = user.wishlist.includes(productId);
 
-        // console.log('Wishlist Status - Product ID:', productId); 
-        // console.log('In Wishlist:', inWishlist); 
+        
 
         res.json({
             success: true,

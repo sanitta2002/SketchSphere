@@ -16,9 +16,7 @@ const addAddress = async (req, res) => {
         console.log(req.body)
 
         const userId = req.session.user;
-        console.log('Session:', req.session);
-        console.log('User ID:', userId);
-        console.log('Request body:', req.body);
+        
 
         if (!userId) {
             return res.status(401).json({
@@ -39,7 +37,7 @@ const addAddress = async (req, res) => {
 
         // Validate required fields
         if (!name || !phone || !addressType || !landMark || !city || !state || !pincode) {
-            console.log('Missing required fields:', { name, phone, addressType, landMark, city, state, pincode });
+            
             return res.status(400).json({
                 success: false,
                 message: 'Please fill all required fields'
@@ -83,7 +81,7 @@ const addAddress = async (req, res) => {
             pincode: parseInt(pincode)
         };
 
-        console.log('New address to be added:', newAddress);
+       
         userAddress.address.push(newAddress);
 
         await userAddress.save();

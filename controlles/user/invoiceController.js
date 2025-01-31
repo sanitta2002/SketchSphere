@@ -12,19 +12,19 @@ const generateInvoice = async (req, res) => {
             return res.status(404).json({ message: 'Order not found' });
         }
 
-        console.log('Order data:', {
-            orderId: order.orderId,
-            totalPrice: order.totalPrice,
-            discount: order.discount,
-            finalAmount: order.finalAmount,
-            orderedItems: order.orderedItems.map(item => ({
-                productName: item.product.name,
-                quantity: item.quantity,
-                price: item.price,
-                totalPrice: item.totalPrice,
-                status: item.status
-            }))
-        });
+        // console.log('Order data:', {
+        //     orderId: order.orderId,
+        //     totalPrice: order.totalPrice,
+        //     discount: order.discount,
+        //     finalAmount: order.finalAmount,
+        //     orderedItems: order.orderedItems.map(item => ({
+        //         productName: item.product.name,
+        //         quantity: item.quantity,
+        //         price: item.price,
+        //         totalPrice: item.totalPrice,
+        //         status: item.status
+        //     }))
+        // });
 
         // Create a new PDF document
         const doc = new PDFDocument({ margin: 50 });

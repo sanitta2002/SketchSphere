@@ -109,7 +109,7 @@ const orderController = {
             const { orderId, itemId } = req.params;
             const { status, rejectReason } = req.body;
 
-            console.log('Updating order status:', { orderId, itemId, status, rejectReason });
+            
 
             // Find the order
             const order = await Order.findById(orderId)
@@ -153,12 +153,12 @@ const orderController = {
                     { new: true }
                 );
 
-                console.log('Product quantity updated:', {
-                    productId: orderItem.product._id,
-                    quantityRestored: orderItem.quantity,
-                    newQuantity: updateResult.available_quantity,
-                    reason: status
-                });
+                // console.log('Product quantity updated:', {
+                //     productId: orderItem.product._id,
+                //     quantityRestored: orderItem.quantity,
+                //     newQuantity: updateResult.available_quantity,
+                //     reason: status
+                // });
 
                 // Process refund for both online and COD payments when returning
                 if (status === 'Returned') {
@@ -197,13 +197,13 @@ const orderController = {
                         );
                     }
 
-                    console.log('Refund processed:', {
-                        userId: order.userId,
-                        amount: refundAmount,
-                        reason: status,
-                        orderId: order._id,
-                        paymentMethod: order.paymentMethod
-                    });
+                    // console.log('Refund processed:', {
+                    //     userId: order.userId,
+                    //     amount: refundAmount,
+                    //     reason: status,
+                    //     orderId: order._id,
+                    //     paymentMethod: order.paymentMethod
+                    // });
                 }
                 // For cancellations, only process refund for online payments
                 else if (status === 'Cancelled' && order.paymentMethod === 'online' && order.paymentStatus === 'Completed') {
@@ -242,23 +242,23 @@ const orderController = {
                         );
                     }
 
-                    console.log('Cancellation refund processed:', {
-                        userId: order.userId,
-                        amount: refundAmount,
-                        orderId: order._id,
-                        paymentMethod: order.paymentMethod
-                    });
+                    // console.log('Cancellation refund processed:', {
+                    //     userId: order.userId,
+                    //     amount: refundAmount,
+                    //     orderId: order._id,
+                    //     paymentMethod: order.paymentMethod
+                    // });
                 }
             }
 
             // Save the updated order
             await order.save();
 
-            console.log('Order status updated successfully:', {
-                orderId: order._id,
-                status: order.status,
-                itemStatus: orderItem.status
-            });
+            // console.log('Order status updated successfully:', {
+            //     orderId: order._id,
+            //     status: order.status,
+            //     itemStatus: orderItem.status
+            // });
 
             res.json({
                 success: true,

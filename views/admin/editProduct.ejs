@@ -116,7 +116,7 @@
 
                             <div class="mb-4">
                                 <label class="form-label">Published Date</label>
-                                <input type="date" name="published_date" value="<%= product.Published_Date ? product.Published_Date.toISOString().split('T')[0] : '' %>" class="form-control border" id="published_date">
+                                <input type="date" name="Published_Date" value="<%= product.Published_Date ? new Date(product.Published_Date).toISOString().split('T')[0] : '' %>" class="form-control border" id="Published_Date">
                                 <div id="publishedDate-error" class="error-message"></div>
                             </div>
 
@@ -487,7 +487,7 @@
         }
 
         // Published Date validation
-        const publishedDate = document.getElementById('published_date').value.trim();
+        const publishedDate = document.getElementById('Published_Date').value.trim();
         if (!publishedDate) {
             displayErrorMessage('publishedDate-error', 'Published date is required');
             isValid = false;

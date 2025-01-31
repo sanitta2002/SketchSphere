@@ -42,38 +42,82 @@ const loadHomepage = async (req, res) => {
             .limit(8);
 
         // Fetch best selling products
+        
+        
+        // First, get all orders
+        const totalOrders = await Order.countDocuments();
+        
+
+        // Get a sample order to verify structure
+        const sampleOrder = await Order.findOne().lean();
+        
+
         const bestSellingProducts = await Order.aggregate([
-            { 
-                $match: { 
-                    'orderedItems.status': { $nin: ['Cancelled', 'Returned'] }
-                } 
-            },
+            // Unwind the orderedItems array first
             { $unwind: "$orderedItems" },
+            
+            // Only include delivered items
+            {
+                $match: {
+                    'orderedItems.status': 'Delivered'
+                }
+            },
+            
+            // Group by product and sum quantities
             {
                 $group: {
                     _id: "$orderedItems.product",
                     totalQuantitySold: { $sum: "$orderedItems.quantity" }
                 }
             },
-            { $sort: { totalQuantitySold: -1 } },
-            { $limit: 8 }
+            
+            // Sort by total quantity sold
+            { 
+                $sort: { 
+                    totalQuantitySold: -1 
+                } 
+            },
+            
+            // Limit to top 8
+            { 
+                $limit: 8 
+            }
         ]);
 
-        console.log('Best Selling Products Aggregation:', bestSellingProducts);
+        
 
         const bestSellingProductIds = bestSellingProducts.map(item => item._id);
         
-        console.log('Best Selling Product IDs:', bestSellingProductIds);
 
-        const bestSellingProductDetails = await Product.find({
-            _id: { $in: bestSellingProductIds },
-            isBlocked: false,
-            category_id: { $in: activeCategoryIds }
-        })
-        .populate('category_id')
-        .select('name description product_img quantity Regular_price Sale_price offerPrice offerPercentage offerStartDate offerEndDate');
+        // If no best selling products found, use featured products instead
+        let bestSellingProductDetails = [];
+        if (bestSellingProductIds.length === 0) {
+            
+            bestSellingProductDetails = await Product.find({ 
+                isBlocked: false,
+                category_id: { $in: activeCategoryIds }
+            })
+            .populate('category_id')
+            .select('name description product_img quantity Regular_price Sale_price offerPrice offerPercentage offerStartDate offerEndDate')
+            .limit(8);
+        } else {
+            bestSellingProductDetails = await Product.find({
+                _id: { $in: bestSellingProductIds },
+                isBlocked: false
+            })
+            .populate('category_id')
+            .select('name description product_img quantity Regular_price Sale_price offerPrice offerPercentage offerStartDate offerEndDate');
+        }
 
         
+        if (bestSellingProductDetails.length === 0) {
+            
+            // Try to find these products regardless of blocked status
+            const allProductsWithIds = await Product.find({
+                _id: { $in: bestSellingProductIds }
+            }).select('_id name isBlocked');
+            
+        }
 
         // Process products with offers
         const processProducts = (products) => {
@@ -128,7 +172,7 @@ const loadHomepage = async (req, res) => {
         const processedProducts = processProducts(products);
         const processedBestSellingProducts = processProducts(bestSellingProductDetails);
 
-        console.log('Processed Best Selling Products Count:', processedBestSellingProducts.length);
+        
 
         // Get user data if logged in
         let userData = null;
@@ -222,8 +266,7 @@ const signup = async (req, res) => {
     try {
 
         const { name, email, phone, password, confirmPassword } = req.body
-        console.log(req.body)
-        console.log(email, password, confirmPassword)
+       
         if (password !== confirmPassword) {
             return res.render('signup', { message: "Passwords do not match" })
         }
@@ -231,7 +274,7 @@ const signup = async (req, res) => {
         const findUser = await User.findOne({ email })
 
         if (findUser) {
-            console.log("user")
+            
             return res.render("signup", { message: "User with this email already exists" })
         }
 
@@ -280,7 +323,7 @@ const verifyOtp = async (req, res) => {
     try {
         const { otp1, otp2, otp3, otp4, otp5, otp6 } = req.body;
         const enteredOtp = `${otp1}${otp2}${otp3}${otp4}${otp5}${otp6}`; // Concatenate OTP inputs
-        console.log("Entered OTP:", enteredOtp);
+        
 
         // Check if OTP exists in session
         if (!req.session.userOtp || !req.session.userOtp.code) {
