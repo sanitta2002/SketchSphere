@@ -15,6 +15,9 @@ const { generateInvoice } = require('../controlles/user/invoiceController')
 
 router.get('/pageNotFound',userController.pageNotFound)
 router.get('/',userController.loadHomepage)
+router.get('/about', (req, res) => {
+    res.render('about')
+})
 
 router.get('/signup',userController.loadSignup)
 router.post('/signup',userController.signup)

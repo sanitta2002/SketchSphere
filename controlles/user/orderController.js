@@ -533,7 +533,8 @@ const orderController = {
             res.render('view-item', {
                 orderItem,
                 order,  // Pass the full order object to access payment details
-                pageTitle: 'Order Item Details'
+                pageTitle: 'Order Item Details',
+                user:req.session.user
             });
         } catch (error) {
             console.error('Error in viewOrderItemDetails:', error);

@@ -1,0 +1,158 @@
+<%- include('../layouts/user/header.ejs') %>
+
+<!-- Add AOS CSS and JS -->
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+<script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+
+<style>
+    .about-section {
+        padding: 80px 0;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        min-height: 100vh;
+    }
+    
+    .about-image {
+        transition: transform 0.3s ease;
+        box-shadow: 
+    }
+    
+    .about-image:hover {
+        transform: scale(1.05);
+    }
+    
+    .feature-card {
+        padding: 25px;
+        border-radius: 15px;
+        background: white;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        height: 100%;
+    }
+    
+    .feature-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+    }
+    
+    .feature-icon {
+        color: #000000;
+        margin-bottom: 20px;
+        transition: transform 0.3s ease;
+    }
+    
+    .feature-card:hover .feature-icon {
+        transform: scale(1.2);
+    }
+    
+    .section-title {
+        position: relative;
+        margin-bottom: 50px;
+    }
+    
+    .section-title:after {
+        content: '';
+        position: absolute;
+        bottom: -15px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 50px;
+        height: 3px;
+        background: #000000;
+    }
+
+    .about-content {
+        line-height: 1.8;
+    }
+
+    .mission-box {
+        background: #000000;
+        color: white;
+        padding: 30px;
+        border-radius: 15px;
+        margin: 30px 0;
+    }
+
+    .card-body {
+        padding: 4rem !important;
+        min-height: calc(100vh - 200px);
+    }
+</style>
+
+<div class="about-section">
+    <div class="container">
+        <div class="row p-5">
+            <div class="col-12">
+                <h1 class="text-center section-title mb-5" data-aos="fade-down">About SketchSphere</h1>
+                <div class="card shadow-lg rounded-lg overflow-hidden">
+                    <div class="card-body p-md-5">
+                        <div class="row align-items-center">
+                            <div class="col-md-6" data-aos="fade-right" data-aos-delay="100">
+                                <img src="images/icons/logo3.png" alt="About SketchSphere" class="img-fluid rounded about-image mb-4 mb-md-0">
+                            </div>
+                            <div class="col-md-6" data-aos="fade-left" data-aos-delay="200">
+                                <div class="about-content">
+                                    <h2 class="mb-4">Our Story</h2>
+                                    <p>Welcome to SketchSphere, your premier destination for artistic expression and creativity. We are passionate about bringing high-quality art supplies to artists of all skill levels.</p>
+                                    
+                                    <div class="mission-box" data-aos="zoom-in" data-aos-delay="300">
+                                        <h3 class="mb-3">Our Mission</h3>
+                                        <p class="mb-0">Our mission is to inspire and empower artists by providing them with the finest art materials and supplies. We believe that everyone has an artist within them, waiting to be discovered.</p>
+                                    </div>
+                                    
+                                    <h3 class="mt-4">What We Offer</h3>
+                                    <ul class="list-unstyled">
+                                        <li class="mb-2"><i class="fas fa-check-circle text-black me-2"></i> Premium quality art supplies</li>
+                                        <li class="mb-2"><i class="fas fa-check-circle text-black me-2"></i> Expert customer service</li>
+                                        <li class="mb-2"><i class="fas fa-check-circle text-black me-2"></i> Competitive prices</li>
+                                        <li class="mb-2"><i class="fas fa-check-circle text-black me-2"></i> Wide range of products</li>
+                                        <li class="mb-2"><i class="fas fa-check-circle text-black me-2"></i> Fast and secure shipping</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-5">
+                            <div class="col-12">
+                                <h2 class="text-center section-title" data-aos="fade-up">Why Choose Us?</h2>
+                                <div class="row mt-5">
+                                    <div class="col-md-4 mb-4" data-aos="fade-up" data-aos-delay="100">
+                                        <div class="feature-card text-center">
+                                            <i class="fas fa-paint-brush fa-3x feature-icon"></i>
+                                            <h4>Quality Products</h4>
+                                            <p class="mb-0">We carefully select each product to ensure the highest quality for our customers.</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 mb-4" data-aos="fade-up" data-aos-delay="200">
+                                        <div class="feature-card text-center">
+                                            <i class="fas fa-shipping-fast fa-3x feature-icon"></i>
+                                            <h4>Fast Delivery</h4>
+                                            <p class="mb-0">Quick and reliable shipping to get your art supplies to you when you need them.</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 mb-4" data-aos="fade-up" data-aos-delay="300">
+                                        <div class="feature-card text-center">
+                                            <i class="fas fa-headset fa-3x feature-icon"></i>
+                                            <h4>Customer Support</h4>
+                                            <p class="mb-0">Our dedicated team is here to help you with any questions or concerns.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Initialize AOS
+    AOS.init({
+        duration: 800,
+        once: true,
+        offset: 100
+    });
+</script>
+
+<%- include('../layouts/user/footer.ejs') %>

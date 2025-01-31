@@ -41,58 +41,94 @@ const loadHomepage = async (req, res) => {
             .sort({ createdAt: -1 })
             .limit(8);
 
+        // Fetch best selling products
+        const bestSellingProducts = await Order.aggregate([
+            { 
+                $match: { 
+                    'orderedItems.status': { $nin: ['Cancelled', 'Returned'] }
+                } 
+            },
+            { $unwind: "$orderedItems" },
+            {
+                $group: {
+                    _id: "$orderedItems.product",
+                    totalQuantitySold: { $sum: "$orderedItems.quantity" }
+                }
+            },
+            { $sort: { totalQuantitySold: -1 } },
+            { $limit: 8 }
+        ]);
+
+        console.log('Best Selling Products Aggregation:', bestSellingProducts);
+
+        const bestSellingProductIds = bestSellingProducts.map(item => item._id);
+        
+        console.log('Best Selling Product IDs:', bestSellingProductIds);
+
+        const bestSellingProductDetails = await Product.find({
+            _id: { $in: bestSellingProductIds },
+            isBlocked: false,
+            category_id: { $in: activeCategoryIds }
+        })
+        .populate('category_id')
+        .select('name description product_img quantity Regular_price Sale_price offerPrice offerPercentage offerStartDate offerEndDate');
+
+        
+
         // Process products with offers
-        const processedProducts = products.map(product => {
-            const now = new Date();
-            const category = product.category_id;
-            
-            // Get product and category offers
-            const productOffer = product.offerPercentage || 0;
-            const categoryOffer = category?.offerPercentage || 0;
-            
-            // Check if offers are valid
-            const hasValidProductOffer = productOffer > 0 && new Date(product.offerEndDate) > now;
-            const hasValidCategoryOffer = categoryOffer > 0 && category && new Date(category.offerEndDate) > now;
-            
-            // Determine which offer is better
-            let bestOffer = 0;
-            let offerType = 'none';
-            
-            if (hasValidProductOffer && hasValidCategoryOffer) {
-                // Both offers are valid, use the higher one
-                if (productOffer >= categoryOffer) {
+        const processProducts = (products) => {
+            return products.map(product => {
+                const now = new Date();
+                const category = product.category_id;
+                
+                const productOffer = product.offerPercentage || 0;
+                const categoryOffer = category?.offerPercentage || 0;
+                
+                const hasValidProductOffer = productOffer > 0 && new Date(product.offerEndDate) > now;
+                const hasValidCategoryOffer = categoryOffer > 0 && category && new Date(category.offerEndDate) > now;
+                
+                let bestOffer = 0;
+                let offerType = 'none';
+                
+                if (hasValidProductOffer && hasValidCategoryOffer) {
+                    if (productOffer >= categoryOffer) {
+                        bestOffer = productOffer;
+                        offerType = 'product';
+                    } else {
+                        bestOffer = categoryOffer;
+                        offerType = 'category';
+                    }
+                } else if (hasValidProductOffer) {
                     bestOffer = productOffer;
                     offerType = 'product';
-                } else {
+                } else if (hasValidCategoryOffer) {
                     bestOffer = categoryOffer;
                     offerType = 'category';
                 }
-            } else if (hasValidProductOffer) {
-                bestOffer = productOffer;
-                offerType = 'product';
-            } else if (hasValidCategoryOffer) {
-                bestOffer = categoryOffer;
-                offerType = 'category';
-            }
-            
-            // Calculate current price with best offer
-            let currentPrice = product.Sale_price;
-            if (bestOffer > 0) {
-                const discountAmount = Math.round((product.Sale_price * bestOffer) / 100);
-                currentPrice = Math.round(product.Sale_price - discountAmount);
-            }
-            
-            return {
-                ...product.toObject(),
-                currentPrice,
-                originalPrice: product.Sale_price,
-                offerPercentage: bestOffer,
-                hasValidOffer: bestOffer > 0,
-                offerType,
-                productOffer: hasValidProductOffer ? productOffer : 0,
-                categoryOffer: hasValidCategoryOffer ? categoryOffer : 0
-            };
-        });
+                
+                let currentPrice = product.Sale_price;
+                if (bestOffer > 0) {
+                    const discountAmount = Math.round((product.Sale_price * bestOffer) / 100);
+                    currentPrice = Math.round(product.Sale_price - discountAmount);
+                }
+                
+                return {
+                    ...product.toObject(),
+                    currentPrice,
+                    originalPrice: product.Sale_price,
+                    offerPercentage: bestOffer,
+                    hasValidOffer: bestOffer > 0,
+                    offerType,
+                    productOffer: hasValidProductOffer ? productOffer : 0,
+                    categoryOffer: hasValidCategoryOffer ? categoryOffer : 0
+                };
+            });
+        };
+
+        const processedProducts = processProducts(products);
+        const processedBestSellingProducts = processProducts(bestSellingProductDetails);
+
+        console.log('Processed Best Selling Products Count:', processedBestSellingProducts.length);
 
         // Get user data if logged in
         let userData = null;
@@ -106,6 +142,7 @@ const loadHomepage = async (req, res) => {
         
         return res.render('home', {
             products: processedProducts,
+            bestSellingProducts: processedBestSellingProducts,
             user: userData,
             cart: cartData,
             categories: activeCategories,
@@ -776,6 +813,7 @@ const loadShop = async (req, res) => {
             let offerType = 'none';
             
             if (hasValidProductOffer && hasValidCategoryOffer) {
+                // Both offers are valid, use the higher one
                 if (productOffer >= categoryOffer) {
                     bestOffer = productOffer;
                     offerType = 'product';
@@ -841,7 +879,8 @@ const loadShop = async (req, res) => {
             sortBy: sortOption || 'default',
             searchQuery: searchQuery || '',
             cart:cartData,
-            wishlistCount: wishlistCount
+            wishlistCount: wishlistCount,
+            user:req.session.user
         });
 
     } catch (error) {
