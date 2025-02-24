@@ -591,6 +591,14 @@ async function placeOrder(paymentMethod) {
         if (paymentMethod === 'COD') {
             // For COD orders
             try {
+                if(finalAmount > 1000){
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'COD not available for orders above ₹1,000'
+                    });
+                    return;
+                }
                 console.log('Placing COD order');
                 const response = await fetch('/place-order', {
                     method: 'POST',

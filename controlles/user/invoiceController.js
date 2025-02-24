@@ -12,19 +12,7 @@ const generateInvoice = async (req, res) => {
             return res.status(404).json({ message: 'Order not found' });
         }
 
-        // console.log('Order data:', {
-        //     orderId: order.orderId,
-        //     totalPrice: order.totalPrice,
-        //     discount: order.discount,
-        //     finalAmount: order.finalAmount,
-        //     orderedItems: order.orderedItems.map(item => ({
-        //         productName: item.product.name,
-        //         quantity: item.quantity,
-        //         price: item.price,
-        //         totalPrice: item.totalPrice,
-        //         status: item.status
-        //     }))
-        // });
+        
 
         // Create a new PDF document
         const doc = new PDFDocument({ margin: 50 });
@@ -105,11 +93,7 @@ const generateInvoice = async (req, res) => {
            .text(`₹${order.totalPrice}`, 500, tableY);
         tableY += 20;
 
-      //   if (order.discount > 0) {
-      //       doc.text('Total Discount:', 350, tableY)
-      //          .text(`-₹${order.discount}`, 500, tableY);
-      //       tableY += 20;
-      //   }
+      
 
         doc.fontSize(12)
            .text('Final Amount:', 350, tableY)

@@ -173,7 +173,7 @@ const editAddress = async (req, res) => {
             });
         }
 
-        // Update the address at the specified index
+        // Update the address specified index
         userAddress.address[index] = {
             name,
             phone,
@@ -212,7 +212,7 @@ const deleteAddress = async (req, res) => {
             });
         }
 
-        // Remove the address at the specified index
+        // Remove the address specified index
         userAddress.address.splice(index, 1);
         await userAddress.save();
 

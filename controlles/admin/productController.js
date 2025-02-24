@@ -232,13 +232,13 @@ const editProduct = async (req, res) => {
 
        
 
-        // Get current product to handle image updates
+        //  image updates
         const currentProduct = await product.findById(id);
         if (!currentProduct) {
             throw new Error('Product not found');
         }
 
-        // Handle deleted images
+        // deleted images
         let remainingImages = [...currentProduct.product_img];
         if (data.deletedImages) {
             const deletedImages = JSON.parse(data.deletedImages);
@@ -247,7 +247,7 @@ const editProduct = async (req, res) => {
             // Remove deleted images from the array
             remainingImages = currentProduct.product_img.filter(img => !deletedImages.includes(img));
 
-            // Delete the actual files
+            // Delete the files
             for (const imgName of deletedImages) {
                 const imagePath = path.join('public', 'uploads', 're-image', imgName);
                 try {
@@ -261,7 +261,7 @@ const editProduct = async (req, res) => {
             }
         }
 
-        // Handle new image uploads
+        // add image uploads
         if (req.files && req.files.length > 0) {
             const newImages = [];
             for (let i = 0; i < req.files.length; i++) {
@@ -296,14 +296,14 @@ const editProduct = async (req, res) => {
             remainingImages = [...remainingImages, ...newImages];
         }
 
-        // Update the product_img field
+        // Update the product_img 
         updateFields.product_img = remainingImages;
 
-        // Find category ID
+       
         const categoryData = await Category.findOne({ name: data.category });
         if (categoryData) {
             updateFields.category_id = categoryData._id;
-        }
+        } // Find category ID
 
         const updatedProduct = await product.findByIdAndUpdate(id, updateFields, { new: true });
         
@@ -321,7 +321,7 @@ const deleteSingleImage = async (req, res) => {
         const { imageNameTOServer, productIdToServer } = req.body;
         
 
-        // Find the product and remove the image from the array
+        // Find the product
         const productData = await product.findById(productIdToServer);
         if (!productData) {
             return res.json({ success: false, message: 'Product not found' });
@@ -338,7 +338,7 @@ const deleteSingleImage = async (req, res) => {
             return res.json({ success: false, message: 'Failed to update product' });
         }
 
-        // Delete the physical image file
+        // Delete the  image file
         const imagePath = path.join("public", "uploads", "re-image", imageNameTOServer);
         if (fs.existsSync(imagePath)) {
             fs.unlinkSync(imagePath);

@@ -16,7 +16,7 @@ const offerController = {
         }
     },
 
-    // Add offer to product
+    // Add offer product
     addOffer: async (req, res) => {
         try {
             const productId = req.params.id;
@@ -33,7 +33,7 @@ const offerController = {
             const discountAmount = (salePrice * discountPercentage) / 100;
             const offerPrice = salePrice - discountAmount;
 
-            // Update product with offer details
+            // Update product with offer
             product.offerPrice = offerPrice;
             product.offerPercentage = discountPercentage;
             product.offerStartDate = new Date(startDate);
@@ -49,7 +49,7 @@ const offerController = {
         }
     },
 
-    // Remove offer from product
+    // Remove offer from produ
     removeOffer: async (req, res) => {
         try {
             const productId = req.params.id;
@@ -60,7 +60,7 @@ const offerController = {
                 return res.redirect('/admin/products');
             }
 
-            // Remove offer details
+            // Remove offer 
             product.offerPrice = 0;
             product.offerPercentage = 0;
             product.offerStartDate = null;

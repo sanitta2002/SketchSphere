@@ -183,7 +183,7 @@ const loadHomepage = async (req, res) => {
             cartData = await Cart.findOne({ userId: req.session.user }).populate('items.productId');
             wishlistCount = userData.wishlist ? userData.wishlist.length : 0;
         }
-        
+        console.log("wishlistCount",wishlistCount)
         return res.render('home', {
             products: processedProducts,
             bestSellingProducts: processedBestSellingProducts,

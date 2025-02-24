@@ -4,18 +4,18 @@ const Product = require('../../models/productSchema');
 const Wallet = require('../../models/walletSchema'); // Assuming Wallet model is defined in walletSchema.js
 
 const orderController = {
-    // Get all orders for admin
+    // Get all orders 
     getAllOrders: async (req, res) => {
         try {
             const page = parseInt(req.query.page) || 1;
-            const limit = 10; // Items per page
+            const limit = 10; 
             const skip = (page - 1) * limit;
 
             // Get search and filter parameters
             const searchQuery = req.query.search || '';
             const status = req.query.status || '';
 
-            // Build filter query
+           
             let query = {};
             
             if (searchQuery) {
@@ -30,17 +30,17 @@ const orderController = {
                 query['orderedItems.status'] = status;
             }
 
-            // Get total count for pagination
+            // Get total pagination count 
             const totalOrders = await Order.countDocuments(query);
             const totalPages = Math.ceil(totalOrders / limit);
 
-            // Calculate pagination values
+            // Calculate pagination 
             const hasPreviousPage = page > 1;
             const hasNextPage = page < totalPages;
             const previousPage = hasPreviousPage ? page - 1 : null;
             const nextPage = hasNextPage ? page + 1 : null;
 
-            // Fetch orders with pagination and filters
+            // Fetch order with pagination
             const orders = await Order.find(query)
                 .populate({
                     path: 'userId',
@@ -111,7 +111,7 @@ const orderController = {
 
             
 
-            // Find the order
+           
             const order = await Order.findById(orderId)
                 .populate('orderedItems.product')
                 .populate('userId');
@@ -120,7 +120,6 @@ const orderController = {
                 return res.status(404).json({ success: false, message: 'Order not found' });
             }
 
-            // Update the order's main status
             order.status = status;
             
             // Find the specific item
@@ -130,7 +129,7 @@ const orderController = {
             }
 
             const previousStatus = orderItem.status;
-            // Update the item status
+            
             orderItem.status = status;
             if (rejectReason) {
                 orderItem.rejectReason = rejectReason;
@@ -140,31 +139,24 @@ const orderController = {
             if ((status === 'Returned' && previousStatus !== 'Returned') || 
                 (status === 'Cancelled' && previousStatus !== 'Cancelled')) {
                 
-                // Find the product
                 const product = await Product.findById(orderItem.product);
                 if (!product) {
                     return res.status(404).json({ success: false, message: 'Product not found' });
                 }
 
-                // Increase product quantity
+               
                 const updateResult = await Product.findByIdAndUpdate(
                     orderItem.product,
-                    { $inc: { available_quantity: orderItem.quantity } },
+                    { $inc: { available_quantity: orderItem.quantity } },  // Increase product quantity
                     { new: true }
                 );
 
-                // console.log('Product quantity updated:', {
-                //     productId: orderItem.product._id,
-                //     quantityRestored: orderItem.quantity,
-                //     newQuantity: updateResult.available_quantity,
-                //     reason: status
-                // });
 
-                // Process refund for both online and COD payments when returning
+                //  refund for online and COD payments when returning
                 if (status === 'Returned') {
                     const refundAmount = orderItem.price * orderItem.quantity;
 
-                    // Add refund to wallet
+                    
                     const wallet = await Wallet.findOne({ userId: order.userId });
                     if (!wallet) {
                         const newWallet = new Wallet({
@@ -173,7 +165,7 @@ const orderController = {
                             transactions: [{
                                 type: 'credit',
                                 amount: refundAmount,
-                                description: `Refund for ${status.toLowerCase()} item in order #${order._id}`,
+                                description: `Refund for ${status.toLowerCase()} item in order #${order._id}`,// Add refund to wallet
                                 orderId: order._id,
                                 date: new Date()
                             }]
@@ -197,19 +189,13 @@ const orderController = {
                         );
                     }
 
-                    // console.log('Refund processed:', {
-                    //     userId: order.userId,
-                    //     amount: refundAmount,
-                    //     reason: status,
-                    //     orderId: order._id,
-                    //     paymentMethod: order.paymentMethod
-                    // });
+                    
                 }
-                // For cancellations, only process refund for online payments
+                //  cancellation for  only process refund for online payment
                 else if (status === 'Cancelled' && order.paymentMethod === 'online' && order.paymentStatus === 'Completed') {
                     const refundAmount = orderItem.price * orderItem.quantity;
 
-                    // Add refund to wallet
+                    
                     const wallet = await Wallet.findOne({ userId: order.userId });
                     if (!wallet) {
                         const newWallet = new Wallet({
@@ -218,7 +204,7 @@ const orderController = {
                             transactions: [{
                                 type: 'credit',
                                 amount: refundAmount,
-                                description: `Refund for cancelled item in order #${order._id}`,
+                                description: `Refund for cancelled item in order #${order._id}`,// Add refund to wallet
                                 orderId: order._id,
                                 date: new Date()
                             }]
@@ -242,23 +228,11 @@ const orderController = {
                         );
                     }
 
-                    // console.log('Cancellation refund processed:', {
-                    //     userId: order.userId,
-                    //     amount: refundAmount,
-                    //     orderId: order._id,
-                    //     paymentMethod: order.paymentMethod
-                    // });
                 }
             }
 
-            // Save the updated order
             await order.save();
 
-            // console.log('Order status updated successfully:', {
-            //     orderId: order._id,
-            //     status: order.status,
-            //     itemStatus: orderItem.status
-            // });
 
             res.json({
                 success: true,

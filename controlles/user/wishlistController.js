@@ -1,7 +1,6 @@
 const User = require('../../models/userSchema');
 const Product = require('../../models/productSchema');
 const Cart = require('../../models/cartSchema');
-
 // Load wishlist page
 const loadWishlist = async (req, res) => {
     try {
@@ -39,11 +38,12 @@ const loadWishlist = async (req, res) => {
 // Add or remove product from wishlist
 const toggleWishlist = async (req, res) => {
     try {
+        
         const { productId } = req.body;
         const userId = req.session.user;
 
        
-
+       
         if (!userId) {
             return res.status(401).json({
                 success: false,
@@ -61,29 +61,34 @@ const toggleWishlist = async (req, res) => {
         }
 
         const user = await User.findById(userId);
-         
+        // console.log("user",user)
+        //  const wishlistCount=  user.wishlist.length
+        
+
 
         const productIndex = user.wishlist.indexOf(productId);
-
+   
         if (productIndex === -1) {
             // Add to wishlist
             user.wishlist.push(productId);
             await user.save();
-            console.log('Product added to wishlist'); 
+            const wishlistCount=  user.wishlist.length
             res.json({
                 success: true,
                 message: "Product added to wishlist",
-                action: "added"
+                action: "added",
+                wishlistCount:wishlistCount
             });
         } else {
             // Remove from wishlist
             user.wishlist.splice(productIndex, 1);
             await user.save();
-            console.log('Product removed from wishlist'); 
+            const wishlistCount=  user.wishlist.length
             res.json({
                 success: true,
                 message: "Product removed from wishlist",
-                action: "removed"
+                action: "removed",
+                wishlistCount:wishlistCount
             });
         }
     } catch (error) {

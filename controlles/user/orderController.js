@@ -51,7 +51,7 @@ const orderController = {
         }
     },
 
-    // View single order details
+    //  single order details
     viewOrder: async (req, res) => {
         try {
             const orderId = req.params.orderId;
@@ -71,11 +71,7 @@ const orderController = {
                 });
             }
 
-            // console.log('Found order:', {
-            //     id: order._id,
-            //     items: order.orderedItems.length,
-            //     total: order.finalAmount
-            // });
+            
 
             res.render('orderDetails', {
                 order,
@@ -94,7 +90,7 @@ const orderController = {
     orderSuccess: async (req, res) => {
         try {
             const orderId = req.query.orderId;
-            // console.log('Loading order success page for:', orderId);
+            
 
             const order = await Order.findById(orderId)
                 .populate({
@@ -104,17 +100,13 @@ const orderController = {
                 });
 
             if (!order) {
-                // console.log('Order not found:', orderId);
+                
                 return res.status(404).render('error', {
                     error: 'Order not found'
                 });
             }
 
-            // console.log('Found order for success page:', {
-            //     id: order._id,
-            //     items: order.orderedItems.length,
-            //     total: order.finalAmount
-            // });
+            
 
             res.render('orderSuccess', {
                 order,
@@ -136,7 +128,7 @@ const orderController = {
 
           
 
-            // Find the order to cancel
+            // the order to cancel
             const order = await Order.findOne({
                 _id: orderId,
                 userId,
@@ -156,12 +148,12 @@ const orderController = {
                 });
             }
 
-            // Handle COD orders
+            //  COD orders
             if (order.paymentMethod === 'COD') {
                 order.status = 'Cancelled';
                 await order.save();
 
-                // Restore product quantities
+                // Restore product quantitie
                 for (const item of order.orderedItems) {
                     await Product.findByIdAndUpdate(item.product._id, {
                         $inc: { available_quantity: item.quantity }
@@ -212,12 +204,12 @@ const orderController = {
                     await wallet.save();
                     console.log('Refunded to wallet:', refundAmount);
 
-                    // Update order status
+                    
                     order.status = 'Cancelled';
                     order.paymentStatus = 'Refunded';
                     await order.save();
 
-                    // Restore product quantities
+                    // Restore product quantitie
                     for (const item of order.orderedItems) {
                         await Product.findByIdAndUpdate(item.product._id, {
                             $inc: { available_quantity: item.quantity }
@@ -242,7 +234,7 @@ const orderController = {
                 try {
                     console.log('Processing refund for online order:', order._id);
                     
-                    // Add refund to wallet first
+                    
                     let wallet = await Wallet.findOne({ userId }); 
                     const numberOfItems = order.orderedItems.length;
                     const couponAmount = order.couponAmount;
@@ -304,8 +296,7 @@ const orderController = {
                             };
                         } catch (refundError) {
                             console.error('Error with Razorpay refund:', refundError);
-                            // Even if Razorpay refund fails, we've already added to wallet
-                            // Just update the order status differently
+                            
                             order.paymentStatus = 'Refunded';
                             order.refundDetails = {
                                 amount: order.finalAmount,
@@ -316,11 +307,11 @@ const orderController = {
                         }
                     }
 
-                    // Update order status
+                   
                     order.status = 'Cancelled';
                     await order.save();
 
-                    // Restore product quantities
+                    // Restore product quantitie
                     for (const item of order.orderedItems) {
                         const updateResult = await Product.findByIdAndUpdate(
                             item.product._id,
@@ -348,11 +339,11 @@ const orderController = {
                     });
                 }
             } else {
-                // Non-Razorpay or incomplete payment
+                
                 order.status = 'Cancelled';
                 await order.save();
 
-                // Restore product quantities
+               
                 for (const item of order.orderedItems) {
                     await Product.findByIdAndUpdate(item.product._id, {
                         $inc: { available_quantity: item.quantity }
@@ -385,7 +376,7 @@ const orderController = {
                 return res.status(400).json({ success: false, message: 'Invalid address' });
             }
 
-            // Get cart items
+           
             const cart = await Cart.findOne({ userId: userId }).populate('items.product');
             if (!cart || !cart.items.length) {
                 return res.status(400).json({ success: false, message: 'Cart is empty' });
@@ -403,7 +394,7 @@ const orderController = {
 
             // Create order items array
             const orderedItems = cart.items.map(item => {
-                // Get the effective price (offer price or regular price)
+                
                 let effectivePrice = item.product.Sale_price;
                 if (item.product.offerPrice > 0 && 
                     item.product.offerStartDate <= new Date() && 
@@ -423,7 +414,7 @@ const orderController = {
                 return total + (item.price * item.quantity);
             }, 0);
 
-            // Create new order
+            
             const newOrder = new Order({
                 userId: userId,
                 orderId: generateOrderId(),
@@ -438,7 +429,7 @@ const orderController = {
 
             await newOrder.save();
 
-            // Update product stock quantities
+            // Update product stock quantitie
             for (const item of cart.items) {
                 await Product.findByIdAndUpdate(
                     item.product._id,
@@ -469,7 +460,7 @@ const orderController = {
             const orderId = req.params.orderId;
             const userId = req.session.user;
 
-            // Get order with populated fields
+            
             const order = await Order.findById(orderId)
                 .populate({
                     path: 'orderedItems.product',
@@ -485,12 +476,12 @@ const orderController = {
                 return res.status(404).json({ success: false, message: 'Order not found' });
             }
 
-            // Check if the order belongs to the logged-in user
+    
             if (order.userId.toString() !== userId) {
                 return res.status(403).json({ success: false, message: 'Unauthorized' });
             }
 
-            // Send the order details
+            // Send the order detail
             res.json(order);
 
         } catch (error) {
@@ -504,7 +495,7 @@ const orderController = {
             const { orderId, itemId } = req.query;
             const userId = req.session.user;
 
-            // Find the order and populate necessary fields
+           
             const order = await Order.findOne({ 
                 _id: orderId,
                 userId 
@@ -521,7 +512,7 @@ const orderController = {
                 return res.redirect('/pageNotFound');
             }
 
-            // Find the specific order item
+            // Find specific order item
             const orderItem = order.orderedItems.find(item => 
                 item._id.toString() === itemId
             );
@@ -532,7 +523,7 @@ const orderController = {
 
             res.render('view-item', {
                 orderItem,
-                order,  // Pass the full order object to access payment details
+                order,  
                 pageTitle: 'Order Item Details',
                 user:req.session.user
             });
@@ -571,7 +562,7 @@ const orderController = {
             if (returnReason) {
                 if (!orderItem.returnReason) {  
                     orderItem.returnReason = returnReason;
-                    orderItem.status = 'Delivered';  // Keep status as Delivered until admin confirms
+                    orderItem.status = 'Delivered';  
                 }
             } else {
                 // Handle other status updates
@@ -584,7 +575,7 @@ const orderController = {
 
                     // Handle refund based on payment method
                     if ((order.paymentMethod === 'online' || order.paymentMethod === 'wallet') && order.paymentStatus === 'Completed') {
-                        // Add refund to wallet
+                        
                         const wallet = await Wallet.findOne({ userId });
                         if (!wallet) {
                             const newWallet = new Wallet({
@@ -643,7 +634,7 @@ const orderController = {
                 orderItem.status = status;
             }
 
-            // Update overall order status based on item statuses
+            // Update order status based on item statuses
             const allItemStatuses = order.orderedItems.map(item => item.status);
             if (allItemStatuses.every(s => s === 'Cancelled')) {
                 order.status = 'Cancelled';
@@ -654,7 +645,7 @@ const orderController = {
             } else if (allItemStatuses.some(s => s === 'Shipped')) {
                 order.status = 'Shipped';
             } else {
-                // For mixed statuses, set to Processing
+                
                 order.status = 'Processing';
             }
 

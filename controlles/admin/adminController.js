@@ -3,7 +3,7 @@ const User = require('../../models/userSchema');
 const Product = require('../../models/productSchema');
 const mongoose = require('mongoose')
 const bcrypt = require('bcrypt')
-const Category = require('../../models/categorySchema'); // Assuming you have a category schema
+const Category = require('../../models/categorySchema'); 
 
 
 const pageerror = async(req,res)=>{
@@ -53,11 +53,11 @@ const loadDashboard = async (req, res) => {
             return res.redirect("/admin/login");
         }
 
-        // Get all orders for summary statistics
+        // get all order for summary 
         const orders = await Order.find().populate('orderedItems.product');
         console.log('Total orders found:', orders.length);
 
-        // Calculate summary statistics
+        // Calculate summary 
         const summary = {
             totalAmount: 0,
             totalOrders: orders.length,
@@ -174,7 +174,7 @@ const loadDashboard = async (req, res) => {
     }
 };
 
-// Helper function to get sales data based on period
+//  function to get sales data based on period
 const getSalesData = async (period) => {
     const now = new Date();
     let startDate;
@@ -271,7 +271,7 @@ const getSalesData = async (period) => {
     try {
         console.log('Fetching sales data from:', startDate, 'to:', endDate);
 
-        // First, get the orders with their items
+        // First get the orders with their items
         const salesData = await Order.aggregate([
             {
                 $match: {
@@ -763,19 +763,19 @@ const loadSalesReport=async(req,res)=>{
     }
 }
 
-// Test function to check orders
+//  function to check orders
 const testOrders = async (req, res) => {
     try {
-        // Get total order count
+        //  total order count
         const totalOrders = await Order.countDocuments();
         
-        // Get recent orders
+        //  recent order
         const recentOrders = await Order.find()
             .populate('orderedItems.product')
             .sort({ createdAt: -1 })
             .limit(5);
 
-        // Get order counts by status
+        //  order counts by status
         const ordersByStatus = await Order.aggregate([
             { $unwind: "$orderedItems" },
             {

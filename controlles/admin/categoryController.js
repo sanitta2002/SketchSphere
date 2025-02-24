@@ -1,6 +1,6 @@
 const Category = require('../../models/categorySchema');
 const category = require('../../models/categorySchema');
-const Product = require('../../models/productSchema'); // Assuming Product model is defined in productSchema.js
+const Product = require('../../models/productSchema');
 
 const categoryInfo = async(req,res) => {
     try {
@@ -15,7 +15,7 @@ const categoryInfo = async(req,res) => {
 const addCategory = async (req,res) => {
     const {name, description} = req.body;
     try {
-        const existingCategory = await category.findOne({name:{$regex:(`^${name}$`, 'i')}});
+        const existingCategory = await category.findOne({ name: { $regex: `^${name}$`, $options: 'i' } });
         if(existingCategory) {
             return res.status(400).json({error: "Category already exists"});
         }
@@ -23,6 +23,7 @@ const addCategory = async (req,res) => {
             name,
             description
         });
+        
         await newCategory.save();
         return res.json({message: "Category added successfully"});
     } catch (error) {
@@ -119,22 +120,8 @@ const addCategoryOffer = async (req, res) => {
         category.offerEndDate = offerEndDate;
         await category.save();
 
-        // Find all products in this category and update their offers
+        // Find all products in this category and update their offer
         const products = await Product.find({ category_id: categoryId });
-        
-        // for (const product of products) {
-            // Calculate offer price for each product
-            // const salePrice = product.Sale_price;
-            // const discountAmount = (salePrice * offerPercentage) / 100;
-            // const offerPrice = salePrice - discountAmount;
-
-            // Update product with offer details
-        //     product.offerPrice = offerPrice;
-        //     product.offerPercentage = offerPercentage;
-        //     product.offerStartDate = offerStartDate;
-        //     product.offerEndDate = offerEndDate;
-        //     await product.save();
-        // }
 
         req.session.success = 'Category offer added and applied to all products!';
         res.redirect('/admin/category');
@@ -162,18 +149,6 @@ const removeCategoryOffer = async (req, res) => {
         category.offerStartDate = null;
         category.offerEndDate = null;
         await category.save();
-
-        // Find all products in this category and remove their offers
-        // const products = await Product.find({ category_id: categoryId });
-        
-        // for (const product of products) {
-            // Remove offer details from each product
-        //     product.offerPrice = 0;
-        //     product.offerPercentage = 0;
-        //     product.offerStartDate = null;
-        //     product.offerEndDate = null;
-        //     await product.save();
-        // }
 
         req.session.success = 'Category offer removed from category and all products!';
         res.redirect('/admin/category');

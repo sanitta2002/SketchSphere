@@ -17,7 +17,7 @@ const productDetail = async (req, res) => {
             return res.status(404).render('404-page');
         }
 
-        // Calculate current prices based on offers
+       
         const now = new Date();
         const category = product.category_id;
         
@@ -25,11 +25,11 @@ const productDetail = async (req, res) => {
         const productOffer = product.offerPercentage || 0;
         const categoryOffer = category?.offerPercentage || 0;
         
-        // Check if offers are valid
+        // Check  offer are valid
         const hasValidProductOffer = productOffer > 0 && new Date(product.offerEndDate) > now;
         const hasValidCategoryOffer = categoryOffer > 0 && category && new Date(category.offerEndDate) > now;
         
-        // Get the best offer
+        //  best offer
         const bestOffer = hasValidProductOffer ? productOffer : (hasValidCategoryOffer ? categoryOffer : 0);
         
         // Calculate offer price
@@ -39,7 +39,7 @@ const productDetail = async (req, res) => {
             currentPrice = product.Sale_price - discountAmount;
         }
 
-        // Fetch recommended products from the same category
+        
         const recommendedProducts = await Product.find({
             category_id: product.category_id,
             _id: { $ne: product._id },
@@ -81,7 +81,7 @@ const productDetail = async (req, res) => {
             originalPrice: product.Sale_price
         };
 
-        // Get user data if logged in
+       
         let userData = null;
         let cartData = null;
         let wishlistCount = 0;

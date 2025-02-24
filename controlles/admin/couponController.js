@@ -1,7 +1,7 @@
 const Coupon = require('../../models/couponSchema');
 
 const couponController = {
-    // Get all coupons page
+    // Get all coupon page
     getAllCoupons: async (req, res) => {
         try {
             const coupons = await Coupon.find().sort({ createdOn: -1 });
@@ -16,7 +16,7 @@ const couponController = {
         }
     },
 
-    // Add new coupon page
+    // Add new coupon
     getAddCouponPage: async (req, res) => {
         try {
             res.render('add-coupon', {
@@ -29,7 +29,7 @@ const couponController = {
         }
     },
 
-    // Add new coupon
+    
     addCoupon: async (req, res) => {
         try {
             const { name, expireOn, offerPrice, minimumPrice } = req.body;
@@ -42,7 +42,7 @@ const couponController = {
                 });
             }
 
-            // Check if coupon with same name exists
+            // Check if coupon with same name 
             const existingCoupon = await Coupon.findOne({ name: name });
             if (existingCoupon) {
                 return res.status(400).json({ 
@@ -51,7 +51,7 @@ const couponController = {
                 });
             }
 
-            // Create new coupon
+            // create new coupon
             const newCoupon = new Coupon({
                 name,
                 expireOn,

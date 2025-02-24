@@ -5,7 +5,7 @@ const Coupon = require('../../models/couponSchema');
 const CouponUsage = require('../../models/couponUsageSchema');
 const User = require('../../models/userSchema');
 const Product = require('../../models/productSchema');
-const Wallet = require('../../models/walletSchema'); // Added Wallet model
+const Wallet = require('../../models/walletSchema'); 
 const mongoose = require('mongoose');
 
 const checkoutController = {
@@ -29,31 +29,31 @@ const checkoutController = {
                 return res.redirect('/cart');
             }
 
-            // Get wallet balance
+            //  wallet balance
             const wallet = await Wallet.findOne({ userId: req.session.user });
             const walletBalance = wallet ? wallet.balance : 0;
             user.walletBalance = walletBalance;
 
-            // Calculate prices with best offers (product or category)
+            // Calculate  best offer
             const cartItems = cart.items.map(item => {
                 const product = item.productId;
                 const now = new Date();
                 const category = product.category_id;
 
-                // Get product and category offers
+               
                 const productOffer = product.offerPercentage || 0;
                 const categoryOffer = category?.offerPercentage || 0;
 
-                // Check if offers are valid
+               
                 const hasValidProductOffer = productOffer > 0 && new Date(product.offerEndDate) > now;
                 const hasValidCategoryOffer = categoryOffer > 0 && category && new Date(category.offerEndDate) > now;
 
-                // Determine which offer is better
+                // better is 
                 let bestOffer = 0;
                 let offerType = 'none';
 
                 if (hasValidProductOffer && hasValidCategoryOffer) {
-                    // Both offers are valid, use the higher one
+                    
                     if (productOffer >= categoryOffer) {
                         bestOffer = productOffer;
                         offerType = 'product';
@@ -90,18 +90,18 @@ const checkoutController = {
                 };
             });
 
-            // Calculate cart total with offers
+            
             const subtotal = cartItems.reduce((total, item) => total + item.totalPrice, 0);
 
             const userAddress = await Address.findOne({ userId: req.session.user });
             const addresses = userAddress ? userAddress.address : [];
 
-            // Get used coupons from CouponUsage
+            
             const usedCoupons = await CouponUsage.distinct('couponCode', {
                 userId: req.session.user
             });
 
-            // Get all active coupons
+            
             const allActiveCoupons = await Coupon.find({
                 isList: true,
                 expireOn: { $gt: new Date() },
@@ -204,7 +204,7 @@ const checkoutController = {
 
     removeCoupon: async (req, res) => {
         try {
-            // Remove the applied coupon from session
+            
             delete req.session.appliedCoupon;
 
             return res.json({
@@ -233,7 +233,7 @@ const checkoutController = {
                 razorpay_signature
             } = req.body;
 
-            // Validate required fields
+            
             if (!totalPrice || !finalAmount) {
                 return res.status(400).json({
                     success: false,
@@ -271,26 +271,26 @@ const checkoutController = {
                 });
             }
 
-            // Calculate final prices with offers
+            
             const orderItems = cart.items.map(item => {
                 const product = item.productId;
                 const now = new Date();
                 const category = product.category_id;
 
-                // Get product and category offers
+                
                 const productOffer = product.offerPercentage || 0;
                 const categoryOffer = category?.offerPercentage || 0;
 
-                // Check if offers are valid
+             
                 const hasValidProductOffer = productOffer > 0 && new Date(product.offerEndDate) > now;
                 const hasValidCategoryOffer = categoryOffer > 0 && category && new Date(category.offerEndDate) > now;
 
-                // Determine which offer is better
+                
                 let bestOffer = 0;
                 let offerType = 'none';
 
                 if (hasValidProductOffer && hasValidCategoryOffer) {
-                    // Both offers are valid, use the higher one
+                    
                     if (productOffer >= categoryOffer) {
                         bestOffer = productOffer;
                         offerType = 'product';
@@ -306,7 +306,7 @@ const checkoutController = {
                     offerType = 'category';
                 }
 
-                // Calculate current price with best offer
+                
                 let currentPrice = product.Sale_price;
                 let discount = 0;
                 if (bestOffer > 0) {
@@ -327,11 +327,11 @@ const checkoutController = {
             const orderTotal = orderItems.reduce((total, item) => total + item.totalPrice, 0);
             const itemsDiscount = orderItems.reduce((total, item) => total + (item.discount * item.quantity), 0);
 
-            // Add coupon discount if applied
+           
             const couponDiscount = req.session.appliedCoupon ? req.session.appliedCoupon.discount : 0;
             const totalDiscount = itemsDiscount + couponDiscount;
 
-            // Validate product quantities
+            
             for (const cartItem of cart.items) {
                 const product = await Product.findById(cartItem.productId._id);
                 if (!product) {
@@ -348,7 +348,7 @@ const checkoutController = {
                 }
             }
 
-            // Create order
+            
             const order = new Order({
                 userId: req.session.user,
                 orderedItems: orderItems,
@@ -382,10 +382,9 @@ const checkoutController = {
             
             await order.save();
 
-            // Update product quantities
+            // Update product quantitie
             if (paymentMethod === 'COD') {
                 const updatePromises = cart.items.map(async (item) => {
-                    console.log(`Updating quantity for product ${item.productId._id} by -${item.quantity}`);
                     return Product.findByIdAndUpdate(
                         item.productId._id,
                         { $inc: { available_quantity: -item.quantity } },
@@ -395,18 +394,13 @@ const checkoutController = {
 
                 try {
                     const updatedProducts = await Promise.all(updatePromises);
-                    console.log('Updated product quantities:', updatedProducts.map(p => ({
-                        id: p._id,
-                        name: p.name,
-                        newQuantity: p.available_quantity
-                    })));
+                    
                 } catch (error) {
                     console.error('Error updating product quantities:', error);
-                    // Don't fail the order if quantity update fails
-                    // But log it for investigation
+                    
                 }
             }
-            // Clear cart only for COD orders (online orders clear cart after payment verification)
+            
             if (paymentMethod === 'COD') {
                 await Cart.findOneAndUpdate(
                     { userId: req.session.user },
@@ -421,7 +415,7 @@ const checkoutController = {
                     couponCode: couponCode.toUpperCase(),
                     usedAt: new Date()
                 });
-                // Clear the applied coupon from session
+                // Clear the applied coupon
                 delete req.session.appliedCoupon;
             }
 
@@ -452,7 +446,7 @@ const checkoutController = {
                 razorpay_order_id,
                 error_description
             } = req.body;
-
+        
             // Get cart items
             const cart = await Cart.findOne({ userId: req.session.user })
                 .populate({
@@ -470,21 +464,21 @@ const checkoutController = {
                 });
             }
 
-            // Calculate order items same as place order
+           
             const orderItems = cart.items.map(item => {
                 const product = item.productId;
                 const now = new Date();
                 const category = product.category_id;
 
-                // Get product and category offers
+                
                 const productOffer = product.offerPercentage || 0;
                 const categoryOffer = category?.offerPercentage || 0;
 
-                // Check if offers are valid
+              
                 const hasValidProductOffer = productOffer > 0 && new Date(product.offerEndDate) > now;
                 const hasValidCategoryOffer = categoryOffer > 0 && category && new Date(category.offerEndDate) > now;
 
-                // Determine which offer is better
+                
                 let bestOffer = 0;
                 let offerType = 'none';
 
@@ -504,7 +498,7 @@ const checkoutController = {
                     offerType = 'category';
                 }
 
-                // Calculate current price with best offer
+               
                 let currentPrice = product.Sale_price;
                 let discount = 0;
                 if (bestOffer > 0) {
@@ -521,7 +515,7 @@ const checkoutController = {
                 };
             });
 
-            // Get user address
+           
             const userAddress = await Address.findOne({
                 userId: req.session.user,
                 'address._id': addressId
@@ -541,7 +535,7 @@ const checkoutController = {
             const couponDiscount = req.session.appliedCoupon ? req.session.appliedCoupon.discount : 0;
             const totalDiscount = itemsDiscount + couponDiscount;
 
-            // Create order with failed status
+            
             const order = new Order({
                 userId: req.session.user,
                 orderedItems: orderItems,
@@ -564,9 +558,7 @@ const checkoutController = {
             
             await order.save();
 
-            // Don't clear cart since payment failed
-            // Don't update product quantities since order failed
-            // Don't record coupon usage since payment failed
+            
 
             res.json({
                 success: true,

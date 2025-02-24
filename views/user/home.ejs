@@ -962,8 +962,12 @@
                     showConfirmButton: false,
                     timer: 1000
                 }).then(() => {
-                    // Refresh the page after the alert closes
-                    window.location.reload();
+                    
+                    const cnt=document.getElementById('cnt')
+                    cnt.innerHTML =  data.cartCount ;                   
+                     console.log("count",data.cartCount)
+                    
+                    
                 });
             } else {
                 Swal.fire({
@@ -998,6 +1002,7 @@
             
             if (response.ok) {
                 // Show success message and refresh page
+                console.log(data)
                 Swal.fire({
                     icon: 'success',
                     title: 'Success!',
@@ -1005,7 +1010,8 @@
                     showConfirmButton: false,
                     timer: 1000
                 }).then(() => {
-                    window.location.reload();
+                    window.location.reload();   
+
                 });
             } else {
                 throw new Error(data.message || 'Failed to toggle wishlist');

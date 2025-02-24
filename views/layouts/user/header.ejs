@@ -194,20 +194,21 @@
 						<div class="icon-header-item cl2 hov-cl1 trans-04 p-l-22 p-r-11 icon-header-noti position-relative">
 							<a href="/cart" class="text-dark">
 								<i class="fa-solid fa-cart-plus"></i>
-								<% if (typeof cart !== 'undefined' && cart && cart.items && cart.items.length > 0) { %>
-									<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-										<%= cart.items.length %>
+								<% if (typeof cart !== 'undefined' && cart && cart.items ) { %>
+									<span id="cnt"  class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" count="<%= cart.items.length %>||0" value="">
+										<%= cart.items.length || 0 %>
 										<span class="visually-hidden">items in cart</span>
 									</span>
 								<% } %>
 							</a>
 						</div>
 
-						<a href="/wishlist" class="dis-block icon-header-item cl2 hov-cl1 trans-04 p-l-22 p-r-11 icon-header-noti" data-notify="">
+						<a href="/wishlist" class="dis-block icon-header-item cl2 hov-cl1 trans-04 p-l-22 p-r-11 icon-header-noti" >
 							<i class="fa-regular fa-heart" style="color: #000000;"></i>
-							<% if (locals.wishlistCount && wishlistCount > 0) { %>
-								<span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-									<%= wishlistCount %>
+							<% if (typeof wishlistCount!=='undefined' && wishlistCount >0) { %>
+								<span id="wish" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" cnt="<%= wishlistCount ||0 %>" value="">
+									<%= wishlistCount || 0 %>
+					
 									<span class="visually-hidden">items in wishlist</span>
 								</span>
 							<% } %>

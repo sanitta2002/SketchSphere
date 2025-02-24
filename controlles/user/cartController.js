@@ -34,7 +34,7 @@ const cartController = {
                 const now = new Date();
                 const category = product.category_id;
 
-                // Check if product is blocked
+                // Check  product is blocked
                 if (product.isBlocked) {
                     return {
                         ...item.toObject(),
@@ -53,16 +53,16 @@ const cartController = {
                 const productOffer = product.offerPercentage || 0;
                 const categoryOffer = category?.offerPercentage || 0;
                 
-                // Check if offers are valid
+                // Check offer are valid
                 const hasValidProductOffer = productOffer > 0 && new Date(product.offerEndDate) > now;
                 const hasValidCategoryOffer = categoryOffer > 0 && category && new Date(category.offerEndDate) > now;
                 
-                // Determine which offer is better
+                // which offer is better
                 let bestOffer = 0;
                 let offerType = 'none';
                 
                 if (hasValidProductOffer && hasValidCategoryOffer) {
-                    // Both offers are valid, use the higher one
+                    
                     if (productOffer >= categoryOffer) {
                         bestOffer = productOffer;
                         offerType = 'product';
@@ -99,9 +99,9 @@ const cartController = {
 
             // Calculate total price
             const subtotal = cartItems.reduce((total, item) => total + item.totalPrice, 0);
-            const totalPrice = subtotal; // Add shipping or other costs if needed
+            const totalPrice = subtotal; 
 
-            // Create a new cart object with calculated items
+            
             const cartWithOffers = {
                 ...cart.toObject(),
                 items: cartItems,
@@ -132,18 +132,18 @@ const cartController = {
                 return res.status(401).json({ success: false, message: 'Please login first' });
             }
 
-            // Fetch product details
+            
             const product = await Product.findById(productId);
             if (!product) {
                 return res.status(404).json({ success: false, message: 'Product not found' });
             }
 
-            // Check if product is blocked
+            //  product is blocked
             if (product.isBlocked) {
                 return res.status(400)
             }
 
-            // Check if product is in stock
+            // Check product is stock
             if (product.available_quantity < quantity) {
                 return res.status(400).json({ success: false, message: 'Not enough stock available' });
             }
@@ -158,12 +158,12 @@ const cartController = {
             const hasValidProductOffer = productOffer > 0 && new Date(product.offerEndDate) > now;
             const hasValidCategoryOffer = categoryOffer > 0 && category && new Date(category.offerEndDate) > now;
             
-            // Determine which offer is better
+            
             let bestOffer = 0;
             let offerType = 'none';
             
             if (hasValidProductOffer && hasValidCategoryOffer) {
-                // Both offers are valid, use the higher one
+               
                 if (productOffer >= categoryOffer) {
                     bestOffer = productOffer;
                     offerType = 'product';
@@ -188,13 +188,13 @@ const cartController = {
             let cart = await Cart.findOne({ userId: req.session.user });
             
             if (cart) {
-                // Check if product already exists in cart
+                // Check  product is already exists  cart
                 const existingItem = cart.items.find(item => 
                     item.productId.toString() === productId
                 );
 
                 if (existingItem) {
-                    // Update existing item
+                    // Update item
                     const newQuantity = existingItem.quantity + parseInt(quantity);
                     
                     if (newQuantity > 5) {
@@ -215,7 +215,7 @@ const cartController = {
                     existingItem.price = currentPrice;
                     existingItem.totalPrice = currentPrice * newQuantity;
                 } else {
-                    // Add new item
+                    
                     cart.items.push({
                         productId: productId,
                         quantity: parseInt(quantity),
@@ -312,12 +312,12 @@ const cartController = {
             const hasValidProductOffer = productOffer > 0 && new Date(product.offerEndDate) > now;
             const hasValidCategoryOffer = categoryOffer > 0 && category && new Date(category.offerEndDate) > now;
             
-            // Determine which offer is better
+            
             let bestOffer = 0;
             let offerType = 'none';
             
             if (hasValidProductOffer && hasValidCategoryOffer) {
-                // Both offers are valid, use the higher one
+                
                 if (productOffer >= categoryOffer) {
                     bestOffer = productOffer;
                     offerType = 'product';
@@ -343,7 +343,7 @@ const cartController = {
             cartItem.quantity = quantity;
             await cart.save();
 
-            // Calculate total price for all items
+            // Calculate total price  all items
             let totalPrice = 0;
             cart.items.forEach(item => {
                 const itemProduct = item.productId;
@@ -355,12 +355,12 @@ const cartController = {
                 const hasValidItemProductOffer = itemProductOffer > 0 && new Date(itemProduct.offerEndDate) > now;
                 const hasValidItemCategoryOffer = itemCategoryOffer > 0 && itemCategory && new Date(itemCategory.offerEndDate) > now;
                 
-                // Determine which offer is better
+                
                 let itemBestOffer = 0;
                 let itemOfferType = 'none';
                 
                 if (hasValidItemProductOffer && hasValidItemCategoryOffer) {
-                    // Both offers are valid, use the higher one
+                    
                     if (itemProductOffer >= itemCategoryOffer) {
                         itemBestOffer = itemProductOffer;
                         itemOfferType = 'product';
@@ -433,10 +433,7 @@ const cartController = {
 
             await cart.save();
 
-            // If cart is empty, remove it
-            if (cart.items.length === 0) {
-                await Cart.findByIdAndDelete(cart._id);
-            }
+            
 
             res.json({
                 success: true,

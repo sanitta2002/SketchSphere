@@ -3,14 +3,14 @@ const User = require('../../models/userSchema');
 const customerInfo = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
-        const limit = 10; // Items per page
+        const limit = 10; 
         const skip = (page - 1) * limit;
 
         // Get search parameter
         const searchQuery = req.query.search || '';
 
         // Build filter query
-        let query = { isAdmin: false }; // Exclude admin users
+        let query = { isAdmin: false };
         
         if (searchQuery) {
             query.$or = [
@@ -44,6 +44,7 @@ const customerInfo = async (req, res) => {
     }
 };
 
+//block user
 const CustomerBlocked = async (req, res) => {
     try {
         const id = req.query.id;
@@ -77,6 +78,7 @@ const CustomerBlocked = async (req, res) => {
     }
 };
 
+//unblock user
 const CustomerunBlocked = async (req, res) => {
     try {
         const id = req.query.id;
