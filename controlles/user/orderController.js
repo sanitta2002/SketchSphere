@@ -32,11 +32,7 @@ const orderController = {
                 })
                 .sort({ createdOn: -1 });
 
-            console.log('Found orders:', orders.map(order => ({
-                id: order._id,
-                items: order.orderedItems.length,
-                total: order.finalAmount
-            })));
+            
 
             res.render('orders', {
                 orders,
@@ -148,6 +144,8 @@ const orderController = {
                 });
             }
 
+
+
             //  COD orders
             if (order.paymentMethod === 'COD') {
                 order.status = 'Cancelled';
@@ -176,8 +174,8 @@ const orderController = {
                     const numberOfItems = order.orderedItems.length;
                     const couponAmount = order.couponAmount;
                     const couponDiscount = couponAmount/numberOfItems
-                    console.log("couponDiscount",couponDiscount)
                     const refundAmount = order.finalAmount - couponDiscount;
+
 
                     if (!wallet) {
                         wallet = new Wallet({
@@ -232,16 +230,16 @@ const orderController = {
             // Handle Razorpay refund
             if (order.paymentMethod === 'online' && order.paymentStatus === 'Completed') {
                 try {
-                    console.log('Processing refund for online order:', order._id);
                     
                     
                     let wallet = await Wallet.findOne({ userId }); 
                     const numberOfItems = order.orderedItems.length;
                     const couponAmount = order.couponAmount;
                     const couponDiscount = couponAmount/numberOfItems
-                    const refundAmount = order.finalAmount - couponDiscount; // Include offer discount in refund
-                    console.log(
-                         refundAmount);
+                    const refundAmount = order.finalAmount - couponDiscount; 
+
+                    
+                    
                     if (!wallet) {
                         wallet = new Wallet({
                             userId,
@@ -318,11 +316,6 @@ const orderController = {
                             { $inc: { available_quantity: item.quantity } },
                             { new: true }
                         );
-                        console.log('Product quantity updated:', {
-                            productId: item.product._id,
-                            quantityRestored: item.quantity,
-                            newQuantity: updateResult.available_quantity
-                        });
                     }
 
                     console.log('Order cancellation and refund completed successfully');
@@ -545,6 +538,7 @@ const orderController = {
                 userId: userId
             }).populate('orderedItems.product');
 
+
             if (!order) {
                 return res.status(404).json({ success: false, message: 'Order not found' });
             }
@@ -557,6 +551,7 @@ const orderController = {
             }
 
             let refundAmount = 0;
+            
 
             // Handle return request
             if (returnReason) {
@@ -577,6 +572,7 @@ const orderController = {
                     if ((order.paymentMethod === 'online' || order.paymentMethod === 'wallet') && order.paymentStatus === 'Completed') {
                         
                         const wallet = await Wallet.findOne({ userId });
+                        
                         if (!wallet) {
                             const newWallet = new Wallet({
                                 userId,
