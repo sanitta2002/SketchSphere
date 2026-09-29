@@ -9,6 +9,8 @@ const Wallet = require('../../models/walletSchema')
 const nodemailer = require('nodemailer')
 const env = require("dotenv").config()
 const bcrypt = require('bcrypt')
+const { Resend } = require('resend');
+
 
 
 const pageNotFound = async (req, res) => {
@@ -214,28 +216,62 @@ function generateOtp() {
 
     return Math.floor(100000 + Math.random() * 900000).toString()
 }
+// const resend = new Resend(process.env.RESEND_API_KEY);
+// async function sendVerificationEmail(email, otp) {
+//     try {
+//         const transporter = nodemailer.createTransport({
+//             host: 'smtp.gmail.com',
+//             port: 465,
+//             secure: true, // use SSL
+//             auth: {
+//                 user: process.env.NODEMAILER_EMAIL,
+//                 pass: process.env.NODEMAILER_PASSWORD // Use your app-specific password here
+//             }
+//         });
+
+//         const info = await transporter.sendMail({
+//             from: process.env.NODEMAILER_EMAIL,
+//             to: email,
+//             subject: "Verify your account",
+//             text: `Your OTP is ${otp}`,
+//             html: `<b>Your OTP: ${otp}</b>`,
+//         });
+
+//         console.log("Email sent successfully:", info.messageId);
+//         return info.accepted.length > 0;
+//     } catch (error) {
+//         console.error("Error sending email:", error);
+//         return false;
+//     }
+// }
+
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+
 async function sendVerificationEmail(email, otp) {
     try {
-        const transporter = nodemailer.createTransport({
-            host: 'smtp.gmail.com',
-            port: 465,
-            secure: true, // use SSL
-            auth: {
-                user: process.env.NODEMAILER_EMAIL,
-                pass: process.env.NODEMAILER_PASSWORD // Use your app-specific password here
-            }
+        const { data, error } = await resend.emails.send({
+            from: 'SketchSphere <onboarding@resend.dev>',
+            to: [email],
+            subject: 'Verify your SketchSphere account',
+            html: `
+                <div>
+                    <h2>SketchSphere Email Verification</h2>
+                    <p>Your OTP is:</p>
+                    <h1>${otp}</h1>
+                    <p>This OTP is valid for 5 minutes.</p>
+                </div>
+            `
         });
 
-        const info = await transporter.sendMail({
-            from: process.env.NODEMAILER_EMAIL,
-            to: email,
-            subject: "Verify your account",
-            text: `Your OTP is ${otp}`,
-            html: `<b>Your OTP: ${otp}</b>`,
-        });
+        if (error) {
+            console.error("Resend email error:", error);
+            return false;
+        }
 
-        console.log("Email sent successfully:", info.messageId);
-        return info.accepted.length > 0;
+        console.log("Email sent successfully:", data.id);
+        return true;
+
     } catch (error) {
         console.error("Error sending email:", error);
         return false;

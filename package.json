@@ -26,6 +26,7 @@
     "passport-google-oauth20": "^2.0.0",
     "pdfkit": "^0.16.0",
     "razorpay": "^2.9.5",
+    "resend": "^6.30.0",
     "sharp": "^0.33.5",
     "uuid": "^11.0.3",
     "xlsx": "^0.18.5"
