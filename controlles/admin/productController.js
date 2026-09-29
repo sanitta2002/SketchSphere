@@ -188,7 +188,10 @@ const editProduct = async (req, res) => {
         const id = req.params.id;
         const data = req.body;
         
-       
+        const regularPrice = Number(data.regularPrice);
+const salePrice = Number(data.salePrice);
+const quantity = Number(data.quantity);
+
 
 
 
@@ -201,29 +204,35 @@ const editProduct = async (req, res) => {
             return res.status(400).json({ error: "Description is required" });
         }
         
-        if(data.quantity < 0){
-            return res.status(400).json({ error: "Quantity cannot be negative" });
-        }
+      if (quantity < 0) {
+    return res.status(400).json({
+        error: "Quantity cannot be negative"
+    });
+}
 
-        if(data.regularPrice < 0){
-            return res.status(400).json({ error: "Regular price cannot be negative" });
-        }
+        if (regularPrice < 0) {
+    return res.status(400).json({
+        error: "Regular price cannot be negative"
+    });
+}
+        if (salePrice < 0) {
+    return res.status(400).json({
+        error: "Sale price cannot be negative"
+    });
+}
 
-        if(data.salePrice < 0){
-            return res.status(400).json({ error: "Sale price cannot be negative" });
-        }
+       if (salePrice > regularPrice) {
+    return res.status(400).json({
+        error: "Sale price cannot be greater than regular price"
+    });
+}
 
-        if(data.salePrice < data.regularPrice){
-            return res.status(400).json({ error: "Sale price cannot be greater than regular price" });
-        }
-
-        // Update fields
         const updateFields = {
             name: data.productName,
             description: data.description,
-            Regular_price: data.regularPrice,
-            Sale_price: data.salePrice,
-            available_quantity: data.quantity,
+            Regular_price: regularPrice,
+            Sale_price: salePrice,
+            available_quantity: quantity,
             Published_Date: data.Published_Date || null,
             writer: data.writer || null,
             cover_Artist: data.cover_Artist || null,
