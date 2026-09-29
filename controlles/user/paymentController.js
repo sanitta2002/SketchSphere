@@ -10,7 +10,7 @@ dotenv.config();
 
 const razorpay = new Razorpay({
     key_id: process.env.RAZORPAY_KEY_ID,
-    key_secret: process.env.RAZORPAY_SECRET_KEY
+    key_secret: process.env.RAZORPAY_KEY_SECRET
 });
 
 const paymentController = {
@@ -170,7 +170,7 @@ const paymentController = {
             // Verify signature
             const sign = razorpay_order_id + "|" + razorpay_payment_id;
             const expectedSign = crypto
-                .createHmac("sha256", process.env.RAZORPAY_SECRET_KEY)
+                .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
                 .update(sign.toString())
                 .digest("hex");
 

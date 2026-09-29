@@ -11,7 +11,6 @@ const env = require("dotenv").config()
 const bcrypt = require('bcrypt')
 
 
-//render error page
 const pageNotFound = async (req, res) => {
 
     try {
@@ -24,14 +23,12 @@ const pageNotFound = async (req, res) => {
     }
 }
 
-//render home page
 const loadHomepage = async (req, res) => {
     try {
-        // Get active categories first
+        
         const activeCategories = await Category.find({ isListed: true });
         const activeCategoryIds = activeCategories.map(cat => cat._id);
 
-        // Fetch products from active categories only
         const products = await Product.find({ 
             isBlocked: false,
             category_id: { $in: activeCategoryIds }
@@ -213,23 +210,6 @@ const loadSignup = async (req, res) => {
     }
 }
 
-// const signup = async(req,res)=>{
-//     const {name,email,phone,password}=req.body
-//     try{
-//        console.log(req.boby)
-//         const newUser = new User({name,email,phone,password})
-//         await newUser.save();
-        
-//         return  res.redirect('/signup')
-
-//     }catch(error){
-       
-//         console.log("Error for save user",error)
-//         res.status(500).send("Internal server error")
-//     }
-// }
-
-
 function generateOtp() {
 
     return Math.floor(100000 + Math.random() * 900000).toString()
@@ -293,7 +273,7 @@ const signup = async (req, res) => {
         };
         req.session.userData = { name, phone, email, password }
 
-        res.render("verify-otp")
+        res.render("verify-otp",{email:email})
         console.log("OTP sent", otp)
         // res.status(200).json({message:"mail Sent"});
 
@@ -319,80 +299,173 @@ const securePassword = async (password) => {
 
 
 
+// const verifyOtp = async (req, res) => {
+//     try {
+//         const { otp1, otp2, otp3, otp4, otp5, otp6 } = req.body;
+//         // const enteredOtp = `${otp1}${otp2}${otp3}${otp4}${otp5}${otp6}`; 
+        
+//          const enteredOtp = [
+//             otp1,
+//             otp2,
+//             otp3,
+//             otp4,
+//             otp5,
+//             otp6
+//         ].join('').trim();
+
+       
+//         if (!req.session.userOtp || !req.session.userOtp.code) {
+//             return res.status(400).json({ success: false, message: "No OTP found in session." });
+//         }
+
+//         const { code, expiresAt } = req.session.userOtp;
+
+//         // Check if OTP has expired
+//         if (Date.now() > expiresAt) {
+//             // Clear expired OTP from session
+//             delete req.session.userOtp;
+//             return res.status(400).json({ success: false, message: "OTP has expired." });
+//         }
+
+//         // Verify OTP
+//         if (enteredOtp === code) {
+//             const user = req.session.userData;
+//             if (!user) {
+//                 return res.status(400).json({ success: false, message: "User data not found in session." });
+//             }
+
+//             // Hash password
+//             const passwordHash = await securePassword(user.password);
+
+//             // Save user data
+//             const saveUserData = new User({
+//                 name: user.name,
+//                 email: user.email,
+//                 phone: user.phone,
+//                 password: passwordHash,
+//             });
+
+//             await saveUserData.save();
+
+//             delete req.session.userOtp;
+//             delete req.session.userData;
+
+//             req.session.user = saveUserData._id;
+
+//             console.log("User registered successfully.");
+//             return res.json({ success: true, message: "OTP verified successfully" });
+//         } else {
+//             return res.status(400).json({ success: false, message: "Invalid OTP. Please try again." });
+//         }
+//     } catch (error) {
+//         console.error("Error verifying OTP:", error);
+//         res.status(500).json({ success: false, message: "An error occurred while verifying OTP." });
+//     }
+// };
+
+
 const verifyOtp = async (req, res) => {
     try {
         const { otp1, otp2, otp3, otp4, otp5, otp6 } = req.body;
-        const enteredOtp = `${otp1}${otp2}${otp3}${otp4}${otp5}${otp6}`; // Concatenate OTP inputs
-        
 
-        // Check if OTP exists in session
+        const enteredOtp = [
+            otp1,
+            otp2,
+            otp3,
+            otp4,
+            otp5,
+            otp6
+        ].join('').trim();
+
+        console.log("Entered OTP:", enteredOtp);
+        console.log("Session OTP:", req.session.userOtp);
+
         if (!req.session.userOtp || !req.session.userOtp.code) {
-            return res.status(400).json({ success: false, message: "No OTP found in session." });
+            return res.status(400).json({
+                success: false,
+                message: "No OTP found in session."
+            });
         }
 
         const { code, expiresAt } = req.session.userOtp;
 
-        // Check if OTP has expired
         if (Date.now() > expiresAt) {
-            // Clear expired OTP from session
             delete req.session.userOtp;
-            return res.status(400).json({ success: false, message: "OTP has expired." });
-        }
 
-        // Verify OTP
-        if (enteredOtp === code) {
-            const user = req.session.userData;
-            if (!user) {
-                return res.status(400).json({ success: false, message: "User data not found in session." });
-            }
-
-            // Hash password
-            const passwordHash = await securePassword(user.password);
-
-            // Save user data
-            const saveUserData = new User({
-                name: user.name,
-                email: user.email,
-                phone: user.phone,
-                password: passwordHash,
+            return res.status(400).json({
+                success: false,
+                message: "OTP has expired."
             });
-
-            await saveUserData.save();
-
-            // Clear OTP and user data from session after successful verification
-            delete req.session.userOtp;
-            delete req.session.userData;
-
-            req.session.user = saveUserData._id;
-
-            console.log("User registered successfully.");
-            return res.json({ success: true, message: "OTP verified successfully" });
-        } else {
-            return res.status(400).json({ success: false, message: "Invalid OTP. Please try again." });
         }
+
+        if (enteredOtp !== String(code).trim()) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid OTP. Please try again."
+            });
+        }
+
+        const user = req.session.userData;
+
+        if (!user) {
+            return res.status(400).json({
+                success: false,
+                message: "User data not found in session."
+            });
+        }
+
+        const passwordHash = await securePassword(user.password);
+
+        const saveUserData = new User({
+            name: user.name,
+            email: user.email,
+            phone: user.phone,
+            password: passwordHash
+        });
+
+        await saveUserData.save();
+
+        delete req.session.userOtp;
+        delete req.session.userData;
+
+        req.session.user = saveUserData._id;
+
+        return res.json({
+            success: true,
+            message: "OTP verified successfully"
+        });
+
     } catch (error) {
         console.error("Error verifying OTP:", error);
-        res.status(500).json({ success: false, message: "An error occurred while verifying OTP." });
+
+        return res.status(500).json({
+            success: false,
+            message: "An error occurred while verifying OTP."
+        });
     }
 };
 
-// Resend OTP Function
+
+
 const resendOtp = async (req, res) => {
     try {
-        const { email } = req.session.userData;
+        const userData = req.session.userData;
 
-        // Check if email exists in session
-        if (!email) {
-            return res.status(400).json({ success: false, message: "Email not found in session." });
-        }
+       if (!userData || !userData.email) {
+    return res.status(400).json({
+        success: false,
+        message: "Signup session expired. Please signup again."
+    });
+}
 
-        const otp = generateOtp(); // Generate a new OTP
+const { email } = userData;
+
+        const otp = generateOtp(); 
         console.log("Generated OTP:", otp);
 
-        // Update OTP in session
-        req.session.userOtp = { code: otp, expiresAt: Date.now() + 300000 }; // 5 minutes expiration
+        req.session.userOtp = { code: otp, expiresAt: Date.now() + 300000 }; 
 
-        // Send OTP via email
+
         const emailSent = await sendVerificationEmail(email, otp);
         if (emailSent) {
             console.log("Resend OTP successful:", otp);

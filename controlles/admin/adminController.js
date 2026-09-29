@@ -53,7 +53,6 @@ const loadDashboard = async (req, res) => {
             return res.redirect("/admin/login");
         }
 
-        // get all order for summary 
         const orders = await Order.find().populate('orderedItems.product');
         console.log('Total orders found:', orders.length);
 

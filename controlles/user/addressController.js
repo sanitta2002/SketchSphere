@@ -4,7 +4,7 @@ const mongoose = require('mongoose')
 
 const loadAddAddress = async (req, res) => {
     try {
-        res.render('add-Address')
+        res.render('add-address')
     } catch (error) {
         console.log(error)
     }
@@ -35,7 +35,6 @@ const addAddress = async (req, res) => {
             pincode
         } = req.body;
 
-        // Validate required fields
         if (!name || !phone || !addressType || !landMark || !city || !state || !pincode) {
             
             return res.status(400).json({
@@ -44,7 +43,6 @@ const addAddress = async (req, res) => {
             });
         }
 
-        // Validate phone number
         if (!/^[0-9]{10}$/.test(phone)) {
             return res.status(400).json({
                 success: false,
@@ -52,7 +50,7 @@ const addAddress = async (req, res) => {
             });
         }
 
-        // Validate pincode
+   
         if (!/^[0-9]{6}$/.test(pincode)) {
             return res.status(400).json({
                 success: false,
@@ -60,7 +58,7 @@ const addAddress = async (req, res) => {
             });
         }
 
-        // Find existing address document for user or create new one
+        
         let userAddress = await Address.findOne({ userId: userId });
 
         if (!userAddress) {
@@ -70,7 +68,7 @@ const addAddress = async (req, res) => {
             });
         }
 
-        // Add new address to array
+      
         const newAddress = {
             name,
             phone,
@@ -141,7 +139,6 @@ const editAddress = async (req, res) => {
             pincode
         } = req.body;
 
-        // Validate required fields
         if (!name || !phone || !addressType || !landMark || !city || !state || !pincode) {
             return res.status(400).json({
                 success: false,
@@ -149,7 +146,6 @@ const editAddress = async (req, res) => {
             });
         }
 
-        // Validate phone number
         if (!/^[0-9]{10}$/.test(phone)) {
             return res.status(400).json({
                 success: false,
@@ -157,7 +153,6 @@ const editAddress = async (req, res) => {
             });
         }
 
-        // Validate pincode
         if (!/^[0-9]{6}$/.test(pincode)) {
             return res.status(400).json({
                 success: false,

@@ -68,7 +68,7 @@
                             <i class="bi bi-check-circle me-2"></i>
                             Verify OTP
                         </button>
-                        <a class="btn btn-outline-secondary" id="resendOtp" onclick="sendOTP()">
+                        <a href="javascript:void(0)" class="btn btn-outline-secondary" id="resendOtp">
                             <i class="bi bi-send me-2"></i>
                             Resend OTP
                         </a>
@@ -146,7 +146,13 @@
                 timerElement.innerHTML = '<i class="bi bi-send me-2"></i>Resending OTP...';
         
                 // Simulate API call
-                fetch('/resend-otp', { method: 'POST' })
+                fetch('/resend-otp', { method: 'POST' , headers:{
+                    'content-Type':'application/json'
+                },
+                body: JSON.stringify({
+        email: '<%= email %>'
+    })
+            })
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
@@ -168,44 +174,104 @@
             startTimer(120); // Initial 2-minute timer
         });
         
-        async function verifyOTP(event) {
-            event.preventDefault();
+        // async function verifyOTP(event) {
+        //     event.preventDefault();
             
-            const formData = new FormData(event.target);
-            const formDataObj = {};
-            formData.forEach((value, key) => {
-                formDataObj[key] = value;
-            });
+        //     const formData = new FormData(event.target);
+        //     const formDataObj = {};
+        //     formData.forEach((value, key) => {
+        //         formDataObj[key] = value;
+        //     });
 
-            try {
-                const response = await fetch('/verify-otp', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(formDataObj),
-                });
+        //     try {
+        //        const response = await fetch('/verify-otp', {
+        //     method: 'POST',
+        //     headers: {
+        //         'Content-Type': 'application/json'
+        //     },
+        //     body: JSON.stringify(formDataObj)
+        // });
                 
-                const data = await response.json();
+        //         const data = await response.json();
                 
-                if (!response.ok) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Invalid OTP',
-                        text: data.message || 'Please check your OTP and try again',
-                        confirmButtonColor: '#01070e'
-                    });
-                } else {
-                    window.location.href = '/login';
-                }
-            } catch (error) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'An error occurred. Please try again.',
-                    confirmButtonColor: '#01070e'
-                });
-            }
+        //         if (!response.ok) {
+        //             Swal.fire({
+        //                 icon: 'error',
+        //                 title: 'Invalid OTP',
+        //                 text: data.message || 'Please check your OTP and try again',
+        //                 confirmButtonColor: '#01070e'
+        //             });
+        //         } else {
+        //             window.location.href = '/login';
+        //         }
+        //     } catch (error) {
+        //         Swal.fire({
+        //             icon: 'error',
+        //             title: 'Error',
+        //             text: 'An error occurred. Please try again.',
+        //             confirmButtonColor: '#01070e'
+        //         });
+        //     }
+        // }
+
+        async function verifyOTP(event) {
+    event.preventDefault();
+
+    const otpInputs = document.querySelectorAll('.otp-input');
+
+    const otpData = {
+        otp1: otpInputs[0].value,
+        otp2: otpInputs[1].value,
+        otp3: otpInputs[2].value,
+        otp4: otpInputs[3].value,
+        otp5: otpInputs[4].value,
+        otp6: otpInputs[5].value
+    };
+
+    console.log("OTP DATA:", otpData);
+
+    try {
+        const response = await fetch('/verify-otp', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(otpData)
+        });
+
+        const data = await response.json();
+
+        console.log("SERVER RESPONSE:", data);
+
+        if (!response.ok) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Invalid OTP',
+                text: data.message || 'Please check your OTP and try again',
+                confirmButtonColor: '#01070e'
+            });
+            return;
         }
+
+        Swal.fire({
+            icon: 'success',
+            title: 'OTP Verified',
+            text: data.message,
+            confirmButtonColor: '#01070e'
+        }).then(() => {
+            window.location.href = '/';
+        });
+
+    } catch (error) {
+        console.error("Verify OTP error:", error);
+
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'An error occurred. Please try again.',
+            confirmButtonColor: '#01070e'
+        });
+    }
+}
     </script>
 <%- include('../../views/layouts/user/footer.ejs') %>        
